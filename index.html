@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>osm-auth</title>
+        <link rel='stylesheet' type='text/css' href='' />
+        <meta http-equiv='content-type' content='text/html; charset=utf-8' />
+        <style>
+        body {
+            width: 300px;
+            margin: 40px auto;
+            font:normal 12px/20px 'Helvetica Neue', sans-serif;
+        }
+        button {
+            border-radius:5px;
+            background:#54af29;
+            border-color:#2C7505;
+            color:#fff;
+            font-size:25px;
+            text-shadow:1px 1px -1px #2C7505;
+            padding:10px;
+        }
+        button:hover {
+            background: #2C7505;
+        }
+        #user {
+            display:none;
+            font:normal 15px/20px 'Helvetica Neue', sans-serif;
+            text-align:center;
+        }
+        h1, h2 {
+            margin: 10px 0;
+        }
+        </style>
+    </head>
+    <body>
+        <button id='authenticate'>authenticate with openstreetmap</button>
+        <div id='user'>
+            <h1 id='display_name'></h1>
+            <h2 id='id'></h2>
+            Changesets: <span id='count'></span>
+        </div>
+        <script src='osmauth.js'></script>
+        <script>
+        var auth = osmAuth({
+            oauth_secret: '9WfJnwQxDvvYagx1Ut0tZBsOZ0ZCzAvOje3u1TV0',
+            oauth_consumer_key: "WLwXbm6XFMG7WrVnE8enIF6GzyefYIN6oUJSxG65"
+        });
+        function done(err, res) {
+            if (err) return alert('error!');
+            var u = res.getElementsByTagName('user')[0];
+            var changesets = res.getElementsByTagName('changesets')[0];
+            var o = {
+                display_name: u.getAttribute('display_name'),
+                id: u.getAttribute('id'),
+                count: changesets.getAttribute('count')
+            };
+            for (var k in o) {
+                document.getElementById(k).innerHTML = o[k];
+            }
+            document.getElementById('user').style.display = 'block';
+        }
+        document.getElementById('authenticate').onclick = function() {
+            auth.authenticate(function() {
+                auth.xhr({
+                    method: 'GET',
+                    path: '/api/0.6/user/details'
+                }, done);
+            });
+        };
+        </script>
+    </body>
+</html>
