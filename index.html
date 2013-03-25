@@ -59,7 +59,11 @@
             oauth_consumer_key: 'WLwXbm6XFMG7WrVnE8enIF6GzyefYIN6oUJSxG65'
         });
         function done(err, res) {
-            if (err) return alert('error');
+            if (err) {
+                document.getElementById('user').innerHTML = 'error! try clearing your browser cache';
+                document.getElementById('user').style.display = 'block';
+                return;
+            }
             var u = res.getElementsByTagName('user')[0];
             var changesets = res.getElementsByTagName('changesets')[0];
             var o = {
