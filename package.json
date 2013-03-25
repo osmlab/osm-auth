@@ -15,7 +15,7 @@
   "author": "Tom MacWright",
   "license": "BSD",
   "dependencies": {
-    "ohauth": "0.1.1",
+    "ohauth": "0.1.2",
     "store": "~1.3.6"
   }
 }
