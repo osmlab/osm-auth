@@ -20,6 +20,9 @@
             text-shadow:1px 1px -1px #2C7505;
             padding:10px;
         }
+        button.done {
+            background:#2C7505;
+        }
         button:hover {
             background: #2C7505;
         }
@@ -31,6 +34,10 @@
         h1, h2 {
             margin: 10px 0;
         }
+        p {
+            text-align:center;
+            color:#666;
+        }
         </style>
     </head>
     <body>
@@ -41,6 +48,10 @@
             <h2 id='id'></h2>
             Changesets: <span id='count'></span>
         </div>
+        <p><a href='https://github.com/osmlab/osm-auth'>osm-auth</a> is a minimal
+        example of authenticating and interacting with the
+        <a href='http://www.openstreetmap.org/'>openstreetmap</a>
+        API.</p>
         <script src='osmauth.js'></script>
         <script>
         var auth = osmAuth({
@@ -48,7 +59,7 @@
             oauth_consumer_key: 'WLwXbm6XFMG7WrVnE8enIF6GzyefYIN6oUJSxG65'
         });
         function done(err, res) {
-            if (err) return alert('error!');
+            if (err) return alert('error');
             var u = res.getElementsByTagName('user')[0];
             var changesets = res.getElementsByTagName('changesets')[0];
             var o = {
@@ -64,7 +75,7 @@
 
         document.getElementById('authenticate').onclick = function() {
             auth.authenticate(function() {
-                showDetails();
+                update();
             });
         };
 
@@ -81,12 +92,22 @@
 
         document.getElementById('logout').onclick = function() {
             auth.logout();
-            hideDetails();
+            update();
         };
 
-        if (auth.authenticated()) {
-            showDetails();
+        function update() {
+            if (auth.authenticated()) {
+                document.getElementById('authenticate').className = 'done';
+                document.getElementById('logout').className = '';
+                showDetails();
+            } else {
+                document.getElementById('authenticate').className = '';
+                document.getElementById('logout').className = 'done';
+                hideDetails();
+            }
         }
+
+        update();
         </script>
     </body>
 </html>

@@ -1,18 +1,18 @@
 {
   "name": "osm-auth",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "a usable example of javascript oauth with openstreetmap",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "repository": "",
+  "repository": "git@github.com:osmlab/osm-auth.git",
   "keywords": [
     "oauth",
     "openstreetmap",
     "ohauth"
   ],
-  "author": "Tom MacWright",
+  "author": "Tom MacWright <tom@macwright.org>",
   "license": "BSD",
   "dependencies": {
     "ohauth": "0.1.2",

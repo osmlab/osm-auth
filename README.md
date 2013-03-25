@@ -4,7 +4,7 @@ Easy authentication with [OpenStreetMap](http://www.openstreetmap.org/)
 over [OAuth](http://oauth.net/) with
 [CORS](http://en.wikipedia.org/wiki/Cross-origin_resource_sharing).
 
-## installation
+## Installation
 
 Basic:
 
@@ -21,7 +21,7 @@ var osmAuth = require('osm-auth');
 **Requires land.html to be accessible, or a page that does the same thing -
 calls an auth complete function - to be available.**
 
-## example
+## Getting Keys
 
 Register a new OAuth application on openstreetmap.org:
 
@@ -30,12 +30,16 @@ Register a new OAuth application on openstreetmap.org:
 3. Click 'oauth settings'
 4. At the bottom, 'Register your application'
 5. Fill in the form & submit
+6. Copy & Paste the secret & consumer key into the osmAuth config object as below
+
+## Example
 
 ```js
 var auth = osmAuth({
     oauth_secret: '9WfJnwQxDvvYagx1Ut0tZBsOZ0ZCzAvOje3u1TV0',
     oauth_consumer_key: 'WLwXbm6XFMG7WrVnE8enIF6GzyefYIN6oUJSxG65',
-    auto: true
+    auto: true // show a login form if the user is not authenticated and
+    // you try to do a call
 });
 
 document.getElementById('authenticate').onclick = function() {
@@ -51,11 +55,11 @@ document.getElementById('authenticate').onclick = function() {
 };
 ```
 
-## support
+## Support
 
 [CORS-supporting browsers](http://caniuse.com/#feat=cors)
 
-## api
+## API
 
 `.logout()`
 
@@ -70,13 +74,13 @@ Tries to authenticate. Calls callback if successful.
 Signed [XMLHttpRequest](http://en.wikipedia.org/wiki/XMLHttpRequest).
 Main options are `url` and `method`.
 
-## based on
+## Based on
 
 Uses [ohauth](https://github.com/tmcw/ohauth) and
 [store.js](https://github.com/marcuswestin/store.js) behind the scenes.
 
 Based on the implementation in the [iD editor](http://ideditor.com/).
 
-## see also
+## See Also
 
 * [OAuth in Javascript](http://mapbox.com/osmdev/2013/01/15/oauth-in-javascript/)
