@@ -8,7 +8,10 @@ over [OAuth](http://oauth.net/) with
 
 Basic:
 
-Copy `osmauth.js`, use the `osmAuth` object.
+Copy `osmauth.js`, use the `osmAuth` object. This uses
+[UMD](https://github.com/umdjs/umd), so it's compatible
+with [RequireJS](http://requirejs.org/) etc too, if you're into that kind
+of thing.
 
 With browserify:
 
