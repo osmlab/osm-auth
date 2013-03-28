@@ -39,10 +39,12 @@ Register a new OAuth application on openstreetmap.org:
 
 ```js
 var auth = osmAuth({
-    oauth_secret: '9WfJnwQxDvvYagx1Ut0tZBsOZ0ZCzAvOje3u1TV0',
-    oauth_consumer_key: 'WLwXbm6XFMG7WrVnE8enIF6GzyefYIN6oUJSxG65',
-    auto: true // show a login form if the user is not authenticated and
+    "http://www.openstreetmap.org": {
+        oauth_secret: '9WfJnwQxDvvYagx1Ut0tZBsOZ0ZCzAvOje3u1TV0',
+        oauth_consumer_key: 'WLwXbm6XFMG7WrVnE8enIF6GzyefYIN6oUJSxG65',
+        auto: true // show a login form if the user is not authenticated and
     // you try to do a call
+    }
 });
 
 document.getElementById('authenticate').onclick = function() {
@@ -64,6 +66,25 @@ document.getElementById('authenticate').onclick = function() {
 
 ## API
 
+`.osmAuth(keys, options)`
+
+Keys is keys in the form
+
+```
+{
+  url: {
+    oauth_secret: ...
+    oauth_consumer_key: ...
+  }
+}
+```
+
+Options includes:
+
+* `url` for another base url
+* `loading`: a function called when auth-related xhr calls start
+* `done`: a function called when auth-related xhr calls end
+
 `.logout()`
 
 `.authenticated()`: am I authenticated?
@@ -76,6 +97,15 @@ Tries to authenticate. Calls callback if successful.
 
 Signed [XMLHttpRequest](http://en.wikipedia.org/wiki/XMLHttpRequest).
 Main options are `url` and `method`.
+
+`.url(newurl)`
+
+Set or get the base url that this points to. By default, `http://www.openstreetmap.org`
+is the value.
+
+`.keys(newkeys)`
+
+Set or get the keys known by this auth instance.
 
 ## Based on
 

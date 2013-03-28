@@ -1,18 +1,33 @@
 var ohauth = require('ohauth'),
     store = require('store');
 
-module.exports = function(o) {
-
-    // o is for options. for example,
-    //
-    // { oauth_secret: '9WfJnwQxDvvYagx1Ut0tZBsOZ0ZCzAvOje3u1TV0',
-    //   oauth_consumer_key: "WLwXbm6XFMG7WrVnE8enIF6GzyefYIN6oUJSxG65",
-    //   oauth_signature_method: "HMAC-SHA1" }
-
-    o.url = o.url || 'http://www.openstreetmap.org';
+// # osm-auth
+//
+// This code is only compatible with IE10+ because the [XDomainRequest](http://bit.ly/LfO7xo)
+// object, IE<10's idea of [CORS](http://en.wikipedia.org/wiki/Cross-origin_resource_sharing),
+// does not support custom headers, which this uses everywhere.
+module.exports = function(keys, o) {
 
     var oauth = {};
 
+    // keys is for keys. for example,
+    //
+    //     { "http://www.openstreetmap.org/": {
+    //         oauth_secret: '9WfJnwQxDvvYagx1Ut0tZBsOZ0ZCzAvOje3u1TV0',
+    //         oauth_consumer_key: "WLwXbm6XFMG7WrVnE8enIF6GzyefYIN6oUJSxG65",
+    //         oauth_signature_method: "HMAC-SHA1"
+    //     } }
+
+    o = o || {};
+    o.url = o.url || 'http://www.openstreetmap.org';
+
+    // Optional loading and loading-done functions for nice UI feedback.
+    // by default, no-ops
+    o.loading = o.loading || function() {};
+    o.done = o.done || function() {};
+
+    // authenticated users will also have a request token secret, but it's
+    // not used in transactions with the server
     oauth.authenticated = function() {
         return token('oauth_token') && token('oauth_token_secret');
     };
@@ -30,13 +45,15 @@ module.exports = function(o) {
 
         oauth.logout();
 
+        // ## Getting a request token
         var params = timenonce(getAuth(o)),
             url = o.url + '/oauth/request_token';
 
         params.oauth_signature = ohauth.signature(
-            o.oauth_secret, '',
+            keys[o.url].oauth_secret, '',
             ohauth.baseString('POST', url, params));
 
+        // Create a 600x550 popup window in the center of the screen
         var w = 600, h = 550,
             settings = [
                 ['width', w], ['height', h],
@@ -46,10 +63,14 @@ module.exports = function(o) {
                 }).join(','),
             popup = window.open('about:blank', 'oauth_window', settings);
 
+        // Request a request token. When this is complete, the popup
+        // window is redirected to OSM's authorization page.
         ohauth.xhr('POST', url, params, null, {}, reqTokenDone);
+        o.loading();
 
         function reqTokenDone(err, xhr) {
-            if (err) callback(err);
+            o.done();
+            if (err) return callback(err);
             var resp = ohauth.stringQs(xhr.response);
             token('oauth_request_token_secret', resp.oauth_token_secret);
             popup.location = o.url + '/oauth/authorize?' + ohauth.qsString({
@@ -67,27 +88,42 @@ module.exports = function(o) {
             delete window.authComplete;
         };
 
+        // ## Getting an request token
+        //
+        // At this point we have an `oauth_token`, brought in from a function
+        // call on the `landing.html` popup.
         function get_access_token(oauth_token) {
             var url = o.url + '/oauth/access_token',
                 params = timenonce(getAuth(o)),
                 request_token_secret = token('oauth_request_token_secret');
             params.oauth_token = oauth_token;
             params.oauth_signature = ohauth.signature(
-                o.oauth_secret,
+                keys[o.url].oauth_secret,
                 request_token_secret,
                 ohauth.baseString('POST', url, params));
+
+            // ## Getting an access token
+            //
+            // The final token required for authentication. At this point
+            // we have a `request token secret`
             ohauth.xhr('POST', url, params, null, {}, accessTokenDone);
+            o.loading();
         }
 
         function accessTokenDone(err, xhr) {
-            if (err) callback(err);
+            o.done();
+            if (err) return callback(err);
             var access_token = ohauth.stringQs(xhr.response);
             token('oauth_token', access_token.oauth_token);
             token('oauth_token_secret', access_token.oauth_token_secret);
-            callback();
+            callback(null, oauth);
         }
     };
 
+    // # xhr
+    //
+    // A single XMLHttpRequest wrapper that does authenticated calls if the
+    // user has logged in.
     oauth.xhr = function(options, callback) {
         if (!token('oauth_token')) {
             if (o.auto) return oauth.authenticate(run);
@@ -101,7 +137,7 @@ module.exports = function(o) {
 
             params.oauth_token = token('oauth_token');
             params.oauth_signature = ohauth.signature(
-                o.oauth_secret,
+                keys[o.url].oauth_secret,
                 oauth_token_secret,
                 ohauth.baseString(options.method, url, params));
 
@@ -116,21 +152,44 @@ module.exports = function(o) {
         }
     };
 
+    // Reset the base URL that this OAuth connection points to
+    oauth.url = function(_) {
+        if (!arguments.length) return o.url;
+        o.url = _;
+        return oauth;
+    };
+
+    // Reset the base URL that this OAuth connection points to
+    oauth.keys = function(_) {
+        if (!arguments.length) return keys;
+        keys = _;
+        return oauth;
+    };
+
+    // 'stamp' an authentication object from `getAuth()`
+    // with a [nonce](http://en.wikipedia.org/wiki/Cryptographic_nonce)
+    // and timestamp
     function timenonce(o) {
         o.oauth_timestamp = ohauth.timestamp();
         o.oauth_nonce = ohauth.nonce();
         return o;
     }
 
+    // get/set tokens. These are prefixed with the base URL so that `osm-auth`
+    // can be used with multiple APIs and the keys in `localStorage`
+    // will not clash
     function token(x, y) {
         if (arguments.length === 1) return store.get(o.url + x);
         else if (arguments.length === 2) return store.set(o.url + x, y);
     }
 
+    // Get an authentication object. If you just add and remove properties
+    // from a single object, you'll need to use `delete` to make sure that
+    // it doesn't contain undesired properties for authentication
     function getAuth(o) {
         return {
-            oauth_consumer_key: o.oauth_consumer_key,
-            oauth_signature_method: "HMAC-SHA1",
+            oauth_consumer_key: keys[o.url].oauth_consumer_key,
+            oauth_signature_method: "HMAC-SHA1"
         };
     }
 
