@@ -1,5 +1,5 @@
 (function(e){if("function"==typeof bootstrap)bootstrap("osmauth",e);else if("object"==typeof exports)module.exports=e();else if("function"==typeof define&&define.amd)define(e);else if("undefined"!=typeof ses){if(!ses.ok())return;ses.makeOsmAuth=e}else"undefined"!=typeof window?window.osmAuth=e():global.osmAuth=e()})(function(){var define,ses,bootstrap,module,exports;
-return (function(e,t,n){function r(n,i){if(!t[n]){if(!e[n]){var s=typeof require=="function"&&require;if(!i&&s)return s(n,!0);throw new Error("Cannot find module '"+n+"'")}var o=t[n]={exports:{}};e[n][0](function(t){var i=e[n][1][t];return r(i?i:t)},o,o.exports)}return t[n].exports}for(var i=0;i<n.length;i++)r(n[i]);return r})({1:[function(require,module,exports){
+return (function(e,t,n){function i(n,s){if(!t[n]){if(!e[n]){var o=typeof require=="function"&&require;if(!s&&o)return o(n,!0);if(r)return r(n,!0);throw new Error("Cannot find module '"+n+"'")}var u=t[n]={exports:{}};e[n][0](function(t){var r=e[n][1][t];return i(r?r:t)},u,u.exports)}return t[n].exports}var r=typeof require=="function"&&require;for(var s=0;s<n.length;s++)i(n[s]);return i})({1:[function(require,module,exports){
 var ohauth = require('ohauth'),
     store = require('store');
 
@@ -20,6 +20,7 @@ module.exports = function(keys, o) {
     //     } }
     o = o || {};
     o.url = o.url || 'http://www.openstreetmap.org';
+    o.landing = o.landing || 'land.html';
 
     // Optional loading and loading-done functions for nice UI feedback.
     // by default, no-ops
@@ -76,11 +77,11 @@ module.exports = function(keys, o) {
             popup.location = o.url + '/oauth/authorize?' + ohauth.qsString({
                 oauth_token: resp.oauth_token,
                 oauth_callback: location.href.replace('index.html', '')
-                    .replace(/#.+/, '') + 'land.html'
+                    .replace(/#.+/, '') + o.landing
             });
         }
 
-        // Called by a function in `land.html`, in the popup window. The
+        // Called by a function in a landing page, in the popup window. The
         // window closes itself.
         window.authComplete = function(token) {
             var oauth_token = ohauth.stringQs(token.split('?')[1]);
@@ -91,7 +92,7 @@ module.exports = function(keys, o) {
         // ## Getting an request token
         //
         // At this point we have an `oauth_token`, brought in from a function
-        // call on the `landing.html` popup.
+        // call on a landing page popup.
         function get_access_token(oauth_token) {
             var url = o.url + '/oauth/access_token',
                 params = timenonce(getAuth(o)),
@@ -470,12 +471,12 @@ module.exports = ohauth;
 
 },{"jshashes":4}],4:[function(require,module,exports){
 (function(global){/**
- * jsHashes - A fast and independent hashing library pure JavaScript implemented for both server and client side
+ * jsHashes - A fast and independent hashing library pure JavaScript implemented (ES5 compliant) for both server and client side
  * 
  * @class Hashes
  * @author Tomas Aparicio <tomas@rijndael-project.com>
  * @license New BSD (see LICENSE file)
- * @version 1.0.1 - 17/02/2013
+ * @version 1.0.2 - 25/03/2013
  *
  * Algorithms specification:
  *
@@ -492,11 +493,11 @@ module.exports = ohauth;
   
   // private helper methods
   function utf8Encode(input) {
-    var output = '', i = -1, x, y;
-    while (++i < input.length) {
+    var  x, y, output = '', i = -1, l = input.length;
+    while (i+=1 < l) {
       /* Decode utf-16 surrogate pairs */
       x = input.charCodeAt(i);
-      y = i + 1 < input.length ? input.charCodeAt(i + 1) : 0;
+      y = i + 1 < l ? input.charCodeAt(i + 1) : 0;
       if (0xD800 <= x && x <= 0xDBFF && 0xDC00 <= y && y <= 0xDFFF) {
           x = 0x10000 + ((x & 0x03FF) << 10) + (y & 0x03FF);
           i += 1;
@@ -522,11 +523,11 @@ module.exports = ohauth;
   }
   
   function utf8Decode(str_data) {
-    var i, ac, c1, c2, c3, arr = [];
+    var i, ac, c1, c2, c3, arr = [], l = str_data.length;
     i = ac = c1 = c2 = c3 = 0;
     str_data += '';
 
-    while (i < str_data.length) {
+    while (i < l) {
         c1 = str_data.charCodeAt(i);
         ac += 1;
         if (c1 < 128) {
@@ -568,8 +569,8 @@ module.exports = ohauth;
    */
   function rstr2hex(input, hexcase) {
     var hex_tab = hexcase ? '0123456789ABCDEF' : '0123456789abcdef',
-        output = '', x, i = 0;
-    for (; i < input.length; i+=1) {
+        output = '', x, i = 0, l = input.length;
+    for (; i < l; i+=1) {
       x = input.charCodeAt(i);
       output += hex_tab.charAt((x >>> 4) & 0x0F) + hex_tab.charAt(x & 0x0F);
     }
@@ -580,16 +581,16 @@ module.exports = ohauth;
    * Encode a string as utf-16
    */
   function str2rstr_utf16le(input) {
-    var i = 0, output = '';
-    for (; i < input.length; i+=1) {
+    var i, l = input.length, output = '';
+    for (i = 0; i < l; i+=1) {
       output += String.fromCharCode( input.charCodeAt(i) & 0xFF, (input.charCodeAt(i) >>> 8) & 0xFF);
     }
     return output;
   }
 
   function str2rstr_utf16be(input) {
-    var i = 0, output = '';
-    for (; i < input.length; i+=1) {
+    var i, l = input.length, output = '';
+    for (i = 0; i < l; i+=1) {
       output += String.fromCharCode((input.charCodeAt(i) >>> 8) & 0xFF, input.charCodeAt(i) & 0xFF);
     }
     return output;
@@ -599,8 +600,8 @@ module.exports = ohauth;
    * Convert an array of big-endian words to a string
    */
   function binb2rstr(input) {
-    var i = 0, output = '';
-    for (;i < input.length * 32; i += 8) {
+    var i, l = input.length * 32, output = '';
+    for (i = 0; i < l; i += 8) {
         output += String.fromCharCode((input[i>>5] >>> (24 - i % 32)) & 0xFF);
     }
     return output;
@@ -610,8 +611,8 @@ module.exports = ohauth;
    * Convert an array of little-endian words to a string
    */
   function binl2rstr(input) {
-    var i = 0, output = '';
-    for (;i < input.length * 32; i += 8) {
+    var i, l = input.length * 32, output = '';
+    for (i = 0;i < l; i += 8) {
       output += String.fromCharCode((input[i>>5] >>> (i % 32)) & 0xFF);
     }
     return output;
@@ -622,11 +623,11 @@ module.exports = ohauth;
    * Characters >255 have their high-byte silently ignored.
    */
   function rstr2binl(input) {
-    var i, output = Array(input.length >> 2);
-    for (i = 0; i < output.length; i+=1) {
+    var i, l = input.length * 8, output = Array(input.length >> 2), lo = output.length;
+    for (i = 0; i < lo; i+=1) {
       output[i] = 0;
     }
-    for (i = 0; i < input.length * 8; i += 8) {
+    for (i = 0; i < l; i += 8) {
       output[i>>5] |= (input.charCodeAt(i / 8) & 0xFF) << (i%32);
     }
     return output;
@@ -637,11 +638,11 @@ module.exports = ohauth;
    * Characters >255 have their high-byte silently ignored.
    */
    function rstr2binb(input) {
-      var i, output = Array(input.length >> 2);
-      for (i = 0; i < output.length; i+=1) {
+      var i, l = input.length * 8, output = Array(input.length >> 2), lo = output.length;
+      for (i = 0; i < lo; i+=1) {
             output[i] = 0;
         }
-      for (i = 0; i < input.length * 8; i += 8) {
+      for (i = 0; i < l; i += 8) {
             output[i>>5] |= (input.charCodeAt(i / 8) & 0xFF) << (24 - i % 32);
         }
       return output;
@@ -653,11 +654,12 @@ module.exports = ohauth;
   function rstr2any(input, encoding) {
     var divisor = encoding.length,
         remainders = Array(),
-        i, q, x, quotient, dividend, output, full_length;
+        i, q, x, ld, quotient, dividend, output, full_length;
   
     /* Convert to an array of 16-bit big-endian values, forming the dividend */
     dividend = Array(Math.ceil(input.length / 2));
-    for (i = 0; i < dividend.length; i+=1) {
+    ld = dividend.length;
+    for (i = 0; i < ld; i+=1) {
       dividend[i] = (input.charCodeAt(i * 2) << 8) | input.charCodeAt(i * 2 + 1);
     }
   
@@ -708,7 +710,7 @@ module.exports = ohauth;
       triplet = (input.charCodeAt(i) << 16)
             | (i + 1 < len ? input.charCodeAt(i+1) << 8 : 0)
             | (i + 2 < len ? input.charCodeAt(i+2)      : 0);
-      for (j = 0; j < 4; j++) {
+      for (j = 0; j < 4; j+=1) {
         if (i * 8 + j * 6 > input.length * 8) { 
           output += b64pad; 
         } else { 
@@ -745,8 +747,8 @@ module.exports = ohauth;
         triplet = (input.charCodeAt(i) << 16)
               | (i + 1 < len ? input.charCodeAt(i+1) << 8 : 0)
               | (i + 2 < len ? input.charCodeAt(i+2) : 0);
-        for (j = 0; j < 4; j++) {
-          if (i * 8 + j * 6 > input.length * 8) {
+        for (j = 0; j < 4; j+=1) {
+          if (i * 8 + j * 6 > len * 8) {
               output += pad;
           } else {
               output += tab.charAt((triplet >>> 6*(3-j)) & 0x3F);
@@ -826,32 +828,34 @@ module.exports = ohauth;
     var crc = 0, x = 0, y = 0, table, i;
     str = utf8Encode(str);
         
-    table = '00000000 77073096 EE0E612C 990951BA 076DC419 706AF48F E963A535 9E6495A3 0EDB8832 ' +
-            '79DCB8A4 E0D5E91E 97D2D988 09B64C2B 7EB17CBD E7B82D07 90BF1D91 1DB71064 6AB020F2 F3B97148 ' +
-            '84BE41DE 1ADAD47D 6DDDE4EB F4D4B551 83D385C7 136C9856 646BA8C0 FD62F97A 8A65C9EC 14015C4F ' +
-            '63066CD9 FA0F3D63 8D080DF5 3B6E20C8 4C69105E D56041E4 A2677172 3C03E4D1 4B04D447 D20D85FD ' +
-            'A50AB56B 35B5A8FA 42B2986C DBBBC9D6 ACBCF940 32D86CE3 45DF5C75 DCD60DCF ABD13D59 26D930AC ' +
-            '51DE003A C8D75180 BFD06116 21B4F4B5 56B3C423 CFBA9599 B8BDA50F 2802B89E 5F058808 C60CD9B2 ' +
-            'B10BE924 2F6F7C87 58684C11 C1611DAB B6662D3D 76DC4190 01DB7106 98D220BC EFD5102A 71B18589 ' +
-            '06B6B51F 9FBFE4A5 E8B8D433 7807C9A2 0F00F934 9609A88E E10E9818 7F6A0DBB 086D3D2D 91646C97 ' +
-            'E6635C01 6B6B51F4 1C6C6162 856530D8 F262004E 6C0695ED 1B01A57B 8208F4C1 F50FC457 65B0D9C6 ' +
-            '12B7E950 8BBEB8EA FCB9887C 62DD1DDF 15DA2D49 8CD37CF3 FBD44C65 4DB26158 3AB551CE A3BC0074 ' +
-            'D4BB30E2 4ADFA541 3DD895D7 A4D1C46D D3D6F4FB 4369E96A 346ED9FC AD678846 DA60B8D0 44042D73 ' +
-            '33031DE5 AA0A4C5F DD0D7CC9 5005713C 270241AA BE0B1010 C90C2086 5768B525 206F85B3 B966D409 ' +
-            'CE61E49F 5EDEF90E 29D9C998 B0D09822 C7D7A8B4 59B33D17 2EB40D81 B7BD5C3B C0BA6CAD EDB88320 ' +
-            '9ABFB3B6 03B6E20C 74B1D29A EAD54739 9DD277AF 04DB2615 73DC1683 E3630B12 94643B84 0D6D6A3E ' +
-            '7A6A5AA8 E40ECF0B 9309FF9D 0A00AE27 7D079EB1 F00F9344 8708A3D2 1E01F268 6906C2FE F762575D ' +
-            '806567CB 196C3671 6E6B06E7 FED41B76 89D32BE0 10DA7A5A 67DD4ACC F9B9DF6F 8EBEEFF9 17B7BE43 ' +
-            '60B08ED5 D6D6A3E8 A1D1937E 38D8C2C4 4FDFF252 D1BB67F1 A6BC5767 3FB506DD 48B2364B D80D2BDA ' +
-            'AF0A1B4C 36034AF6 41047A60 DF60EFC3 A867DF55 316E8EEF 4669BE79 CB61B38C BC66831A 256FD2A0 ' + 
-            '5268E236 CC0C7795 BB0B4703 220216B9 5505262F C5BA3BBE B2BD0B28 2BB45A92 5CB36A04 C2D7FFA7 ' +
-            'B5D0CF31 2CD99E8B 5BDEAE1D 9B64C2B0 EC63F226 756AA39C 026D930A 9C0906A9 EB0E363F 72076785 ' +
-            '05005713 95BF4A82 E2B87A14 7BB12BAE 0CB61B38 92D28E9B E5D5BE0D 7CDCEFB7 0BDBDF21 86D3D2D4 ' +
-            'F1D4E242 68DDB3F8 1FDA836E 81BE16CD F6B9265B 6FB077E1 18B74777 88085AE6 FF0F6A70 66063BCA ' +
-            '11010B5C 8F659EFF F862AE69 616BFFD3 166CCF45 A00AE278 D70DD2EE 4E048354 3903B3C2 A7672661 ' +
-            'D06016F7 4969474D 3E6E77DB AED16A4A D9D65ADC 40DF0B66 37D83BF0 A9BCAE53 DEBB9EC5 47B2CF7F ' +
-            '30B5FFE9 BDBDF21C CABAC28A 53B39330 24B4A3A6 BAD03605 CDD70693 54DE5729 23D967BF B3667A2E ' +
-            'C4614AB8 5D681B02 2A6F2B94 B40BBE37 C30C8EA1 5A05DF1B 2D02EF8D';
+    table = [ 
+        '00000000 77073096 EE0E612C 990951BA 076DC419 706AF48F E963A535 9E6495A3 0EDB8832 ',
+        '79DCB8A4 E0D5E91E 97D2D988 09B64C2B 7EB17CBD E7B82D07 90BF1D91 1DB71064 6AB020F2 F3B97148 ',
+        '84BE41DE 1ADAD47D 6DDDE4EB F4D4B551 83D385C7 136C9856 646BA8C0 FD62F97A 8A65C9EC 14015C4F ',
+        '63066CD9 FA0F3D63 8D080DF5 3B6E20C8 4C69105E D56041E4 A2677172 3C03E4D1 4B04D447 D20D85FD ',
+        'A50AB56B 35B5A8FA 42B2986C DBBBC9D6 ACBCF940 32D86CE3 45DF5C75 DCD60DCF ABD13D59 26D930AC ',
+        '51DE003A C8D75180 BFD06116 21B4F4B5 56B3C423 CFBA9599 B8BDA50F 2802B89E 5F058808 C60CD9B2 ',
+        'B10BE924 2F6F7C87 58684C11 C1611DAB B6662D3D 76DC4190 01DB7106 98D220BC EFD5102A 71B18589 ',
+        '06B6B51F 9FBFE4A5 E8B8D433 7807C9A2 0F00F934 9609A88E E10E9818 7F6A0DBB 086D3D2D 91646C97 ',
+        'E6635C01 6B6B51F4 1C6C6162 856530D8 F262004E 6C0695ED 1B01A57B 8208F4C1 F50FC457 65B0D9C6 ',
+        '12B7E950 8BBEB8EA FCB9887C 62DD1DDF 15DA2D49 8CD37CF3 FBD44C65 4DB26158 3AB551CE A3BC0074 ',
+        'D4BB30E2 4ADFA541 3DD895D7 A4D1C46D D3D6F4FB 4369E96A 346ED9FC AD678846 DA60B8D0 44042D73 ',
+        '33031DE5 AA0A4C5F DD0D7CC9 5005713C 270241AA BE0B1010 C90C2086 5768B525 206F85B3 B966D409 ',
+        'CE61E49F 5EDEF90E 29D9C998 B0D09822 C7D7A8B4 59B33D17 2EB40D81 B7BD5C3B C0BA6CAD EDB88320 ',
+        '9ABFB3B6 03B6E20C 74B1D29A EAD54739 9DD277AF 04DB2615 73DC1683 E3630B12 94643B84 0D6D6A3E ',
+        '7A6A5AA8 E40ECF0B 9309FF9D 0A00AE27 7D079EB1 F00F9344 8708A3D2 1E01F268 6906C2FE F762575D ',
+        '806567CB 196C3671 6E6B06E7 FED41B76 89D32BE0 10DA7A5A 67DD4ACC F9B9DF6F 8EBEEFF9 17B7BE43 ',
+        '60B08ED5 D6D6A3E8 A1D1937E 38D8C2C4 4FDFF252 D1BB67F1 A6BC5767 3FB506DD 48B2364B D80D2BDA ',
+        'AF0A1B4C 36034AF6 41047A60 DF60EFC3 A867DF55 316E8EEF 4669BE79 CB61B38C BC66831A 256FD2A0 ', 
+        '5268E236 CC0C7795 BB0B4703 220216B9 5505262F C5BA3BBE B2BD0B28 2BB45A92 5CB36A04 C2D7FFA7 ',
+        'B5D0CF31 2CD99E8B 5BDEAE1D 9B64C2B0 EC63F226 756AA39C 026D930A 9C0906A9 EB0E363F 72076785 ',
+        '05005713 95BF4A82 E2B87A14 7BB12BAE 0CB61B38 92D28E9B E5D5BE0D 7CDCEFB7 0BDBDF21 86D3D2D4 ',
+        'F1D4E242 68DDB3F8 1FDA836E 81BE16CD F6B9265B 6FB077E1 18B74777 88085AE6 FF0F6A70 66063BCA ',
+        '11010B5C 8F659EFF F862AE69 616BFFD3 166CCF45 A00AE278 D70DD2EE 4E048354 3903B3C2 A7672661 ',
+        'D06016F7 4969474D 3E6E77DB AED16A4A D9D65ADC 40DF0B66 37D83BF0 A9BCAE53 DEBB9EC5 47B2CF7F ',
+        '30B5FFE9 BDBDF21C CABAC28A 53B39330 24B4A3A6 BAD03605 CDD70693 54DE5729 23D967BF B3667A2E ',
+        'C4614AB8 5D681B02 2A6F2B94 B40BBE37 C30C8EA1 5A05DF1B 2D02EF8D'
+    ].join('');
 
     crc = crc ^ (-1);
     for (i = 0, iTop = str.length; i < iTop; i+=1 ) {
@@ -1225,7 +1229,7 @@ module.exports = ohauth;
         oldd = d;
         olde = e;
       
-      	for (j = 0; j < 80; j++)	{
+      	for (j = 0; j < 80; j+=1)	{
       	  if (j < 16) { 
             w[j] = x[i + j]; 
           } else { 
@@ -1400,8 +1404,7 @@ module.exports = ohauth;
     function sha256_Gamma0512(x) {return (sha256_S(x, 1)  ^ sha256_S(x, 8) ^ sha256_R(x, 7));}
     function sha256_Gamma1512(x) {return (sha256_S(x, 19) ^ sha256_S(x, 61) ^ sha256_R(x, 6));}
     
-    sha256_K = new Array
-    (
+    sha256_K = [
       1116352408, 1899447441, -1245643825, -373957723, 961987163, 1508970993,
       -1841331548, -1424204075, -670586216, 310598401, 607225278, 1426881987,
       1925078388, -2132889090, -1680079193, -1046744716, -459576895, -272742522,
@@ -1413,11 +1416,11 @@ module.exports = ohauth;
       430227734, 506948616, 659060556, 883997877, 958139571, 1322822218,
       1537002063, 1747873779, 1955562222, 2024104815, -2067236844, -1933114872,
       -1866530822, -1538233109, -1090935817, -965641998
-    );
+    ];
     
     function binb(m, l) {
-      var HASH = new Array(1779033703, -1150833019, 1013904242, -1521486534,
-                 1359893119, -1694144372, 528734635, 1541459225);
+      var HASH = [1779033703, -1150833019, 1013904242, -1521486534,
+                 1359893119, -1694144372, 528734635, 1541459225];
       var W = new Array(64);
       var a, b, c, d, e, f, g, h;
       var i, j, T1, T2;
@@ -1437,7 +1440,7 @@ module.exports = ohauth;
       g = HASH[6];
       h = HASH[7];
     
-      for (j = 0; j < 64; j++)
+      for (j = 0; j < 64; j+=1)
       {
         if (j < 16) { 
           W[j] = m[j + i];
@@ -1591,11 +1594,11 @@ module.exports = ohauth;
      * Calculate the SHA-512 of an array of big-endian dwords, and a bit length
      */
     function binb(x, len) {
-      var j, i, 
+      var j, i, l,
           W = new Array(80);
           hash = new Array(16),
           //Initial hash values
-          H = new Array(
+          H = [
             new int64(0x6a09e667, -205731576),
             new int64(-1150833019, -2067093701),
             new int64(0x3c6ef372, -23791573),
@@ -1604,7 +1607,7 @@ module.exports = ohauth;
             new int64(-1694144372, 0x2b3e6c1f),
             new int64(0x1f83d9ab, -79577749),
             new int64(0x5be0cd19, 0x137e2179)
-          ),
+          ],
           T1 = new int64(0, 0),
           T2 = new int64(0, 0),
           a = new int64(0,0),
@@ -1626,7 +1629,7 @@ module.exports = ohauth;
 
       if (sha512_k === undefined) {
           //SHA512 constants
-          sha512_k = new Array(
+          sha512_k = [
             new int64(0x428a2f98, -685199838), new int64(0x71374491, 0x23ef65cd),
             new int64(-1245643825, -330482897), new int64(-373957723, -2121671748),
             new int64(0x3956c25b, -213338824), new int64(0x59f111f1, -1241133031),
@@ -1667,7 +1670,7 @@ module.exports = ohauth;
             new int64(0x3c9ebe0a, 0x15c9bebc), new int64(0x431d67c4, -1676669620),
             new int64(0x4cc5d4be, -885112138), new int64(0x597f299c, -60457430),
             new int64(0x5fcb6fab, 0x3ad6faec), new int64(0x6c44198c, 0x4a475817)
-          );
+          ];
       }
   
       for (i=0; i<80; i+=1) {
@@ -1677,8 +1680,8 @@ module.exports = ohauth;
       // append padding to the source string. The format is described in the FIPS.
       x[len >> 5] |= 0x80 << (24 - (len & 0x1f));
       x[((len + 128 >> 10)<< 5) + 31] = len;
-    
-      for (i = 0; i<x.length; i+=32) { //32 dwords is the block size
+      l = x.length;
+      for (i = 0; i<l; i+=32) { //32 dwords is the block size
         int64copy(a, H[0]);
         int64copy(b, H[1]);
         int64copy(c, H[2]);
@@ -1688,12 +1691,12 @@ module.exports = ohauth;
         int64copy(g, H[6]);
         int64copy(h, H[7]);
       
-        for (j=0; j<16; j++) {
+        for (j=0; j<16; j+=1) {
           W[j].h = x[i + 2*j];
           W[j].l = x[i + 2*j + 1];
         }
       
-        for (j=16; j<80; j++) {
+        for (j=16; j<80; j+=1) {
           //sigma1
           int64rrot(r1, W[j-2], 19);
           int64revrrot(r2, W[j-2], 29);
@@ -1710,7 +1713,7 @@ module.exports = ohauth;
           int64add4(W[j], s1, W[j-7], s0, W[j-16]);
         }
       
-        for (j = 0; j < 80; j++) {
+        for (j = 0; j < 80; j+=1) {
           //Ch
           Ch.l = (e.l & f.l) ^ (~e.l & g.l);
           Ch.h = (e.h & f.h) ^ (~e.h & g.h);
@@ -1973,8 +1976,8 @@ module.exports = ohauth;
      * Convert an array of little-endian words to a string
      */
     function binl2rstr(input) {
-      var output = '', i = 0;
-      for (; i < input.length * 32; i += 8) {
+      var i, output = '', l = input.length * 3;
+      for (i = 0; i < l; i += 8) {
         output += String.fromCharCode((input[i>>5] >>> (i % 32)) & 0xFF);
       }
       return output;
@@ -1984,7 +1987,7 @@ module.exports = ohauth;
      * Calculate the RIPE-MD160 of an array of little-endian words, and a bit length.
      */
     function binl(x, len) {
-      var T, j, i,
+      var T, j, i, l,
           h0 = 0x67452301,
           h1 = 0xefcdab89,
           h2 = 0x98badcfe,
@@ -1996,9 +1999,10 @@ module.exports = ohauth;
       /* append padding */
       x[len >> 5] |= 0x80 << (len % 32);
       x[(((len + 64) >>> 9) << 4) + 14] = len;
-
-      for (i = 0; i < x.length; i += 16) {
-        for (j = 0; j <= 79; ++j) {
+      l = x.length;
+      
+      for (i = 0; i < l; i+=16) {
+        for (j = 0; j <= 79; j+=1) {
           T = safe_add(A1, rmd160_f(j, B1, C1, D1));
           T = safe_add(T, x[i + rmd160_r1[j]]);
           T = safe_add(T, rmd160_K1(j));
@@ -2051,7 +2055,7 @@ module.exports = ohauth;
   }
 };
 
-  // expose Hashes Object
+  // exposes Hashes
   (function( window, undefined ) {
     var freeExports = false;
     if (typeof exports === 'object' ) {

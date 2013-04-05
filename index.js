@@ -18,6 +18,7 @@ module.exports = function(keys, o) {
     //     } }
     o = o || {};
     o.url = o.url || 'http://www.openstreetmap.org';
+    o.landing = o.landing || 'land.html';
 
     // Optional loading and loading-done functions for nice UI feedback.
     // by default, no-ops
@@ -74,11 +75,11 @@ module.exports = function(keys, o) {
             popup.location = o.url + '/oauth/authorize?' + ohauth.qsString({
                 oauth_token: resp.oauth_token,
                 oauth_callback: location.href.replace('index.html', '')
-                    .replace(/#.+/, '') + 'land.html'
+                    .replace(/#.+/, '') + o.landing
             });
         }
 
-        // Called by a function in `land.html`, in the popup window. The
+        // Called by a function in a landing page, in the popup window. The
         // window closes itself.
         window.authComplete = function(token) {
             var oauth_token = ohauth.stringQs(token.split('?')[1]);
@@ -89,7 +90,7 @@ module.exports = function(keys, o) {
         // ## Getting an request token
         //
         // At this point we have an `oauth_token`, brought in from a function
-        // call on the `landing.html` popup.
+        // call on a landing page popup.
         function get_access_token(oauth_token) {
             var url = o.url + '/oauth/access_token',
                 params = timenonce(getAuth(o)),

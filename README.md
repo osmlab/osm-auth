@@ -82,6 +82,7 @@ Keys is keys in the form
 Options includes:
 
 * `url` for another base url
+* `landing` for a landing page name (if not using standard `land.html`)
 * `loading`: a function called when auth-related xhr calls start
 * `done`: a function called when auth-related xhr calls end
 
