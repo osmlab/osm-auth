@@ -14,10 +14,10 @@ module.exports = function(keys, o) {
 
     // keys is for keys. for example,
     //
-    //     { "http://www.openstreetmap.org/": {
+    //     {
     //         oauth_secret: '9WfJnwQxDvvYagx1Ut0tZBsOZ0ZCzAvOje3u1TV0',
     //         oauth_consumer_key: "WLwXbm6XFMG7WrVnE8enIF6GzyefYIN6oUJSxG65"
-    //     } }
+    //     }
     o = o || {};
     o.url = o.url || 'http://www.openstreetmap.org';
     o.landing = o.landing || 'land.html';
@@ -51,7 +51,7 @@ module.exports = function(keys, o) {
             url = o.url + '/oauth/request_token';
 
         params.oauth_signature = ohauth.signature(
-            keys[o.url].oauth_secret, '',
+            keys.oauth_secret, '',
             ohauth.baseString('POST', url, params));
 
         // Create a 600x550 popup window in the center of the screen
@@ -99,7 +99,7 @@ module.exports = function(keys, o) {
                 request_token_secret = token('oauth_request_token_secret');
             params.oauth_token = oauth_token;
             params.oauth_signature = ohauth.signature(
-                keys[o.url].oauth_secret,
+                keys.oauth_secret,
                 request_token_secret,
                 ohauth.baseString('POST', url, params));
 
@@ -138,7 +138,7 @@ module.exports = function(keys, o) {
 
             params.oauth_token = token('oauth_token');
             params.oauth_signature = ohauth.signature(
-                keys[o.url].oauth_secret,
+                keys.oauth_secret,
                 oauth_token_secret,
                 ohauth.baseString(options.method, url, params));
 
@@ -162,8 +162,7 @@ module.exports = function(keys, o) {
 
     // pre-authorize this object, if we can just get a token and token_secret
     // from the start
-    oauth.preauth = function(_) {
-        var c = _[o.url];
+    oauth.preauth = function(c) {
         if (!c) return;
         if (c.oauth_token) token('oauth_token', c.oauth_token);
         if (c.oauth_token_secret) token('oauth_token_secret', c.oauth_token_secret);
@@ -199,7 +198,7 @@ module.exports = function(keys, o) {
     // it doesn't contain undesired properties for authentication
     function getAuth(o) {
         return {
-            oauth_consumer_key: keys[o.url].oauth_consumer_key,
+            oauth_consumer_key: keys.oauth_consumer_key,
             oauth_signature_method: "HMAC-SHA1"
         };
     }

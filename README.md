@@ -39,12 +39,11 @@ Register a new OAuth application on openstreetmap.org:
 
 ```js
 var auth = osmAuth({
-    "http://www.openstreetmap.org": {
-        oauth_secret: '9WfJnwQxDvvYagx1Ut0tZBsOZ0ZCzAvOje3u1TV0',
-        oauth_consumer_key: 'WLwXbm6XFMG7WrVnE8enIF6GzyefYIN6oUJSxG65',
-        auto: true // show a login form if the user is not authenticated and
-    // you try to do a call
-    }
+    oauth_secret: '9WfJnwQxDvvYagx1Ut0tZBsOZ0ZCzAvOje3u1TV0',
+    oauth_consumer_key: 'WLwXbm6XFMG7WrVnE8enIF6GzyefYIN6oUJSxG65',
+}, {
+    auto: true // show a login form if the user is not authenticated and
+               // you try to do a call
 });
 
 document.getElementById('authenticate').onclick = function() {
@@ -72,10 +71,8 @@ Keys is keys in the form
 
 ```
 {
-  url: {
     oauth_secret: ...
     oauth_consumer_key: ...
-  }
 }
 ```
 
