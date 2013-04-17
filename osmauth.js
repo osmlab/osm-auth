@@ -8,24 +8,9 @@ var ohauth = require('ohauth'),
 // This code is only compatible with IE10+ because the [XDomainRequest](http://bit.ly/LfO7xo)
 // object, IE<10's idea of [CORS](http://en.wikipedia.org/wiki/Cross-origin_resource_sharing),
 // does not support custom headers, which this uses everywhere.
-module.exports = function(keys, o) {
+module.exports = function(o) {
 
     var oauth = {};
-
-    // keys is for keys. for example,
-    //
-    //     { "http://www.openstreetmap.org/": {
-    //         oauth_secret: '9WfJnwQxDvvYagx1Ut0tZBsOZ0ZCzAvOje3u1TV0',
-    //         oauth_consumer_key: "WLwXbm6XFMG7WrVnE8enIF6GzyefYIN6oUJSxG65"
-    //     } }
-    o = o || {};
-    o.url = o.url || 'http://www.openstreetmap.org';
-    o.landing = o.landing || 'land.html';
-
-    // Optional loading and loading-done functions for nice UI feedback.
-    // by default, no-ops
-    o.loading = o.loading || function() {};
-    o.done = o.done || function() {};
 
     // authenticated users will also have a request token secret, but it's
     // not used in transactions with the server
@@ -51,7 +36,7 @@ module.exports = function(keys, o) {
             url = o.url + '/oauth/request_token';
 
         params.oauth_signature = ohauth.signature(
-            keys[o.url].oauth_secret, '',
+            o.oauth_secret, '',
             ohauth.baseString('POST', url, params));
 
         // Create a 600x550 popup window in the center of the screen
@@ -99,7 +84,7 @@ module.exports = function(keys, o) {
                 request_token_secret = token('oauth_request_token_secret');
             params.oauth_token = oauth_token;
             params.oauth_signature = ohauth.signature(
-                keys[o.url].oauth_secret,
+                o.oauth_secret,
                 request_token_secret,
                 ohauth.baseString('POST', url, params));
 
@@ -138,7 +123,7 @@ module.exports = function(keys, o) {
 
             params.oauth_token = token('oauth_token');
             params.oauth_signature = ohauth.signature(
-                keys[o.url].oauth_secret,
+                o.oauth_secret,
                 oauth_token_secret,
                 ohauth.baseString(options.method, url, params));
 
@@ -153,28 +138,29 @@ module.exports = function(keys, o) {
         }
     };
 
-    // Reset the base URL that this OAuth connection points to
-    oauth.url = function(_) {
-        if (!arguments.length) return o.url;
-        o.url = _;
-        return oauth;
-    };
-
     // pre-authorize this object, if we can just get a token and token_secret
     // from the start
-    oauth.preauth = function(_) {
-        var c = _[o.url];
+    oauth.preauth = function(c) {
         if (!c) return;
         if (c.oauth_token) token('oauth_token', c.oauth_token);
         if (c.oauth_token_secret) token('oauth_token_secret', c.oauth_token_secret);
         return oauth;
     };
 
-    // Reset the base URL that this OAuth connection points to
-    oauth.keys = function(_) {
-        if (!arguments.length) return keys;
-        keys = _;
-        return oauth.preauth(keys);
+    oauth.options = function(_) {
+        if (!arguments.length) return o;
+
+        o = _;
+
+        o.url = o.url || 'http://www.openstreetmap.org';
+        o.landing = o.landing || 'land.html';
+
+        // Optional loading and loading-done functions for nice UI feedback.
+        // by default, no-ops
+        o.loading = o.loading || function() {};
+        o.done = o.done || function() {};
+
+        return oauth.preauth(o);
     };
 
     // 'stamp' an authentication object from `getAuth()`
@@ -199,18 +185,18 @@ module.exports = function(keys, o) {
     // it doesn't contain undesired properties for authentication
     function getAuth(o) {
         return {
-            oauth_consumer_key: keys[o.url].oauth_consumer_key,
+            oauth_consumer_key: o.oauth_consumer_key,
             oauth_signature_method: "HMAC-SHA1"
         };
     }
 
     // potentially pre-authorize
-    oauth.keys(keys);
+    oauth.options(o);
 
     return oauth;
 };
 
-},{"ohauth":2,"store":3}],3:[function(require,module,exports){
+},{"store":2,"ohauth":3}],2:[function(require,module,exports){
 /* Copyright (c) 2010-2012 Marcus Westin
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -387,7 +373,7 @@ module.exports = function(keys, o) {
 	else { this.store = store }
 })();
 
-},{}],2:[function(require,module,exports){
+},{}],3:[function(require,module,exports){
 'use strict';
 
 var hashes = require('jshashes'),
