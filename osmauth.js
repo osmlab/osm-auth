@@ -1,5 +1,5 @@
 (function(e){if("function"==typeof bootstrap)bootstrap("osmauth",e);else if("object"==typeof exports)module.exports=e();else if("function"==typeof define&&define.amd)define(e);else if("undefined"!=typeof ses){if(!ses.ok())return;ses.makeOsmAuth=e}else"undefined"!=typeof window?window.osmAuth=e():global.osmAuth=e()})(function(){var define,ses,bootstrap,module,exports;
-return (function(e,t,n){function i(n,s){if(!t[n]){if(!e[n]){var o=typeof require=="function"&&require;if(!s&&o)return o(n,!0);if(r)return r(n,!0);throw new Error("Cannot find module '"+n+"'")}var u=t[n]={exports:{}};e[n][0](function(t){var r=e[n][1][t];return i(r?r:t)},u,u.exports)}return t[n].exports}var r=typeof require=="function"&&require;for(var s=0;s<n.length;s++)i(n[s]);return i})({1:[function(require,module,exports){
+return (function(e,t,n){function i(n,s){if(!t[n]){if(!e[n]){var o=typeof require=="function"&&require;if(!s&&o)return o(n,!0);if(r)return r(n,!0);throw new Error("Cannot find module '"+n+"'")}var u=t[n]={exports:{}};e[n][0].call(u.exports,function(t){var r=e[n][1][t];return i(r?r:t)},u,u.exports)}return t[n].exports}var r=typeof require=="function"&&require;for(var s=0;s<n.length;s++)i(n[s]);return i})({1:[function(require,module,exports){
 var ohauth = require('ohauth'),
     store = require('store');
 
@@ -388,6 +388,8 @@ module.exports = function(keys, o) {
 })();
 
 },{}],2:[function(require,module,exports){
+'use strict';
+
 var hashes = require('jshashes'),
     sha1 = new hashes.SHA1();
 
@@ -410,7 +412,8 @@ ohauth.stringQs = function(str) {
 };
 
 ohauth.rawxhr = function(method, url, data, headers, callback) {
-    var xhr = new XMLHttpRequest(), twoHundred = /^20\d$/;
+    var xhr = new XMLHttpRequest(),
+        twoHundred = /^20\d$/;
     xhr.onreadystatechange = function() {
         if (4 == xhr.readyState && 0 !== xhr.status) {
             if (twoHundred.test(xhr.status)) callback(null, xhr);
@@ -476,15 +479,15 @@ module.exports = ohauth;
  * @class Hashes
  * @author Tomas Aparicio <tomas@rijndael-project.com>
  * @license New BSD (see LICENSE file)
- * @version 1.0.2 - 25/03/2013
+ * @version 1.0.3
  *
  * Algorithms specification:
  *
  * MD5 <http://www.ietf.org/rfc/rfc1321.txt>
  * RIPEMD-160 <http://homes.esat.kuleuven.be/~bosselae/ripemd160.html>
- * SHA1 <http://homes.esat.kuleuven.be/~bosselae/ripemd160.html>
- * SHA256 <http://csrc.nist.gov/publications/fips/fips180-2/fips180-2.pdf>
- * SHA512 <http://csrc.nist.gov/publications/fips/fips180-2/fips180-2.pdf>
+ * SHA1   <http://csrc.nist.gov/publications/fips/fips180-4/fips-180-4.pdf>
+ * SHA256 <http://csrc.nist.gov/publications/fips/fips180-4/fips-180-4.pdf>
+ * SHA512 <http://csrc.nist.gov/publications/fips/fips180-4/fips-180-4.pdf>
  * HMAC <http://www.ietf.org/rfc/rfc2104.txt>
  *
  */
@@ -494,7 +497,7 @@ module.exports = ohauth;
   // private helper methods
   function utf8Encode(input) {
     var  x, y, output = '', i = -1, l = input.length;
-    while (i+=1 < l) {
+    while ((i+=1) < l) {
       /* Decode utf-16 surrogate pairs */
       x = input.charCodeAt(i);
       y = i + 1 < l ? input.charCodeAt(i + 1) : 0;
@@ -722,6 +725,11 @@ module.exports = ohauth;
   }
 
   Hashes = {
+  /**  
+   * @property {String} version
+   * @readonly
+   */
+  VERSION : '1.0.3',
   /**
    * @member Hashes
    * @class Base64
@@ -825,7 +833,7 @@ module.exports = ohauth;
    * @return {String}
    */
   CRC32 : function (str) {
-    var crc = 0, x = 0, y = 0, table, i;
+    var crc = 0, x = 0, y = 0, table, i, iTop;
     str = utf8Encode(str);
         
     table = [ 
@@ -863,7 +871,8 @@ module.exports = ohauth;
         x = '0x' + table.substr( y * 9, 8 );
         crc = ( crc >>> 8 ) ^ x;
     }
-    return crc ^ (-1);
+    // always return a positive number (that's what >>> 0 does)
+    return (crc ^ (-1)) >>> 0;
   },
   /**
    * @member Hashes
@@ -959,7 +968,7 @@ module.exports = ohauth;
      * Calculate the HMAC-MD5, of a key and some data (raw strings)
      */
     function rstr_hmac(key, data) {
-      var bkey, ipad, hash, i;
+      var bkey, ipad, opad, hash, i;
 
       key = (utf8) ? utf8Encode(key) : key;
       data = (utf8) ? utf8Encode(data) : data;
@@ -1189,7 +1198,7 @@ module.exports = ohauth;
      * Calculate the HMAC-SHA1 of a key and some data (raw strings)
      */
     function rstr_hmac(key, data) {
-      var bkey, ipad, i, hash;
+    	var bkey, ipad, opad, i, hash;
     	key = (utf8) ? utf8Encode(key) : key;
     	data = (utf8) ? utf8Encode(data) : data;
     	bkey = rstr2binb(key);
@@ -1595,7 +1604,7 @@ module.exports = ohauth;
      */
     function binb(x, len) {
       var j, i, l,
-          W = new Array(80);
+          W = new Array(80),
           hash = new Array(16),
           //Initial hash values
           H = [
@@ -1976,7 +1985,7 @@ module.exports = ohauth;
      * Convert an array of little-endian words to a string
      */
     function binl2rstr(input) {
-      var i, output = '', l = input.length * 3;
+      var i, output = '', l = input.length * 32;
       for (i = 0; i < l; i += 8) {
         output += String.fromCharCode((input[i>>5] >>> (i % 32)) & 0xFF);
       }
@@ -1993,8 +2002,8 @@ module.exports = ohauth;
           h2 = 0x98badcfe,
           h3 = 0x10325476,
           h4 = 0xc3d2e1f0,
-          A1 = h0, B1 = h1, C1 = h2, D1 = h3, E1 = h4,
-          A2 = h0, B2 = h1, C2 = h2, D2 = h3, E2 = h4;
+          A1, B1, C1, D1, E1,
+          A2, B2, C2, D2, E2;
 
       /* append padding */
       x[len >> 5] |= 0x80 << (len % 32);
@@ -2002,6 +2011,7 @@ module.exports = ohauth;
       l = x.length;
       
       for (i = 0; i < l; i+=16) {
+        A1 = A2 = h0; B1 = B2 = h1; C1 = C2 = h2; D1 = D2 = h3; E1 = E2 = h4;
         for (j = 0; j <= 79; j+=1) {
           T = safe_add(A1, rmd160_f(j, B1, C1, D1));
           T = safe_add(T, x[i + rmd160_r1[j]]);
