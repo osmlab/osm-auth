@@ -41,7 +41,6 @@ Register a new OAuth application on openstreetmap.org:
 var auth = osmAuth({
     oauth_secret: '9WfJnwQxDvvYagx1Ut0tZBsOZ0ZCzAvOje3u1TV0',
     oauth_consumer_key: 'WLwXbm6XFMG7WrVnE8enIF6GzyefYIN6oUJSxG65',
-}, {
     auto: true // show a login form if the user is not authenticated and
                // you try to do a call
 });
@@ -65,9 +64,9 @@ document.getElementById('authenticate').onclick = function() {
 
 ## API
 
-`.osmAuth(keys, options)`
+`.osmAuth(options)`
 
-Keys is keys in the form
+At a minimum, options must contain an OAuth consumer key and secret:
 
 ```
 {
@@ -76,10 +75,10 @@ Keys is keys in the form
 }
 ```
 
-Options includes:
+Additional options are:
 
-* `url` for another base url
-* `landing` for a landing page name (if not using standard `land.html`)
+* `url` for a base url (default: "http://www.openstreetmap.org")
+* `landing` for a landing page name (default: "land.html")
 * `loading`: a function called when auth-related xhr calls start
 * `done`: a function called when auth-related xhr calls end
 
@@ -96,14 +95,9 @@ Tries to authenticate. Calls callback if successful.
 Signed [XMLHttpRequest](http://en.wikipedia.org/wiki/XMLHttpRequest).
 Main options are `url` and `method`.
 
-`.url(newurl)`
+`.options(options)`
 
-Set or get the base url that this points to. By default, `http://www.openstreetmap.org`
-is the value.
-
-`.keys(newkeys)`
-
-Set or get the keys known by this auth instance.
+Set new options.
 
 ## Based on
 
