@@ -1,6 +1,6 @@
 {
   "name": "osm-auth",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "a usable example of javascript oauth with openstreetmap",
   "main": "index.js",
   "scripts": {
