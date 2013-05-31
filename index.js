@@ -60,7 +60,7 @@ module.exports = function(o) {
             popup.location = o.url + '/oauth/authorize?' + ohauth.qsString({
                 oauth_token: resp.oauth_token,
                 oauth_callback: location.href.replace('index.html', '')
-                    .replace(/#.+/, '') + o.landing
+                    .replace(/#.*/, '') + o.landing
             });
         }
 

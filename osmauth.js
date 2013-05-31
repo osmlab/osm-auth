@@ -62,7 +62,7 @@ module.exports = function(o) {
             popup.location = o.url + '/oauth/authorize?' + ohauth.qsString({
                 oauth_token: resp.oauth_token,
                 oauth_callback: location.href.replace('index.html', '')
-                    .replace(/#.+/, '') + o.landing
+                    .replace(/#.*/, '') + o.landing
             });
         }
 
@@ -512,7 +512,45 @@ ohauth.headerGenerator = function(options) {
 
 module.exports = ohauth;
 
-},{"jshashes":4,"xtend":5}],4:[function(require,module,exports){
+},{"jshashes":4,"xtend":5}],5:[function(require,module,exports){
+var Keys = Object.keys || objectKeys
+
+module.exports = extend
+
+function extend() {
+    var target = {}
+
+    for (var i = 0; i < arguments.length; i++) {
+        var source = arguments[i]
+
+        if (!isObject(source)) {
+            continue
+        }
+
+        var keys = Keys(source)
+
+        for (var j = 0; j < keys.length; j++) {
+            var name = keys[j]
+            target[name] = source[name]
+        }
+    }
+
+    return target
+}
+
+function objectKeys(obj) {
+    var keys = []
+    for (var k in obj) {
+        keys.push(k)
+    }
+    return keys
+}
+
+function isObject(obj) {
+    return obj !== null && typeof obj === "object"
+}
+
+},{}],4:[function(require,module,exports){
 (function(global){/**
  * jsHashes - A fast and independent hashing library pure JavaScript implemented (ES5 compliant) for both server and client side
  * 
@@ -2134,44 +2172,6 @@ module.exports = ohauth;
   }( this ));
 }()); // IIFE
 })(window)
-},{}],5:[function(require,module,exports){
-var Keys = Object.keys || objectKeys
-
-module.exports = extend
-
-function extend() {
-    var target = {}
-
-    for (var i = 0; i < arguments.length; i++) {
-        var source = arguments[i]
-
-        if (!isObject(source)) {
-            continue
-        }
-
-        var keys = Keys(source)
-
-        for (var j = 0; j < keys.length; j++) {
-            var name = keys[j]
-            target[name] = source[name]
-        }
-    }
-
-    return target
-}
-
-function objectKeys(obj) {
-    var keys = []
-    for (var k in obj) {
-        keys.push(k)
-    }
-    return keys
-}
-
-function isObject(obj) {
-    return obj !== null && typeof obj === "object"
-}
-
 },{}]},{},[1])(1)
 });
 ;
