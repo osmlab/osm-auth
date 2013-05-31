@@ -37,15 +37,17 @@ module.exports = function(o) {
             o.oauth_secret, '',
             ohauth.baseString('POST', url, params));
 
-        // Create a 600x550 popup window in the center of the screen
-        var w = 600, h = 550,
-            settings = [
-                ['width', w], ['height', h],
-                ['left', screen.width / 2 - w / 2],
-                ['top', screen.height / 2 - h / 2]].map(function(x) {
-                    return x.join('=');
-                }).join(','),
-            popup = window.open('about:blank', 'oauth_window', settings);
+        if (!o.singlepage) {
+            // Create a 600x550 popup window in the center of the screen
+            var w = 600, h = 550,
+                settings = [
+                    ['width', w], ['height', h],
+                    ['left', screen.width / 2 - w / 2],
+                    ['top', screen.height / 2 - h / 2]].map(function(x) {
+                        return x.join('=');
+                    }).join(','),
+                popup = window.open('about:blank', 'oauth_window', settings);
+        }
 
         // Request a request token. When this is complete, the popup
         // window is redirected to OSM's authorization page.
@@ -57,11 +59,17 @@ module.exports = function(o) {
             if (err) return callback(err);
             var resp = ohauth.stringQs(xhr.response);
             token('oauth_request_token_secret', resp.oauth_token_secret);
-            popup.location = o.url + '/oauth/authorize?' + ohauth.qsString({
+            var authorize_url = o.url + '/oauth/authorize?' + ohauth.qsString({
                 oauth_token: resp.oauth_token,
                 oauth_callback: location.href.replace('index.html', '')
                     .replace(/#.*/, '') + o.landing
             });
+
+            if (o.singlepage) {
+                location.href = authorize_url;
+            } else {
+                popup.location = authorize_url;
+            }
         }
 
         // Called by a function in a landing page, in the popup window. The
@@ -102,6 +110,39 @@ module.exports = function(o) {
             token('oauth_token_secret', access_token.oauth_token_secret);
             callback(null, oauth);
         }
+    };
+
+    oauth.bootstrapToken = function(oauth_token, callback) {
+        // ## Getting an request token
+        // At this point we have an `oauth_token`, brought in from a function
+        // call on a landing page popup.
+        function get_access_token(oauth_token) {
+            var url = o.url + '/oauth/access_token',
+                params = timenonce(getAuth(o)),
+                request_token_secret = token('oauth_request_token_secret');
+            params.oauth_token = oauth_token;
+            params.oauth_signature = ohauth.signature(
+                o.oauth_secret,
+                request_token_secret,
+                ohauth.baseString('POST', url, params));
+
+            // ## Getting an access token
+            // The final token required for authentication. At this point
+            // we have a `request token secret`
+            ohauth.xhr('POST', url, params, null, {}, accessTokenDone);
+            o.loading();
+        }
+
+        function accessTokenDone(err, xhr) {
+            o.done();
+            if (err) return callback(err);
+            var access_token = ohauth.stringQs(xhr.response);
+            token('oauth_token', access_token.oauth_token);
+            token('oauth_token_secret', access_token.oauth_token_secret);
+            callback(null, oauth);
+        }
+
+        get_access_token(oauth_token);
     };
 
     // # xhr
@@ -152,6 +193,8 @@ module.exports = function(o) {
 
         o.url = o.url || 'http://www.openstreetmap.org';
         o.landing = o.landing || 'land.html';
+
+        o.singlepage = o.singlepage || false;
 
         // Optional loading and loading-done functions for nice UI feedback.
         // by default, no-ops

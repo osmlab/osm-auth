@@ -81,6 +81,7 @@ Additional options are:
 * `landing` for a landing page name (default: "land.html")
 * `loading`: a function called when auth-related xhr calls start
 * `done`: a function called when auth-related xhr calls end
+* `singlepage`: use full-page redirection instead of a popup for mobile
 
 `.logout()`
 
