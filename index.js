@@ -1,4 +1,7 @@
+'use strict';
+
 var ohauth = require('ohauth'),
+    xtend = require('xtend'),
     store = require('store');
 
 // # osm-auth
@@ -159,6 +162,13 @@ module.exports = function(o) {
             var params = timenonce(getAuth(o)),
                 url = o.url + options.path,
                 oauth_token_secret = token('oauth_token_secret');
+
+            // https://tools.ietf.org/html/rfc5849#section-3.4.1.3.1
+            if ((!options.headers ||
+                options.headers['Content-Type'] === 'application/x-www-form-urlencoded') &&
+                options.content) {
+                params = xtend(params, ohauth.stringQs(options.content));
+            }
 
             params.oauth_token = token('oauth_token');
             params.oauth_signature = ohauth.signature(
