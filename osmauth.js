@@ -228,9 +228,19 @@ module.exports = function(o) {
     // get/set tokens. These are prefixed with the base URL so that `osm-auth`
     // can be used with multiple APIs and the keys in `localStorage`
     // will not clash
-    function token(x, y) {
-        if (arguments.length === 1) return store.get(o.url + x);
-        else if (arguments.length === 2) return store.set(o.url + x, y);
+    var token;
+
+    if (store.enabled) {
+        token = function (x, y) {
+            if (arguments.length === 1) return store.get(o.url + x);
+            else if (arguments.length === 2) return store.set(o.url + x, y);
+        };
+    } else {
+        var storage = {};
+        token = function (x, y) {
+            if (arguments.length === 1) return storage[o.url + x];
+            else if (arguments.length === 2) return storage[o.url + x] = y;
+        };
     }
 
     // Get an authentication object. If you just add and remove properties
