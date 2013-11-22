@@ -166,8 +166,8 @@ module.exports = function(o) {
                 oauth_token_secret = token('oauth_token_secret');
 
             // https://tools.ietf.org/html/rfc5849#section-3.4.1.3.1
-            if ((!options.headers ||
-                options.headers['Content-Type'] === 'application/x-www-form-urlencoded') &&
+            if ((!options.options || !options.options.header ||
+                options.options.header['Content-Type'] === 'application/x-www-form-urlencoded') &&
                 options.content) {
                 params = xtend(params, ohauth.stringQs(options.content));
             }
@@ -259,7 +259,7 @@ module.exports = function(o) {
     return oauth;
 };
 
-},{"ohauth":2,"xtend":3,"store":4}],4:[function(require,module,exports){
+},{"ohauth":2,"store":3,"xtend":4}],3:[function(require,module,exports){
 (function(global){;(function(win){
 	var store = {},
 		doc = win.document,
@@ -435,7 +435,7 @@ function hasKeys(source) {
         typeof source === "function")
 }
 
-},{}],3:[function(require,module,exports){
+},{}],4:[function(require,module,exports){
 var Keys = require("object-keys")
 var hasKeys = require("./has-keys")
 
@@ -2232,7 +2232,7 @@ ohauth.headerGenerator = function(options) {
 
 module.exports = ohauth;
 
-},{"jshashes":7,"xtend":3}],6:[function(require,module,exports){
+},{"jshashes":7,"xtend":4}],6:[function(require,module,exports){
 module.exports = Object.keys || require('./shim');
 
 

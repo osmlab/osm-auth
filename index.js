@@ -164,8 +164,8 @@ module.exports = function(o) {
                 oauth_token_secret = token('oauth_token_secret');
 
             // https://tools.ietf.org/html/rfc5849#section-3.4.1.3.1
-            if ((!options.headers ||
-                options.headers['Content-Type'] === 'application/x-www-form-urlencoded') &&
+            if ((!options.options || !options.options.header ||
+                options.options.header['Content-Type'] === 'application/x-www-form-urlencoded') &&
                 options.content) {
                 params = xtend(params, ohauth.stringQs(options.content));
             }
