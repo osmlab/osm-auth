@@ -102,7 +102,7 @@ Set new options.
 
 ## Based on
 
-Uses [ohauth](https://github.com/tmcw/ohauth) and
+Uses [ohauth](https://github.com/osmlab/ohauth) and
 [store.js](https://github.com/marcuswestin/store.js) behind the scenes.
 
 Based on the implementation in the [iD editor](http://ideditor.com/).
