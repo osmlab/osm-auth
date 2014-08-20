@@ -65,7 +65,7 @@ module.exports = function(o) {
             var authorize_url = o.url + '/oauth/authorize?' + ohauth.qsString({
                 oauth_token: resp.oauth_token,
                 oauth_callback: location.href.replace('index.html', '')
-                    .replace(/#.*/, '') + o.landing
+                    .replace(/#.*/, '').replace(location.search, '') + o.landing
             });
 
             if (o.singlepage) {
