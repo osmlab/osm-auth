@@ -160,8 +160,8 @@ module.exports = function(o) {
 
         function run() {
             var params = timenonce(getAuth(o)),
-                url = o.url + options.path,
                 oauth_token_secret = token('oauth_token_secret');
+            var url = (options.prefix !== false) ? o.url + options.path : options.path;
 
             // https://tools.ietf.org/html/rfc5849#section-3.4.1.3.1
             if ((!options.options || !options.options.header ||
