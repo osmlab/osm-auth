@@ -177,7 +177,7 @@ module.exports = function(o) {
                 oauth_token_secret,
                 ohauth.baseString(options.method, url, params));
 
-            ohauth.xhr(options.method,
+            return ohauth.xhr(options.method,
                 url, params, options.content, options.options, done);
         }
 
