@@ -154,9 +154,15 @@ module.exports = function(o) {
     // user has logged in.
     oauth.xhr = function(options, callback) {
         if (!oauth.authenticated()) {
-            if (o.auto) return oauth.authenticate(run);
-            else return callback('not authenticated', null);
-        } else return run();
+            if (o.auto) {
+                return oauth.authenticate(run);
+            } else {
+                callback('not authenticated', null);
+                return;
+            }
+        } else {
+            return run();
+        }
 
         function run() {
             var params = timenonce(getAuth(o)),
