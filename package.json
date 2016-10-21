@@ -1,19 +1,16 @@
 {
   "name": "osm-auth",
   "version": "0.2.9",
-  "description": "a usable example of javascript oauth with openstreetmap",
+  "description": "A usable example of javascript oauth with openstreetmap",
   "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "repository": "git@github.com:osmlab/osm-auth.git",
+  "repository": "osmlab/osm-auth",
+  "author": "Tom MacWright <tom@macwright.org>",
+  "license": "ISC",
   "keywords": [
     "oauth",
     "openstreetmap",
     "ohauth"
   ],
-  "author": "Tom MacWright <tom@macwright.org>",
-  "license": "Public Domain",
   "dependencies": {
     "ohauth": "0.2.2",
     "store": "~1.3.8",
@@ -22,5 +19,8 @@
   "devDependencies": {
     "browserify": "~13.1.0",
     "uglify-js": "~2.7.0"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
   }
 }
