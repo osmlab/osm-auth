@@ -12,12 +12,12 @@
     "ohauth"
   ],
   "dependencies": {
-    "ohauth": "0.2.2",
-    "store": "~1.3.8",
+    "ohauth": "~1.0.0",
+    "store": "~1.3.0",
     "xtend": "~4.0.0"
   },
   "devDependencies": {
-    "browserify": "~13.1.0",
+    "browserify": "^13.0.0",
     "uglify-js": "~2.7.0"
   },
   "scripts": {

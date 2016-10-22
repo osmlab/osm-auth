@@ -2064,7 +2064,7 @@ ohauth.rawxhr = function(method, url, data, headers, callback) {
     var xhr = new XMLHttpRequest(),
         twoHundred = /^20\d$/;
     xhr.onreadystatechange = function() {
-        if (4 == xhr.readyState && 0 !== xhr.status) {
+        if (4 === xhr.readyState && 0 !== xhr.status) {
             if (twoHundred.test(xhr.status)) callback(null, xhr);
             else return callback(xhr, null);
         }
@@ -2073,6 +2073,7 @@ ohauth.rawxhr = function(method, url, data, headers, callback) {
     xhr.open(method, url, true);
     for (var h in headers) xhr.setRequestHeader(h, headers[h]);
     xhr.send(data);
+    return xhr;
 };
 
 ohauth.xhr = function(method, url, auth, data, options, callback) {
@@ -2080,7 +2081,7 @@ ohauth.xhr = function(method, url, auth, data, options, callback) {
         'Content-Type': 'application/x-www-form-urlencoded'
     };
     headers.Authorization = 'OAuth ' + ohauth.authHeader(auth);
-    ohauth.rawxhr(method, url, data, headers, callback);
+    return ohauth.rawxhr(method, url, data, headers, callback);
 };
 
 ohauth.nonce = function() {
