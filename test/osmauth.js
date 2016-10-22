@@ -1,3 +1,5 @@
+/* global osmAuth:false, expect:false */
+
 describe('osmauth', function() {
 
     beforeEach(function() {

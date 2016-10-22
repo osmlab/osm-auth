@@ -253,7 +253,7 @@ module.exports = function(o) {
     function getAuth(o) {
         return {
             oauth_consumer_key: o.oauth_consumer_key,
-            oauth_signature_method: "HMAC-SHA1"
+            oauth_signature_method: 'HMAC-SHA1'
         };
     }
 

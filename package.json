@@ -18,9 +18,11 @@
   },
   "devDependencies": {
     "browserify": "^13.0.0",
+    "eslint": "^3.0.0",
     "uglify-js": "~2.7.0"
   },
   "scripts": {
+    "lint": "eslint index.js test/osmauth.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   }
 }
