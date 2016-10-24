@@ -7,6 +7,11 @@ Easy authentication with [OpenStreetMap](http://www.openstreetmap.org/)
 over [OAuth](http://oauth.net/) with
 [CORS](http://en.wikipedia.org/wiki/Cross-origin_resource_sharing).
 
+## Demo
+
+Try it out at:  http://osmlab.github.io/osm-auth/
+
+
 ## Installation
 
 Basic:
