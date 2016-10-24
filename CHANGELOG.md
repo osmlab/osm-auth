@@ -1,5 +1,9 @@
 :warning: = Breaking change
 
+## 1.0.1
+##### 2016-Oct-24
+* Bugfix: Properly sign requests that include a querystring (#17)
+
 ## 1.0.0
 ##### 2016-Oct-23
 * Upgrade all dependencies
