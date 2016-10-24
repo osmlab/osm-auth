@@ -1,3 +1,6 @@
+[![npm version](https://badge.fury.io/js/osm-auth.svg)](https://badge.fury.io/js/osm-auth)
+[![Build Status](https://circleci.com/gh/osmlab/osm-auth/tree/master.svg?style=shield)](https://circleci.com/gh/osmlab/osm-auth)
+
 ## osm-auth
 
 Easy authentication with [OpenStreetMap](http://www.openstreetmap.org/)
