@@ -166,8 +166,11 @@ module.exports = function(o) {
 
         function run() {
             var params = timenonce(getAuth(o)),
-                oauth_token_secret = token('oauth_token_secret');
-            var url = (options.prefix !== false) ? o.url + options.path : options.path;
+                oauth_token_secret = token('oauth_token_secret'),
+                url = (options.prefix !== false) ? o.url + options.path : options.path,
+                url_parts = url.replace(/#.*$/, '').split('?', 2),
+                base_url = url_parts[0],
+                query = (url_parts.length === 2) ? url_parts[1] : '';
 
             // https://tools.ietf.org/html/rfc5849#section-3.4.1.3.1
             if ((!options.options || !options.options.header ||
@@ -180,10 +183,10 @@ module.exports = function(o) {
             params.oauth_signature = ohauth.signature(
                 o.oauth_secret,
                 oauth_token_secret,
-                ohauth.baseString(options.method, url, params));
+                ohauth.baseString(options.method, base_url, xtend(params, ohauth.stringQs(query)))
+            );
 
-            return ohauth.xhr(options.method,
-                url, params, options.content, options.options, done);
+            return ohauth.xhr(options.method, url, params, options.content, options.options, done);
         }
 
         function done(err, xhr) {
@@ -206,10 +209,8 @@ module.exports = function(o) {
         if (!arguments.length) return o;
 
         o = _;
-
         o.url = o.url || 'http://www.openstreetmap.org';
         o.landing = o.landing || 'land.html';
-
         o.singlepage = o.singlepage || false;
 
         // Optional loading and loading-done functions for nice UI feedback.
