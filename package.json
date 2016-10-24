@@ -24,7 +24,10 @@
     "uglify-js": "~2.7.0"
   },
   "scripts": {
-    "build": "make",
+    "clean": "rm -f osmauth.js osmauth.min.js",
+    "prebuild": "npm run clean",
+    "build": "browserify index.js -s osmAuth > osmauth.js",
+    "postbuild": "uglifyjs osmauth.js -c > osmauth.min.js",
     "lint": "eslint index.js test/osmauth.js",
     "test": "npm run build && npm run lint && tap --cov test/*.js"
   }
