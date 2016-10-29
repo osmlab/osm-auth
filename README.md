@@ -85,7 +85,7 @@ At a minimum, options must contain an OAuth consumer key and secret:
 
 Additional options are:
 
-* `url` for a base url (default: "http://www.openstreetmap.org")
+* `url` for a base url (default: "https://www.openstreetmap.org")
 * `landing` for a landing page name (default: "land.html")
 * `loading`: a function called when auth-related xhr calls start
 * `done`: a function called when auth-related xhr calls end
