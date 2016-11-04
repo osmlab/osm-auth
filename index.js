@@ -64,7 +64,7 @@ module.exports = function(o) {
             token('oauth_request_token_secret', resp.oauth_token_secret);
             var authorize_url = o.url + '/oauth/authorize?' + ohauth.qsString({
                 oauth_token: resp.oauth_token,
-                oauth_callback: location.href.replace('index.html', '')
+                oauth_callback: location.href.replace(o.index, '')
                     .replace(/#.*/, '').replace(location.search, '') + o.landing
             });
 
@@ -211,6 +211,7 @@ module.exports = function(o) {
         o = _;
         o.url = o.url || 'https://www.openstreetmap.org';
         o.landing = o.landing || 'land.html';
+        o.index = o.index || 'index.html';
         o.singlepage = o.singlepage || false;
 
         // Optional loading and loading-done functions for nice UI feedback.
