@@ -211,7 +211,7 @@ module.exports = function(o) {
         o = _;
         o.url = o.url || 'http://www.openstreetmap.org';
         o.landing = o.landing || 'land.html';
-		o.index = o.index || 'index.html';
+        o.index = o.index || 'index.html';
         o.singlepage = o.singlepage || false;
 
         // Optional loading and loading-done functions for nice UI feedback.
