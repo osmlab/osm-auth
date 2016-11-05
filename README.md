@@ -7,24 +7,36 @@ Easy authentication with [OpenStreetMap](http://www.openstreetmap.org/)
 over [OAuth](http://oauth.net/) with
 [CORS](http://en.wikipedia.org/wiki/Cross-origin_resource_sharing).
 
-## Demo
 
-Try it out at:  http://osmlab.github.io/osm-auth/
+### Demo
+
+Try it out now at:  http://osmlab.github.io/osm-auth/
+
+Or you can run the demo locally by cloning this project, then run:
+
+```sh
+$ npm install
+$ npm run build
+$ npm start
+```
+
+This will start a local server on port 8080.  Then open `http://localhost:8080` in a browser.
 
 
-## Installation
+### Using osm-auth in your project
 
-Basic:
+##### Basic:
 
-Copy `osmauth.js`, use the `osmAuth` object. This uses
+Copy `osmauth.js`, use the `osmAuth` object.  This uses
 [UMD](https://github.com/umdjs/umd), so it's compatible
 with [RequireJS](http://requirejs.org/) etc too, if you're into that kind
 of thing.
 
-With browserify:
+##### With node:
 
-    npm install osm-auth
-
+```sh
+$ npm install osm-auth
+```
 ```js
 var osmAuth = require('osm-auth');
 ```
@@ -32,7 +44,8 @@ var osmAuth = require('osm-auth');
 **Requires land.html to be accessible, or a page that does the same thing -
 calls an auth complete function - to be available.**
 
-## Getting Keys
+
+### Getting Keys
 
 Register a new OAuth application on openstreetmap.org:
 
@@ -43,7 +56,8 @@ Register a new OAuth application on openstreetmap.org:
 5. Fill in the form & submit
 6. Copy & Paste the secret & consumer key into the osmAuth config object as below
 
-## Example
+
+### Example
 
 ```js
 var auth = osmAuth({
@@ -66,11 +80,12 @@ document.getElementById('authenticate').onclick = function() {
 };
 ```
 
-## Support
+### Support
 
 [CORS-supporting browsers](http://caniuse.com/#feat=cors)
 
-## API
+
+### API
 
 `.osmAuth(options)`
 
@@ -87,7 +102,6 @@ Additional options are:
 
 * `url` for a base url (default: "https://www.openstreetmap.org")
 * `landing` for a landing page name (default: "land.html")
-* `index` for a index page name (default: "index.html") - use this when the authentication does not start from index.html
 * `loading`: a function called when auth-related xhr calls start
 * `done`: a function called when auth-related xhr calls end
 * `singlepage`: use full-page redirection instead of a popup for mobile
@@ -109,13 +123,15 @@ Main options are `url` and `method`.
 
 Set new options.
 
-## Based on
+
+### Based on
 
 Uses [ohauth](https://github.com/osmlab/ohauth) and
 [store.js](https://github.com/marcuswestin/store.js) behind the scenes.
 
-Based on the implementation in the [iD editor](http://ideditor.com/).
+Built for and used by OpenStreetMap's [iD editor](https://github.com/openstreetmap/iD).
 
-## See Also
+
+### See Also
 
 * [OAuth in Javascript](http://mapbox.com/osmdev/2013/01/15/oauth-in-javascript/)
