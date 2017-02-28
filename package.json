@@ -13,7 +13,7 @@
   ],
   "dependencies": {
     "ohauth": "~1.0.0",
-    "store": "~1.3.0",
+    "store": "~2.0.3",
     "resolve-url": "~0.2.1",
     "xtend": "~4.0.0"
   },
