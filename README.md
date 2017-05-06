@@ -3,6 +3,8 @@
 
 ## osm-auth
 
+[![Greenkeeper badge](https://badges.greenkeeper.io/osmlab/osm-auth.svg)](https://greenkeeper.io/)
+
 Easy authentication with [OpenStreetMap](http://www.openstreetmap.org/)
 over [OAuth](http://oauth.net/) with
 [CORS](http://en.wikipedia.org/wiki/Cross-origin_resource_sharing).
