@@ -1,5 +1,5 @@
 [![npm version](https://badge.fury.io/js/osm-auth.svg)](https://badge.fury.io/js/osm-auth)
-[![Build Status](https://circleci.com/gh/osmlab/osm-auth/tree/master.svg?style=shield)](https://circleci.com/gh/osmlab/osm-auth)
+[![Build Status](https://circleci.com/gh/osmlab/osm%2dauth/tree/master.svg?style=shield)](https://circleci.com/gh/osmlab/osm-auth)
 [![Greenkeeper badge](https://badges.greenkeeper.io/osmlab/osm-auth.svg)](https://greenkeeper.io/)
 
 ## osm-auth
