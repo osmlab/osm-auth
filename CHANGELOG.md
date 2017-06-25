@@ -1,5 +1,9 @@
 :warning: = Breaking change
 
+## 1.0.2
+##### 2017-Jun-25
+* Use HTTPS protocol by default for openstreetmap.org (#20, thanks @kewang!)
+
 ## 1.0.1
 ##### 2016-Oct-24
 * Bugfix: Properly sign requests that include a querystring (#17)

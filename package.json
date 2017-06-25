@@ -1,6 +1,6 @@
 {
   "name": "osm-auth",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "A usable example of JavaScript OAuth with OpenStreetMap",
   "main": "index.js",
   "repository": "osmlab/osm-auth",
