@@ -1,9 +1,9 @@
 [![npm version](https://badge.fury.io/js/osm-auth.svg)](https://badge.fury.io/js/osm-auth)
-[![Build Status](https://circleci.com/gh/osmlab/osm%2dauth/tree/master.svg?style=shield&circle-token=155ce086e7c7dd43a0281a2b429a25b7d6aa973a)](https://circleci.com/gh/osmlab/osm-auth)
+[![Build Status](https://travis-ci.org/osmlab/osm-auth.svg?branch=master)](https://travis-ci.org/osmlab/osm-auth)
 [![Greenkeeper badge](https://badges.greenkeeper.io/osmlab/osm-auth.svg)](https://greenkeeper.io/)
 
-## osm-auth
 
+## osm-auth
 
 Easy authentication with [OpenStreetMap](http://www.openstreetmap.org/)
 over [OAuth](http://oauth.net/) with
@@ -33,6 +33,7 @@ Copy `osmauth.js`, use the `osmAuth` object.  This uses
 [UMD](https://github.com/umdjs/umd), so it's compatible
 with [RequireJS](http://requirejs.org/) etc too, if you're into that kind
 of thing.
+
 
 ##### With node:
 
