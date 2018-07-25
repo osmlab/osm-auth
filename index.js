@@ -166,28 +166,9 @@ module.exports = function(o) {
         }
 
         function run() {
-            var params = timenonce(getAuth(o)),
-                oauth_token_secret = token('oauth_token_secret'),
-                url = (options.prefix !== false) ? o.url + options.path : options.path,
-                url_parts = url.replace(/#.*$/, '').split('?', 2),
-                base_url = url_parts[0],
-                query = (url_parts.length === 2) ? url_parts[1] : '';
-
-            // https://tools.ietf.org/html/rfc5849#section-3.4.1.3.1
-            if ((!options.options || !options.options.header ||
-                options.options.header['Content-Type'] === 'application/x-www-form-urlencoded') &&
-                options.content) {
-                params = xtend(params, ohauth.stringQs(options.content));
-            }
-
-            params.oauth_token = token('oauth_token');
-            params.oauth_signature = ohauth.signature(
-                o.oauth_secret,
-                oauth_token_secret,
-                ohauth.baseString(options.method, base_url, xtend(params, ohauth.stringQs(query)))
-            );
-
-            return ohauth.xhr(options.method, url, params, options.content, options.options, done);
+            var params = oauth.getXhrParams(options);
+            params.push(done);
+            return ohauth.xhr.apply(ohauth, params);
         }
 
         function done(err, xhr) {
@@ -196,6 +177,35 @@ module.exports = function(o) {
             else return callback(err, xhr.response);
         }
     };
+
+    // # getXhrParams
+    //
+    // Exposes the params required do to oauth.xhr
+    oauth.getXhrParams = function(options) {
+        var params = timenonce(getAuth(o)),
+            oauth_token_secret = token('oauth_token_secret'),
+            url = (options.prefix !== false) ? o.url + options.path : options.path,
+            url_parts = url.replace(/#.*$/, '').split('?', 2),
+            base_url = url_parts[0],
+            query = (url_parts.length === 2) ? url_parts[1] : '';
+
+        // https://tools.ietf.org/html/rfc5849#section-3.4.1.3.1
+        if ((!options.options || !options.options.header ||
+            options.options.header['Content-Type'] === 'application/x-www-form-urlencoded') &&
+            options.content) {
+            params = xtend(params, ohauth.stringQs(options.content));
+        }
+
+        params.oauth_token = token('oauth_token');
+        params.oauth_signature = ohauth.signature(
+            o.oauth_secret,
+            oauth_token_secret,
+            ohauth.baseString(options.method, base_url, xtend(params, ohauth.stringQs(query)))
+        );
+
+        return [options.method, url, params, options.content, options.options]
+    }
+
 
     // pre-authorize this object, if we can just get a token and token_secret
     // from the start
