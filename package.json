@@ -31,7 +31,7 @@
     "prebuild": "npm run clean",
     "build": "browserify index.js -s osmAuth > osmauth.js",
     "postbuild": "uglifyjs osmauth.js -c > osmauth.min.js",
-    "lint": "eslint index.js test/osmauth.js",
+    "lint": "eslint index.js test/*.js",
     "start": "node server.js",
     "test": "npm run build && npm run lint && tap --cov test/*.js"
   },
