@@ -78,9 +78,11 @@
         }
 
         document.getElementById('authenticate').onclick = function() {
-            auth.authenticate(function() {
-                update();
-            });
+            if (!auth.bringPopupWindowToFront()) {
+                auth.authenticate(function() {
+                    update();
+                });
+            }
         };
 
         function showDetails() {
