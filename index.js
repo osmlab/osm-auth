@@ -53,12 +53,12 @@ module.exports = function(o) {
                     }).join(','),
                 popup = window.open('about:blank', 'oauth_window', settings);
 
-            oauth.popupWindow = popup
+            oauth.popupWindow = popup;
 
             if (!popup) {
-                var error = new Error('Popup was blocked')
-                error.status = 'popup-blocked'
-                throw error
+                var error = new Error('Popup was blocked');
+                error.status = 'popup-blocked';
+                throw error;
             }
         }
 
@@ -134,6 +134,7 @@ module.exports = function(o) {
                 brougtPopupToFront = true;
             }
         } catch (err) {
+            // Bringing popup window to front failed (probably because of the cross-origin error mentioned above)
         }
         return brougtPopupToFront;
     };
