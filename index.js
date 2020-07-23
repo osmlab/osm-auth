@@ -54,6 +54,12 @@ module.exports = function(o) {
                 popup = window.open('about:blank', 'oauth_window', settings);
 
             oauth.popupWindow = popup
+
+            if (!popup) {
+                var error = new Error('Popup was blocked')
+                error.status = 'popup-blocked'
+                throw error
+            }
         }
 
         // Request a request token. When this is complete, the popup
