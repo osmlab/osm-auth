@@ -117,6 +117,11 @@ Additional options are:
 
 Tries to authenticate. Calls callback if successful.
 
+`.bringPopupWindowToFront()`
+
+Tries to bring an existing authentication popup to the front. Returns `true` on success or `false` if there is no
+authentication popup or if it couldn't be brought to the front (e.g. because of cross-origin restrictions).
+
 `.xhr(options, callback)`
 
 Signed [XMLHttpRequest](http://en.wikipedia.org/wiki/XMLHttpRequest).
