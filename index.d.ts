@@ -6,9 +6,11 @@ declare namespace OSMAuth {
     }
 
     interface OSMAuthInstance {
+        popupWindow?: Window
         logout(): OSMAuthInstance;
         authenticated(): boolean;
         authenticate(callback: (error: null | ErrorEvent | XMLHttpRequest, oauth?: OSMAuthInstance) => any): any;
+        bringPopupWindowToFront(): boolean;
         xhr(options: OSMAuthXHROptions, callback: (error: null | ErrorEvent | XMLHttpRequest, xhr: any) => any): any;
         options(): OSMAuthOptions;
         options(options: OSMAuthNewOptions): OSMAuthInstance;

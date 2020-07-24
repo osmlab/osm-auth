@@ -52,6 +52,14 @@ module.exports = function(o) {
                         return x.join('=');
                     }).join(','),
                 popup = window.open('about:blank', 'oauth_window', settings);
+
+            oauth.popupWindow = popup;
+
+            if (!popup) {
+                var error = new Error('Popup was blocked');
+                error.status = 'popup-blocked';
+                throw error;
+            }
         }
 
         // Request a request token. When this is complete, the popup
@@ -114,6 +122,21 @@ module.exports = function(o) {
             token('oauth_token_secret', access_token.oauth_token_secret);
             callback(null, oauth);
         }
+    };
+
+    oauth.bringPopupWindowToFront = function() {
+        var brougtPopupToFront = false;
+        try {
+            // This may cause a cross-origin error:
+            // `DOMException: Blocked a frame with origin "..." from accessing a cross-origin frame.`
+            if (oauth.popupWindow && !oauth.popupWindow.closed) {
+                oauth.popupWindow.focus();
+                brougtPopupToFront = true;
+            }
+        } catch (err) {
+            // Bringing popup window to front failed (probably because of the cross-origin error mentioned above)
+        }
+        return brougtPopupToFront;
     };
 
     oauth.bootstrapToken = function(oauth_token, callback) {
