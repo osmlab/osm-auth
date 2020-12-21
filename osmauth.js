@@ -290,7 +290,7 @@ module.exports = function(o) {
 };
 
 },{"ohauth":3,"resolve-url":4,"store":5,"xtend":17}],2:[function(require,module,exports){
-(function (global){
+(function (global){(function (){
 /**
  * jshashes - https://github.com/h2non/jshashes
  * Released under the "New BSD" license
@@ -2057,7 +2057,7 @@ module.exports = function(o) {
   }(this));
 }()); // IIFE
 
-}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
+}).call(this)}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
 },{}],3:[function(require,module,exports){
 'use strict';
 
@@ -3016,7 +3016,7 @@ function createStore(storages, plugins, namespace) {
 }
 
 },{"./util":9}],9:[function(require,module,exports){
-(function (global){
+(function (global){(function (){
 var assign = make_assign()
 var create = make_create()
 var trim = make_trim()
@@ -3136,7 +3136,7 @@ function isObject(val) {
 	return val && {}.toString.call(val) === '[object Object]'
 }
 
-}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
+}).call(this)}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
 },{}],10:[function(require,module,exports){
 module.exports = [
 	// Listed in order of usage preference
