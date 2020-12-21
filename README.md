@@ -83,6 +83,41 @@ document.getElementById('authenticate').onclick = function() {
 };
 ```
 
+
+#### Example with single-page
+
+
+
+```
+
+    var auth = osmAuth({
+    oauth_consumer_key: 'WLwXbm6XFMG7WrVnE8enIF6GzyefYIN6oUJSxG65',
+    oauth_secret: '9WfJnwQxDvvYagx1Ut0tZBsOZ0ZCzAvOje3u1TV0',
+    auto: true,
+    singlepage: true, // Load the auth-window in the current window, with a redirect,
+    landing: window.location.href // Come back to the current page
+    });
+    
+    var urlParams = new URLSearchParams(window.location.search);
+    if(urlParams.has('oauth_token')){
+        // The token passed via the URL has to be passed into 'auth.bootstrapToken'. The callback is triggered when the final roundtrip is done
+         auth.bootstrapToken(urlParams.get('oauth_token'), 
+                (error) => {
+                    if(error !== null){
+                        console.log("Something is wrong: ", error);
+                        return;
+                    }
+                    
+                    /* Do authenticated stuff here*/
+                }, this.auth);
+    }else{
+        
+        // Attempt to do something authenticated to trigger authentication
+        
+    }
+
+```
+
 ### Support
 
 [CORS-supporting browsers](http://caniuse.com/#feat=cors)
