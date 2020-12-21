@@ -1,5 +1,5 @@
 [![npm version](https://badge.fury.io/js/osm-auth.svg)](https://badge.fury.io/js/osm-auth)
-[![Build Status](https://travis-ci.org/osmlab/osm-auth.svg?branch=master)](https://travis-ci.org/osmlab/osm-auth)
+[![Build Status](https://travis-ci.org/osmlab/osm-auth.svg?branch=main)](https://travis-ci.org/osmlab/osm-auth)
 [![Greenkeeper badge](https://badges.greenkeeper.io/osmlab/osm-auth.svg)](https://greenkeeper.io/)
 
 
