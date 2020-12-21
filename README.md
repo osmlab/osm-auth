@@ -1,6 +1,5 @@
+[![build](https://github.com/osmlab/osm-auth/workflows/build/badge.svg)](https://github.com/osmlab/osm-auth/actions?query=workflow%3A%22build%22)
 [![npm version](https://badge.fury.io/js/osm-auth.svg)](https://badge.fury.io/js/osm-auth)
-[![Build Status](https://travis-ci.org/osmlab/osm-auth.svg?branch=main)](https://travis-ci.org/osmlab/osm-auth)
-[![Greenkeeper badge](https://badges.greenkeeper.io/osmlab/osm-auth.svg)](https://greenkeeper.io/)
 
 
 ## osm-auth
@@ -97,23 +96,23 @@ document.getElementById('authenticate').onclick = function() {
     singlepage: true, // Load the auth-window in the current window, with a redirect,
     landing: window.location.href // Come back to the current page
     });
-    
+
     var urlParams = new URLSearchParams(window.location.search);
     if(urlParams.has('oauth_token')){
         // The token passed via the URL has to be passed into 'auth.bootstrapToken'. The callback is triggered when the final roundtrip is done
-         auth.bootstrapToken(urlParams.get('oauth_token'), 
+         auth.bootstrapToken(urlParams.get('oauth_token'),
                 (error) => {
                     if(error !== null){
                         console.log("Something is wrong: ", error);
                         return;
                     }
-                    
+
                     /* Do authenticated stuff here*/
                 }, this.auth);
     }else{
-        
+
         // Attempt to do something authenticated to trigger authentication
-        
+
     }
 
 ```
