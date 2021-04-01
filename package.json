@@ -17,8 +17,8 @@
   "types": "index.d.ts",
   "dependencies": {
     "ohauth": "~1.0.0",
-    "store": "~2.0.12",
     "resolve-url": "~0.2.1",
+    "store": "~2.0.12",
     "xtend": "~4.0.2"
   },
   "devDependencies": {
@@ -38,7 +38,7 @@
     "postbuild": "uglifyjs osmauth.js -c > osmauth.min.js",
     "lint": "eslint index.js test/*.js",
     "start": "node server.js",
-    "test": "npm run build && npm run lint && tap --cov test/*.js"
+    "test": "npm run build && npm run lint && tap --reporter terse --no-coverage test/*.js"
   },
   "engines": {
     "node": ">=10"
