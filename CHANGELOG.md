@@ -10,11 +10,17 @@ _Breaking changes, which may affect downstream projects, are marked with a_ :war
 <!--
 # A.B.C
 ##### YYYY-MMM-DD
-
 *
 
 [#xx]: https://github.com/osmlab/osm-auth/issues/xx
 -->
+
+## 1.1.1
+##### 2021-May-24
+* Remove xtend, to avoid deprecation warnings
+
+[#76]: https://github.com/osmlab/osm-auth/issues/76
+
 
 ## 1.1.0
 ##### 2020-Jul-27
