@@ -4,7 +4,22 @@
 var ohauth = require('ohauth');
 var resolveUrl = require('resolve-url');
 var store = require('store');
-var xtend = require('xtend');
+
+
+// # xtend
+var hasOwnProperty = Object.prototype.hasOwnProperty;
+function xtend() {
+    var target = {};
+    for (var i = 0; i < arguments.length; i++) {
+        var source = arguments[i];
+        for (var key in source) {
+            if (hasOwnProperty.call(source, key)) {
+                target[key] = source[key];
+            }
+        }
+    }
+    return target;
+}
 
 
 // # osm-auth
@@ -288,8 +303,7 @@ module.exports = function(o) {
 
     return oauth;
 };
-
-},{"ohauth":3,"resolve-url":4,"store":5,"xtend":17}],2:[function(require,module,exports){
+},{"ohauth":3,"resolve-url":4,"store":5}],2:[function(require,module,exports){
 (function (global){(function (){
 /**
  * jshashes - https://github.com/h2non/jshashes
@@ -2062,8 +2076,24 @@ module.exports = function(o) {
 'use strict';
 
 var hashes = require('jshashes'),
-    xtend = require('xtend'),
     sha1 = new hashes.SHA1();
+
+
+// # xtend
+var hasOwnProperty = Object.prototype.hasOwnProperty;
+function xtend() {
+    var target = {};
+    for (var i = 0; i < arguments.length; i++) {
+        var source = arguments[i];
+        for (var key in source) {
+            if (hasOwnProperty.call(source, key)) {
+                target[key] = source[key];
+            }
+        }
+    }
+    return target;
+}
+
 
 var ohauth = {};
 
@@ -2202,7 +2232,7 @@ ohauth.headerGenerator = function(options) {
 
 module.exports = ohauth;
 
-},{"jshashes":2,"xtend":17}],4:[function(require,module,exports){
+},{"jshashes":2}],4:[function(require,module,exports){
 // Copyright 2014 Simon Lydell
 // X11 (“MIT”) Licensed. (See LICENSE.)
 
@@ -3505,26 +3535,5 @@ function clearAll() {
 	return sessionStorage().clear()
 }
 
-},{"../src/util":9}],17:[function(require,module,exports){
-module.exports = extend
-
-var hasOwnProperty = Object.prototype.hasOwnProperty;
-
-function extend() {
-    var target = {}
-
-    for (var i = 0; i < arguments.length; i++) {
-        var source = arguments[i]
-
-        for (var key in source) {
-            if (hasOwnProperty.call(source, key)) {
-                target[key] = source[key]
-            }
-        }
-    }
-
-    return target
-}
-
-},{}]},{},[1])(1)
+},{"../src/util":9}]},{},[1])(1)
 });

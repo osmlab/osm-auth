@@ -16,10 +16,9 @@
   "main": "index.js",
   "types": "index.d.ts",
   "dependencies": {
-    "ohauth": "~1.0.0",
+    "ohauth": "~1.0.1",
     "resolve-url": "~0.2.1",
-    "store": "~2.0.12",
-    "xtend": "~4.0.2"
+    "store": "~2.0.12"
   },
   "devDependencies": {
     "browserify": "^17.0.0",
