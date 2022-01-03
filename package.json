@@ -23,7 +23,7 @@
   "devDependencies": {
     "browserify": "^17.0.0",
     "ecstatic": "4.1.4",
-    "eslint": "^7.16.0",
+    "eslint": "^8.6.0",
     "node-localstorage": "^2.1.6",
     "shx": "~0.3.3",
     "tap": "^15.0.1",
