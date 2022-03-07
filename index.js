@@ -1,23 +1,7 @@
 "use strict";
 
 var ohauth = require("ohauth");
-var resolveUrl = require("resolve-url");
 var store = require("store");
-
-// # xtend
-var hasOwnProperty = Object.prototype.hasOwnProperty;
-function xtend() {
-  var target = {};
-  for (var i = 0; i < arguments.length; i++) {
-    var source = arguments[i];
-    for (var key in source) {
-      if (hasOwnProperty.call(source, key)) {
-        target[key] = source[key];
-      }
-    }
-  }
-  return target;
-}
 
 // # osm-auth
 //
@@ -27,16 +11,12 @@ function xtend() {
 module.exports = function (o) {
   var oauth = {};
 
-  // authenticated users will also have a request token secret, but it's
-  // not used in transactions with the server
   oauth.authenticated = function () {
-    return !!token("oauth_token");
+    return !!token("access_token");
   };
 
   oauth.logout = function () {
-    token("oauth_token", "");
-    token("oauth_token_secret", "");
-    token("oauth_request_token_secret", "");
+    token("access_token", "");
     return oauth;
   };
 
@@ -46,23 +26,17 @@ module.exports = function (o) {
 
     oauth.logout();
 
-    // ## Getting a request token
-    var params = timenonce(getAuth(o)),
-      url =
-        o.url +
-        "/oauth2/authorize?" +
-        ohauth.qsString({
-          client_id: o.client_id,
-          redirect_uri: o.redirect_uri,
-          response_type: "code",
-          scope: ["read_prefs write_api"],
-        });
-
-    // params.oauth_signature = ohauth.signature(
-    //   o.oauth_secret,
-    //   "",
-    //   ohauth.baseString("POST", url, params)
-    // );
+    // ## Request authorization to access resources from the user
+    // and receive authorization code
+    var url =
+      o.url +
+      "/oauth2/authorize?" +
+      ohauth.qsString({
+        client_id: o.client_id,
+        redirect_uri: o.redirect_uri,
+        response_type: "code",
+        scope: o.scope,
+      });
 
     if (!o.singlepage) {
       // Create a 600x550 popup window in the center of the screen
@@ -89,105 +63,41 @@ module.exports = function (o) {
       }
     }
 
-    // Request a request token. When this is complete, the popup
-    // window is redirected to OSM's authorization page.
-    // ohauth.xhr(
-    //   "GET",
-    //   url,
-    //   params,
-    //   null,
-    //   {
-    //     // header: {
-    //     //   "Content-Type": "application/x-www-form-urlencoded",
-    //     //   "X-Requested-With": "XMLHttpRequest",
-    //     //   "Access-Control-Allow-Origin": "*",
-    //     // },
-    //   },
-    //   reqTokenDone
-    // );
-    // o.loading();
-
-    // function reqTokenDone(err, xhr) {
-    //   console.log("done ma chiryoooo", err, xhr);
-    //   o.done();
-    //   if (err) return callback(err);
-    //   var resp = ohauth.stringQs(xhr.response);
-    //   console.log("resp", resp);
-    //   token("oauth_code", resp.oauth_token_secret);
-    //   var authorize_url =
-    //     o.url +
-    //     "/oauth/authorize?" +
-    //     ohauth.qsString({
-    //       oauth_token: resp.oauth_token,
-    //       oauth_callback: resolveUrl(o.landing),
-    //     });
-
-    //   console.log("yaha pugisakyo??");
-    //   if (o.singlepage) {
-    //     location.href = authorize_url;
-    //   } else {
-    //     popup.location = authorize_url;
-    //   }
-    // }
-
     // Called by a function in a landing page, in the popup window. The
     // window closes itself.
-    window.authComplete = function (token) {
-      var oauth_token = ohauth.stringQs(token.split("?")[1]);
-      get_access_token(oauth_token.code);
+    window.authComplete = function (url) {
+      var params = ohauth.stringQs(url.split("?")[1]);
+      get_access_token(params.code);
       delete window.authComplete;
     };
 
-    // ## Getting an request token
-    //
-    // At this point we have an `oauth_token`, brought in from a function
-    // call on a landing page popup.
-    function get_access_token(oauth_token) {
+    // ## Getting an access token
+    // The client requests an access token by authenticating with the
+    // authorization server and presenting the `auth_code`, brought
+    // in from a function call on a landing page popup.
+    function get_access_token(auth_code) {
       var url =
-          o.url +
-          "/oauth2/token?" +
-          ohauth.qsString({
-            client_id: o.client_id,
-            grant_type: "authorization_code",
-            code: oauth_token,
-            redirect_uri: o.redirect_uri,
-            client_secret: o.client_secret,
-          }),
-        params = timenonce(getAuth(o)),
-        request_token_secret = token("oauth_request_token_secret");
-      params.oauth_token = oauth_token;
-      params.oauth_signature = ohauth.signature(
-        o.oauth_secret,
-        request_token_secret,
-        ohauth.baseString("POST", url, params)
-      );
+        o.url +
+        "/oauth2/token?" +
+        ohauth.qsString({
+          client_id: o.client_id,
+          grant_type: "authorization_code",
+          code: auth_code,
+          redirect_uri: o.redirect_uri,
+          client_secret: o.client_secret,
+        });
 
-      // ## Getting an access token
-
-      // fetch(url, {
-      //   method: "POST",
-      //   headers: new Headers({
-      //     "content-type": "application/x-www-form-urlencoded",
-      //   }),
-      // })
-      //   .then((res) => res.json())
-      //   .then((res) => accessTokenDone(res))
-      //   .catch((err) => console.error(err));
-      //
-      // The final token required for authentication. At this point
-      // we have a `request token secret`
-      ohauth.xhr("POST", url, params, null, {}, accessTokenDone);
+      // The authorization server authenticates the client and validates
+      // the authorization grant, and if valid, issues an access token.
+      ohauth.xhr("POST", url, null, null, {}, accessTokenDone);
       o.loading();
     }
-
-    // EDIT THIS OK
 
     function accessTokenDone(err, xhr) {
       o.done();
       if (err) return callback(err);
       var access_token = JSON.parse(xhr.response);
-      console.log("FINAL", JSON.parse(xhr.response));
-      token("oauth_token", access_token.access_token);
+      token("access_token", access_token.access_token);
       callback(null, oauth);
     }
   };
@@ -207,39 +117,37 @@ module.exports = function (o) {
     return brougtPopupToFront;
   };
 
-  oauth.bootstrapToken = function (oauth_token, callback) {
-    // ## Getting an request token
-    // At this point we have an `oauth_token`, brought in from a function
-    // call on a landing page popup.
-    function get_access_token(oauth_token) {
-      var url = o.url + "/oauth/access_token",
-        params = timenonce(getAuth(o)),
-        request_token_secret = token("oauth_request_token_secret");
-      params.oauth_token = oauth_token;
-      params.oauth_signature = ohauth.signature(
-        o.oauth_secret,
-        request_token_secret,
-        ohauth.baseString("POST", url, params)
-      );
+  oauth.bootstrapToken = function (auth_code, callback) {
+    // ## Getting an access token
+    // The client requests an access token by authenticating with the
+    // authorization server and presenting the authorization_code
+    function get_access_token(auth_code) {
+      var url =
+        o.url +
+        "/oauth2/token?" +
+        ohauth.qsString({
+          client_id: o.client_id,
+          grant_type: "authorization_code",
+          code: auth_code,
+          redirect_uri: o.redirect_uri,
+          client_secret: o.client_secret,
+        });
 
-      // ## Getting an access token
-      // The final token required for authentication. At this point
-      // we have a `request token secret`
-      ohauth.xhr("POST", url, params, null, {}, accessTokenDone);
+      // The authorization server authenticates the client and validates
+      // the authorization grant, and if valid, issues an access token.
+      ohauth.xhr("POST", url, null, null, {}, accessTokenDone);
       o.loading();
     }
 
     function accessTokenDone(err, xhr) {
       o.done();
       if (err) return callback(err);
-      var access_token = ohauth.stringQs(xhr.response);
-      console.log("final_access_token", access_token);
-      token("oauth_token", access_token.oauth_token);
-      token("oauth_token_secret", access_token.oauth_token_secret);
+      var access_token = JSON.parse(xhr.response);
+      token("access_token", access_token.access_token);
       callback(null, oauth);
     }
 
-    get_access_token(oauth_token);
+    get_access_token(auth_code);
   };
 
   // # xhr
@@ -259,39 +167,11 @@ module.exports = function (o) {
     }
 
     function run() {
-      var params = timenonce(getAuth(o)),
-        oauth_token_secret = token("oauth_token_secret"),
-        url = options.prefix !== false ? o.url + options.path : options.path,
-        url_parts = url.replace(/#.*$/, "").split("?", 2),
-        base_url = url_parts[0],
-        query = url_parts.length === 2 ? url_parts[1] : "";
-
-      // https://tools.ietf.org/html/rfc5849#section-3.4.1.3.1
-      if (
-        (!options.options ||
-          !options.options.header ||
-          options.options.header["Content-Type"] ===
-            "application/x-www-form-urlencoded") &&
-        options.content
-      ) {
-        params = xtend(params, ohauth.stringQs(options.content));
-      }
-
-      params.oauth_token = token("oauth_token");
-      params.oauth_signature = ohauth.signature(
-        o.oauth_secret,
-        oauth_token_secret,
-        ohauth.baseString(
-          options.method,
-          base_url,
-          xtend(params, ohauth.stringQs(query))
-        )
-      );
-
+      var url = options.prefix !== false ? o.url + options.path : options.path;
       return ohauth.xhr(
         options.method,
         url,
-        params,
+        token("access_token"),
         options.content,
         options.options,
         done
@@ -305,12 +185,10 @@ module.exports = function (o) {
     }
   };
 
-  // pre-authorize this object, if we can just get a token and token_secret
-  // from the start
+  // pre-authorize this object, if we can just get an access token from the start
   oauth.preauth = function (c) {
-    console.log("preauth", c);
     if (!c) return;
-    if (c.oauth_token) token("oauth_token", c.oauth_token)
+    if (c.access_token) token("access_token", c.access_token);
     return oauth;
   };
 
@@ -329,15 +207,6 @@ module.exports = function (o) {
     return oauth.preauth(o);
   };
 
-  // 'stamp' an authentication object from `getAuth()`
-  // with a [nonce](http://en.wikipedia.org/wiki/Cryptographic_nonce)
-  // and timestamp
-  function timenonce(o) {
-    o.oauth_timestamp = ohauth.timestamp();
-    o.oauth_nonce = ohauth.nonce();
-    return o;
-  }
-
   // get/set tokens. These are prefixed with the base URL so that `osm-auth`
   // can be used with multiple APIs and the keys in `localStorage`
   // will not clash
@@ -353,16 +222,6 @@ module.exports = function (o) {
     token = function (x, y) {
       if (arguments.length === 1) return storage[o.url + x];
       else if (arguments.length === 2) return (storage[o.url + x] = y);
-    };
-  }
-
-  // Get an authentication object. If you just add and remove properties
-  // from a single object, you'll need to use `delete` to make sure that
-  // it doesn't contain undesired properties for authentication
-  function getAuth(o) {
-    return {
-      oauth_consumer_key: o.oauth_consumer_key,
-      oauth_signature_method: "HMAC-SHA1",
     };
   }
 
