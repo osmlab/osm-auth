@@ -62,7 +62,7 @@ ohauth.xhr = function(method, url, auth, data, options, callback) {
     var headers = (options && options.header) || {
         'Content-Type': 'application/x-www-form-urlencoded'
     };
-    // headers.Authorization = 'Bearer ' + auth.oauth_token;
+    headers.Authorization = 'Bearer ' + auth.oauth_token;
     return ohauth.rawxhr(method, url, data, headers, callback);
 };
 
@@ -1983,8 +1983,8 @@ module.exports = function (o) {
         o.url +
         "/oauth2/authorize?" +
         ohauth.qsString({
-          client_id: token("client_id"),
-          redirect_uri: "http://127.0.0.1:8080/land.html",
+          client_id: o.client_id,
+          redirect_uri: o.redirect_uri,
           response_type: "code",
           scope: ["read_prefs write_api"],
         });
@@ -2078,11 +2078,11 @@ module.exports = function (o) {
           o.url +
           "/oauth2/token?" +
           ohauth.qsString({
-            client_id: token("client_id"),
+            client_id: o.client_id,
             grant_type: "authorization_code",
             code: oauth_token,
-            redirect_uri: "http://127.0.0.1:8080/land.html",
-            client_secret: "qWbVpHL_s--akm1mDKdwclk7xU91-vtBOAGuTZE4La4",
+            redirect_uri: o.redirect_uri,
+            client_secret: o.client_secret,
           }),
         params = timenonce(getAuth(o)),
         request_token_secret = token("oauth_request_token_secret");
@@ -2119,7 +2119,6 @@ module.exports = function (o) {
       var access_token = JSON.parse(xhr.response);
       console.log("FINAL", JSON.parse(xhr.response));
       token("oauth_token", access_token.access_token);
-      token("oauth_token_secret", access_token.oauth_token_secret);
       callback(null, oauth);
     }
   };
@@ -2240,9 +2239,9 @@ module.exports = function (o) {
   // pre-authorize this object, if we can just get a token and token_secret
   // from the start
   oauth.preauth = function (c) {
+    console.log("preauth", c);
     if (!c) return;
-    if (c.client_id) token("client_id", c.client_id);
-    if (c.oauth_token_secret) token("oauth_token_secret", c.oauth_token_secret);
+    if (c.oauth_token) token("oauth_token", c.oauth_token)
     return oauth;
   };
 

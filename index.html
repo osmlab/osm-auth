@@ -58,8 +58,9 @@
     <script src="osmauth.js"></script>
     <script>
       var auth = osmAuth({
-        url: "https://master.apis.dev.openstreetmap.org",
-        client_id: "GKVnhzoferm3p2uXsh1hzwziuvCzUkIXw3mzfFC0sL4",
+        url: "https://www.openstreetmap.org",
+        client_id: "h55M4tEsJDLVSFOUZ5EhbpJubiFdZh5YdRFA7Sn5gsQ",
+        client_secret: "Ud8j4TWzQaNR6_HDSv_MprKDpS2Ewe1jIMTQNXEOAcs",
         redirect_uri: "http://127.0.0.1:8080/land.html",
       });
 
@@ -93,7 +94,7 @@
       };
 
       function showDetails() {
-        console.log(">>>")
+        console.log(">>>");
         auth.xhr(
           {
             method: "GET",
@@ -131,12 +132,12 @@
       function update() {
         console.log("update chiryo");
         if (auth.authenticated()) {
-          console.log("yes done")
+          console.log("yes done");
           document.getElementById("authenticate").className = "done";
           document.getElementById("logout").className = "";
           showDetails();
         } else {
-          console.log("no done")
+          console.log("no done");
           document.getElementById("authenticate").className = "";
           document.getElementById("logout").className = "done";
           hideDetails();
