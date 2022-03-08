@@ -1,164 +1,238 @@
 (function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}g.osmAuth = f()}})(function(){var define,module,exports;return (function(){function r(e,n,t){function o(i,f){if(!n[i]){if(!e[i]){var c="function"==typeof require&&require;if(!f&&c)return c(i,!0);if(u)return u(i,!0);var a=new Error("Cannot find module '"+i+"'");throw a.code="MODULE_NOT_FOUND",a}var p=n[i]={exports:{}};e[i][0].call(p.exports,function(r){var n=e[i][1][r];return o(n||r)},p,p.exports,r,e,n,t)}return n[i].exports}for(var u="function"==typeof require&&require,i=0;i<t.length;i++)o(t[i]);return o}return r})()({1:[function(require,module,exports){
-'use strict';
+"use strict";
 
-var hashes = require('jshashes'),
-    sha1 = new hashes.SHA1();
+var ohauth = require("ohauth");
+var store = require("store");
 
+// # osm-auth
+//
+// This code is only compatible with IE10+ because the [XDomainRequest](http://bit.ly/LfO7xo)
+// object, IE<10's idea of [CORS](http://en.wikipedia.org/wiki/Cross-origin_resource_sharing),
+// does not support custom headers, which this uses everywhere.
+module.exports = function (o) {
+  var oauth = {};
 
-// # xtend
-var hasOwnProperty = Object.prototype.hasOwnProperty;
-function xtend() {
-    var target = {};
-    for (var i = 0; i < arguments.length; i++) {
-        var source = arguments[i];
-        for (var key in source) {
-            if (hasOwnProperty.call(source, key)) {
-                target[key] = source[key];
-            }
-        }
+  oauth.authenticated = function () {
+    return !!token("access_token");
+  };
+
+  oauth.logout = function () {
+    token("access_token", "");
+    return oauth;
+  };
+
+  // TODO: detect lack of click event
+  oauth.authenticate = function (callback) {
+    if (oauth.authenticated()) return callback();
+
+    oauth.logout();
+
+    // ## Request authorization to access resources from the user
+    // and receive authorization code
+    var url =
+      o.url +
+      "/oauth2/authorize?" +
+      ohauth.qsString({
+        client_id: o.client_id,
+        redirect_uri: o.redirect_uri,
+        response_type: "code",
+        scope: o.scope,
+      });
+
+    if (!o.singlepage) {
+      // Create a 600x550 popup window in the center of the screen
+      var w = 600,
+        h = 550,
+        settings = [
+          ["width", w],
+          ["height", h],
+          ["left", screen.width / 2 - w / 2],
+          ["top", screen.height / 2 - h / 2],
+        ]
+          .map(function (x) {
+            return x.join("=");
+          })
+          .join(","),
+        popup = window.open("about:blank", "oauth_window", settings);
+      oauth.popupWindow = popup;
+      popup.location = url;
+
+      if (!popup) {
+        var error = new Error("Popup was blocked");
+        error.status = "popup-blocked";
+        throw error;
+      }
     }
-    return target;
-}
 
-
-var ohauth = {};
-
-ohauth.qsString = function(obj) {
-    return Object.keys(obj).sort().map(function(key) {
-        return ohauth.percentEncode(key) + '=' +
-            ohauth.percentEncode(obj[key]);
-    }).join('&');
-};
-
-ohauth.stringQs = function(str) {
-    return str.split('&').filter(function (pair) {
-        return pair !== '';
-    }).reduce(function(obj, pair){
-        var parts = pair.split('=');
-        obj[decodeURIComponent(parts[0])] = (null === parts[1]) ?
-            '' : decodeURIComponent(parts[1]);
-        return obj;
-    }, {});
-};
-
-ohauth.rawxhr = function(method, url, data, headers, callback) {
-    var xhr = new XMLHttpRequest(),
-        twoHundred = /^20\d$/;
-    xhr.onreadystatechange = function() {
-        if (4 === xhr.readyState && 0 !== xhr.status) {
-            if (twoHundred.test(xhr.status)) callback(null, xhr);
-            else return callback(xhr, null);
-        }
+    // Called by a function in a landing page, in the popup window. The
+    // window closes itself.
+    window.authComplete = function (url) {
+      var params = ohauth.stringQs(url.split("?")[1]);
+      get_access_token(params.code);
+      delete window.authComplete;
     };
-    xhr.onerror = function(e) { return callback(e, null); };
-    xhr.open(method, url, true);
-    for (var h in headers) xhr.setRequestHeader(h, headers[h]);
-    xhr.send(data);
-    return xhr;
-};
 
-ohauth.xhr = function(method, url, access_token, data, options, callback) {
-    var headers = (options && options.header) || {
-        'Content-Type': 'application/x-www-form-urlencoded'
-    };
-    headers.Authorization = 'Bearer ' + access_token;
-    return ohauth.rawxhr(method, url, data, headers, callback);
-};
+    // ## Getting an access token
+    // The client requests an access token by authenticating with the
+    // authorization server and presenting the `auth_code`, brought
+    // in from a function call on a landing page popup.
+    function get_access_token(auth_code) {
+      var url =
+        o.url +
+        "/oauth2/token?" +
+        ohauth.qsString({
+          client_id: o.client_id,
+          grant_type: "authorization_code",
+          code: auth_code,
+          redirect_uri: o.redirect_uri,
+          client_secret: o.client_secret,
+        });
 
-ohauth.nonce = function() {
-    for (var o = ''; o.length < 6;) {
-        o += '0123456789ABCDEFGHIJKLMNOPQRSTUVWXTZabcdefghiklmnopqrstuvwxyz'[Math.floor(Math.random() * 61)];
+      // The authorization server authenticates the client and validates
+      // the authorization grant, and if valid, issues an access token.
+      ohauth.xhr("POST", url, null, null, {}, accessTokenDone);
+      o.loading();
     }
-    return o;
-};
 
-ohauth.authHeader = function(obj) {
-    return Object.keys(obj).sort().map(function(key) {
-        return encodeURIComponent(key) + '="' + encodeURIComponent(obj[key]) + '"';
-    }).join(', ');
-};
+    function accessTokenDone(err, xhr) {
+      o.done();
+      if (err) return callback(err);
+      var access_token = JSON.parse(xhr.response);
+      token("access_token", access_token.access_token);
+      callback(null, oauth);
+    }
+  };
 
-ohauth.timestamp = function() { return ~~((+new Date()) / 1000); };
+  oauth.bringPopupWindowToFront = function () {
+    var brougtPopupToFront = false;
+    try {
+      // This may cause a cross-origin error:
+      // `DOMException: Blocked a frame with origin "..." from accessing a cross-origin frame.`
+      if (oauth.popupWindow && !oauth.popupWindow.closed) {
+        oauth.popupWindow.focus();
+        brougtPopupToFront = true;
+      }
+    } catch (err) {
+      // Bringing popup window to front failed (probably because of the cross-origin error mentioned above)
+    }
+    return brougtPopupToFront;
+  };
 
-ohauth.percentEncode = function(s) {
-    return encodeURIComponent(s)
-        .replace(/\!/g, '%21').replace(/\'/g, '%27')
-        .replace(/\*/g, '%2A').replace(/\(/g, '%28').replace(/\)/g, '%29');
-};
+  oauth.bootstrapToken = function (auth_code, callback) {
+    // ## Getting an access token
+    // The client requests an access token by authenticating with the
+    // authorization server and presenting the authorization_code
+    function get_access_token(auth_code) {
+      var url =
+        o.url +
+        "/oauth2/token?" +
+        ohauth.qsString({
+          client_id: o.client_id,
+          grant_type: "authorization_code",
+          code: auth_code,
+          redirect_uri: o.redirect_uri,
+          client_secret: o.client_secret,
+        });
 
-ohauth.baseString = function(method, url, params) {
-    if (params.oauth_signature) delete params.oauth_signature;
-    return [
-        method,
-        ohauth.percentEncode(url),
-        ohauth.percentEncode(ohauth.qsString(params))].join('&');
-};
+      // The authorization server authenticates the client and validates
+      // the authorization grant, and if valid, issues an access token.
+      ohauth.xhr("POST", url, null, null, {}, accessTokenDone);
+      o.loading();
+    }
 
-ohauth.signature = function(oauth_secret, token_secret, baseString) {
-    return sha1.b64_hmac(
-        ohauth.percentEncode(oauth_secret) + '&' +
-        ohauth.percentEncode(token_secret),
-        baseString);
-};
+    function accessTokenDone(err, xhr) {
+      o.done();
+      if (err) return callback(err);
+      var access_token = JSON.parse(xhr.response);
+      token("access_token", access_token.access_token);
+      callback(null, oauth);
+    }
 
-/**
- * Takes an options object for configuration (consumer_key,
- * consumer_secret, version, signature_method, token, token_secret)
- * and returns a function that generates the Authorization header
- * for given data.
- *
- * The returned function takes these parameters:
- * - method: GET/POST/...
- * - uri: full URI with protocol, port, path and query string
- * - extra_params: any extra parameters (that are passed in the POST data),
- *   can be an object or a from-urlencoded string.
- *
- * Returned function returns full OAuth header with "OAuth" string in it.
- */
+    get_access_token(auth_code);
+  };
 
-ohauth.headerGenerator = function(options) {
-    options = options || {};
-    var consumer_key = options.consumer_key || '',
-        consumer_secret = options.consumer_secret || '',
-        signature_method = options.signature_method || 'HMAC-SHA1',
-        version = options.version || '1.0',
-        token = options.token || '',
-        token_secret = options.token_secret || '';
+  // # xhr
+  //
+  // A single XMLHttpRequest wrapper that does authenticated calls if the
+  // user has logged in.
+  oauth.xhr = function (options, callback) {
+    if (!oauth.authenticated()) {
+      if (o.auto) {
+        return oauth.authenticate(run);
+      } else {
+        callback("not authenticated", null);
+        return;
+      }
+    } else {
+      return run();
+    }
 
-    return function(method, uri, extra_params) {
-        method = method.toUpperCase();
-        if (typeof extra_params === 'string' && extra_params.length > 0) {
-            extra_params = ohauth.stringQs(extra_params);
-        }
+    function run() {
+      var url = options.prefix !== false ? o.url + options.path : options.path;
+      return ohauth.xhr(
+        options.method,
+        url,
+        token("access_token"),
+        options.content,
+        options.options,
+        done
+      );
+    }
 
-        var uri_parts = uri.split('?', 2),
-        base_uri = uri_parts[0];
+    function done(err, xhr) {
+      if (err) return callback(err);
+      else if (xhr.responseXML) return callback(err, xhr.responseXML);
+      else return callback(err, xhr.response);
+    }
+  };
 
-        var query_params = uri_parts.length === 2 ?
-            ohauth.stringQs(uri_parts[1]) : {};
+  // pre-authorize this object, if we can just get an access token from the start
+  oauth.preauth = function (c) {
+    if (!c) return;
+    if (c.access_token) token("access_token", c.access_token);
+    return oauth;
+  };
 
-        var oauth_params = {
-            oauth_consumer_key: consumer_key,
-            oauth_signature_method: signature_method,
-            oauth_version: version,
-            oauth_timestamp: ohauth.timestamp(),
-            oauth_nonce: ohauth.nonce()
-        };
+  oauth.options = function (_) {
+    if (!arguments.length) return o;
 
-        if (token) oauth_params.oauth_token = token;
+    o = _;
+    o.url = o.url || "https://www.openstreetmap.org";
+    o.landing = o.landing || "land.html";
+    o.singlepage = o.singlepage || false;
 
-        var all_params = xtend({}, oauth_params, query_params, extra_params),
-            base_str = ohauth.baseString(method, base_uri, all_params);
+    // Optional loading and loading-done functions for nice UI feedback.
+    // by default, no-ops
+    o.loading = o.loading || function () {};
+    o.done = o.done || function () {};
+    return oauth.preauth(o);
+  };
 
-        oauth_params.oauth_signature = ohauth.signature(consumer_secret, token_secret, base_str);
+  // get/set tokens. These are prefixed with the base URL so that `osm-auth`
+  // can be used with multiple APIs and the keys in `localStorage`
+  // will not clash
+  var token;
 
-        return 'OAuth ' + ohauth.authHeader(oauth_params);
+  if (store.enabled) {
+    token = function (x, y) {
+      if (arguments.length === 1) return store.get(o.url + x);
+      else if (arguments.length === 2) return store.set(o.url + x, y);
     };
+  } else {
+    var storage = {};
+    token = function (x, y) {
+      if (arguments.length === 1) return storage[o.url + x];
+      else if (arguments.length === 2) return (storage[o.url + x] = y);
+    };
+  }
+
+  // potentially pre-authorize
+  oauth.options(o);
+
+  return oauth;
 };
 
-module.exports = ohauth;
-
-},{"jshashes":2}],2:[function(require,module,exports){
+},{"ohauth":3,"store":4}],2:[function(require,module,exports){
 (function (global){(function (){
 /**
  * jshashes - https://github.com/h2non/jshashes
@@ -1928,240 +2002,166 @@ module.exports = ohauth;
 
 }).call(this)}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
 },{}],3:[function(require,module,exports){
-"use strict";
+'use strict';
 
-var ohauth = require("ohauth");
-var store = require("store");
+var hashes = require('jshashes'),
+    sha1 = new hashes.SHA1();
 
-// # osm-auth
-//
-// This code is only compatible with IE10+ because the [XDomainRequest](http://bit.ly/LfO7xo)
-// object, IE<10's idea of [CORS](http://en.wikipedia.org/wiki/Cross-origin_resource_sharing),
-// does not support custom headers, which this uses everywhere.
-module.exports = function (o) {
-  var oauth = {};
 
-  oauth.authenticated = function () {
-    return !!token("access_token");
-  };
-
-  oauth.logout = function () {
-    token("access_token", "");
-    return oauth;
-  };
-
-  // TODO: detect lack of click event
-  oauth.authenticate = function (callback) {
-    if (oauth.authenticated()) return callback();
-
-    oauth.logout();
-
-    // ## Request authorization to access resources from the user
-    // and receive authorization code
-    var url =
-      o.url +
-      "/oauth2/authorize?" +
-      ohauth.qsString({
-        client_id: o.client_id,
-        redirect_uri: o.redirect_uri,
-        response_type: "code",
-        scope: o.scope,
-      });
-
-    if (!o.singlepage) {
-      // Create a 600x550 popup window in the center of the screen
-      var w = 600,
-        h = 550,
-        settings = [
-          ["width", w],
-          ["height", h],
-          ["left", screen.width / 2 - w / 2],
-          ["top", screen.height / 2 - h / 2],
-        ]
-          .map(function (x) {
-            return x.join("=");
-          })
-          .join(","),
-        popup = window.open("about:blank", "oauth_window", settings);
-      oauth.popupWindow = popup;
-      popup.location = url;
-
-      if (!popup) {
-        var error = new Error("Popup was blocked");
-        error.status = "popup-blocked";
-        throw error;
-      }
+// # xtend
+var hasOwnProperty = Object.prototype.hasOwnProperty;
+function xtend() {
+    var target = {};
+    for (var i = 0; i < arguments.length; i++) {
+        var source = arguments[i];
+        for (var key in source) {
+            if (hasOwnProperty.call(source, key)) {
+                target[key] = source[key];
+            }
+        }
     }
+    return target;
+}
 
-    // Called by a function in a landing page, in the popup window. The
-    // window closes itself.
-    window.authComplete = function (url) {
-      var params = ohauth.stringQs(url.split("?")[1]);
-      get_access_token(params.code);
-      delete window.authComplete;
-    };
 
-    // ## Getting an access token
-    // The client requests an access token by authenticating with the
-    // authorization server and presenting the `auth_code`, brought
-    // in from a function call on a landing page popup.
-    function get_access_token(auth_code) {
-      var url =
-        o.url +
-        "/oauth2/token?" +
-        ohauth.qsString({
-          client_id: o.client_id,
-          grant_type: "authorization_code",
-          code: auth_code,
-          redirect_uri: o.redirect_uri,
-          client_secret: o.client_secret,
-        });
+var ohauth = {};
 
-      // The authorization server authenticates the client and validates
-      // the authorization grant, and if valid, issues an access token.
-      ohauth.xhr("POST", url, null, null, {}, accessTokenDone);
-      o.loading();
-    }
-
-    function accessTokenDone(err, xhr) {
-      o.done();
-      if (err) return callback(err);
-      var access_token = JSON.parse(xhr.response);
-      token("access_token", access_token.access_token);
-      callback(null, oauth);
-    }
-  };
-
-  oauth.bringPopupWindowToFront = function () {
-    var brougtPopupToFront = false;
-    try {
-      // This may cause a cross-origin error:
-      // `DOMException: Blocked a frame with origin "..." from accessing a cross-origin frame.`
-      if (oauth.popupWindow && !oauth.popupWindow.closed) {
-        oauth.popupWindow.focus();
-        brougtPopupToFront = true;
-      }
-    } catch (err) {
-      // Bringing popup window to front failed (probably because of the cross-origin error mentioned above)
-    }
-    return brougtPopupToFront;
-  };
-
-  oauth.bootstrapToken = function (auth_code, callback) {
-    // ## Getting an access token
-    // The client requests an access token by authenticating with the
-    // authorization server and presenting the authorization_code
-    function get_access_token(auth_code) {
-      var url =
-        o.url +
-        "/oauth2/token?" +
-        ohauth.qsString({
-          client_id: o.client_id,
-          grant_type: "authorization_code",
-          code: auth_code,
-          redirect_uri: o.redirect_uri,
-          client_secret: o.client_secret,
-        });
-
-      // The authorization server authenticates the client and validates
-      // the authorization grant, and if valid, issues an access token.
-      ohauth.xhr("POST", url, null, null, {}, accessTokenDone);
-      o.loading();
-    }
-
-    function accessTokenDone(err, xhr) {
-      o.done();
-      if (err) return callback(err);
-      var access_token = JSON.parse(xhr.response);
-      token("access_token", access_token.access_token);
-      callback(null, oauth);
-    }
-
-    get_access_token(auth_code);
-  };
-
-  // # xhr
-  //
-  // A single XMLHttpRequest wrapper that does authenticated calls if the
-  // user has logged in.
-  oauth.xhr = function (options, callback) {
-    if (!oauth.authenticated()) {
-      if (o.auto) {
-        return oauth.authenticate(run);
-      } else {
-        callback("not authenticated", null);
-        return;
-      }
-    } else {
-      return run();
-    }
-
-    function run() {
-      var url = options.prefix !== false ? o.url + options.path : options.path;
-      return ohauth.xhr(
-        options.method,
-        url,
-        token("access_token"),
-        options.content,
-        options.options,
-        done
-      );
-    }
-
-    function done(err, xhr) {
-      if (err) return callback(err);
-      else if (xhr.responseXML) return callback(err, xhr.responseXML);
-      else return callback(err, xhr.response);
-    }
-  };
-
-  // pre-authorize this object, if we can just get an access token from the start
-  oauth.preauth = function (c) {
-    if (!c) return;
-    if (c.access_token) token("access_token", c.access_token);
-    return oauth;
-  };
-
-  oauth.options = function (_) {
-    if (!arguments.length) return o;
-
-    o = _;
-    o.url = o.url || "https://www.openstreetmap.org";
-    o.landing = o.landing || "land.html";
-    o.singlepage = o.singlepage || false;
-
-    // Optional loading and loading-done functions for nice UI feedback.
-    // by default, no-ops
-    o.loading = o.loading || function () {};
-    o.done = o.done || function () {};
-    return oauth.preauth(o);
-  };
-
-  // get/set tokens. These are prefixed with the base URL so that `osm-auth`
-  // can be used with multiple APIs and the keys in `localStorage`
-  // will not clash
-  var token;
-
-  if (store.enabled) {
-    token = function (x, y) {
-      if (arguments.length === 1) return store.get(o.url + x);
-      else if (arguments.length === 2) return store.set(o.url + x, y);
-    };
-  } else {
-    var storage = {};
-    token = function (x, y) {
-      if (arguments.length === 1) return storage[o.url + x];
-      else if (arguments.length === 2) return (storage[o.url + x] = y);
-    };
-  }
-
-  // potentially pre-authorize
-  oauth.options(o);
-
-  return oauth;
+ohauth.qsString = function(obj) {
+    return Object.keys(obj).sort().map(function(key) {
+        return ohauth.percentEncode(key) + '=' +
+            ohauth.percentEncode(obj[key]);
+    }).join('&');
 };
 
-},{"ohauth":1,"store":4}],4:[function(require,module,exports){
+ohauth.stringQs = function(str) {
+    return str.split('&').filter(function (pair) {
+        return pair !== '';
+    }).reduce(function(obj, pair){
+        var parts = pair.split('=');
+        obj[decodeURIComponent(parts[0])] = (null === parts[1]) ?
+            '' : decodeURIComponent(parts[1]);
+        return obj;
+    }, {});
+};
+
+ohauth.rawxhr = function(method, url, data, headers, callback) {
+    var xhr = new XMLHttpRequest(),
+        twoHundred = /^20\d$/;
+    xhr.onreadystatechange = function() {
+        if (4 === xhr.readyState && 0 !== xhr.status) {
+            if (twoHundred.test(xhr.status)) callback(null, xhr);
+            else return callback(xhr, null);
+        }
+    };
+    xhr.onerror = function(e) { return callback(e, null); };
+    xhr.open(method, url, true);
+    for (var h in headers) xhr.setRequestHeader(h, headers[h]);
+    xhr.send(data);
+    return xhr;
+};
+
+ohauth.xhr = function(method, url, access_token, data, options, callback) {
+    var headers = (options && options.header) || {
+        'Content-Type': 'application/x-www-form-urlencoded'
+    };
+    headers.Authorization = 'Bearer ' + access_token;
+    return ohauth.rawxhr(method, url, data, headers, callback);
+};
+
+ohauth.nonce = function() {
+    for (var o = ''; o.length < 6;) {
+        o += '0123456789ABCDEFGHIJKLMNOPQRSTUVWXTZabcdefghiklmnopqrstuvwxyz'[Math.floor(Math.random() * 61)];
+    }
+    return o;
+};
+
+ohauth.authHeader = function(obj) {
+    return Object.keys(obj).sort().map(function(key) {
+        return encodeURIComponent(key) + '="' + encodeURIComponent(obj[key]) + '"';
+    }).join(', ');
+};
+
+ohauth.timestamp = function() { return ~~((+new Date()) / 1000); };
+
+ohauth.percentEncode = function(s) {
+    return encodeURIComponent(s)
+        .replace(/\!/g, '%21').replace(/\'/g, '%27')
+        .replace(/\*/g, '%2A').replace(/\(/g, '%28').replace(/\)/g, '%29');
+};
+
+ohauth.baseString = function(method, url, params) {
+    if (params.oauth_signature) delete params.oauth_signature;
+    return [
+        method,
+        ohauth.percentEncode(url),
+        ohauth.percentEncode(ohauth.qsString(params))].join('&');
+};
+
+ohauth.signature = function(oauth_secret, token_secret, baseString) {
+    return sha1.b64_hmac(
+        ohauth.percentEncode(oauth_secret) + '&' +
+        ohauth.percentEncode(token_secret),
+        baseString);
+};
+
+/**
+ * Takes an options object for configuration (consumer_key,
+ * consumer_secret, version, signature_method, token, token_secret)
+ * and returns a function that generates the Authorization header
+ * for given data.
+ *
+ * The returned function takes these parameters:
+ * - method: GET/POST/...
+ * - uri: full URI with protocol, port, path and query string
+ * - extra_params: any extra parameters (that are passed in the POST data),
+ *   can be an object or a from-urlencoded string.
+ *
+ * Returned function returns full OAuth header with "OAuth" string in it.
+ */
+
+ohauth.headerGenerator = function(options) {
+    options = options || {};
+    var consumer_key = options.consumer_key || '',
+        consumer_secret = options.consumer_secret || '',
+        signature_method = options.signature_method || 'HMAC-SHA1',
+        version = options.version || '1.0',
+        token = options.token || '',
+        token_secret = options.token_secret || '';
+
+    return function(method, uri, extra_params) {
+        method = method.toUpperCase();
+        if (typeof extra_params === 'string' && extra_params.length > 0) {
+            extra_params = ohauth.stringQs(extra_params);
+        }
+
+        var uri_parts = uri.split('?', 2),
+        base_uri = uri_parts[0];
+
+        var query_params = uri_parts.length === 2 ?
+            ohauth.stringQs(uri_parts[1]) : {};
+
+        var oauth_params = {
+            oauth_consumer_key: consumer_key,
+            oauth_signature_method: signature_method,
+            oauth_version: version,
+            oauth_timestamp: ohauth.timestamp(),
+            oauth_nonce: ohauth.nonce()
+        };
+
+        if (token) oauth_params.oauth_token = token;
+
+        var all_params = xtend({}, oauth_params, query_params, extra_params),
+            base_str = ohauth.baseString(method, base_uri, all_params);
+
+        oauth_params.oauth_signature = ohauth.signature(consumer_secret, token_secret, base_str);
+
+        return 'OAuth ' + ohauth.authHeader(oauth_params);
+    };
+};
+
+module.exports = ohauth;
+
+},{"jshashes":2}],4:[function(require,module,exports){
 var engine = require('../src/store-engine')
 
 var storages = require('../storages/all')
@@ -3415,5 +3415,5 @@ function clearAll() {
 	return sessionStorage().clear()
 }
 
-},{"../src/util":8}]},{},[3])(3)
+},{"../src/util":8}]},{},[1])(1)
 });
