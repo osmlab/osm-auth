@@ -1,7 +1,7 @@
-"use strict";
+'use strict';
 
-var ohauth = require("ohauth");
-var store = require("store");
+var ohauth = require('ohauth');
+var store = require('store');
 
 // # osm-auth
 //
@@ -12,11 +12,11 @@ module.exports = function (o) {
   var oauth = {};
 
   oauth.authenticated = function () {
-    return !!token("access_token");
+    return !!token('access_token');
   };
 
   oauth.logout = function () {
-    token("access_token", "");
+    token('access_token', '');
     return oauth;
   };
 
@@ -30,11 +30,11 @@ module.exports = function (o) {
     // and receive authorization code
     var url =
       o.url +
-      "/oauth2/authorize?" +
+      '/oauth2/authorize?' +
       ohauth.qsString({
         client_id: o.client_id,
         redirect_uri: o.redirect_uri,
-        response_type: "code",
+        response_type: 'code',
         scope: o.scope,
       });
 
@@ -43,45 +43,46 @@ module.exports = function (o) {
       var w = 600,
         h = 550,
         settings = [
-          ["width", w],
-          ["height", h],
-          ["left", screen.width / 2 - w / 2],
-          ["top", screen.height / 2 - h / 2],
+          ['width', w],
+          ['height', h],
+          ['left', screen.width / 2 - w / 2],
+          ['top', screen.height / 2 - h / 2],
         ]
           .map(function (x) {
-            return x.join("=");
+            return x.join('=');
           })
-          .join(","),
-        popup = window.open("about:blank", "oauth_window", settings);
+          .join(','),
+        popup = window.open('about:blank', 'oauth_window', settings);
       oauth.popupWindow = popup;
       popup.location = url;
 
       if (!popup) {
-        var error = new Error("Popup was blocked");
-        error.status = "popup-blocked";
+        var error = new Error('Popup was blocked');
+        error.status = 'popup-blocked';
         throw error;
       }
     }
 
-    // Called by a function in a landing page, in the popup window. The
+    // Called by a function in the redirect URL page, in the popup window. The
     // window closes itself.
     window.authComplete = function (url) {
-      var params = ohauth.stringQs(url.split("?")[1]);
+      var params = ohauth.stringQs(url.split('?')[1]);
       get_access_token(params.code);
       delete window.authComplete;
     };
 
     // ## Getting an access token
+    //
     // The client requests an access token by authenticating with the
     // authorization server and presenting the `auth_code`, brought
     // in from a function call on a landing page popup.
     function get_access_token(auth_code) {
       var url =
         o.url +
-        "/oauth2/token?" +
+        '/oauth2/token?' +
         ohauth.qsString({
           client_id: o.client_id,
-          grant_type: "authorization_code",
+          grant_type: 'authorization_code',
           code: auth_code,
           redirect_uri: o.redirect_uri,
           client_secret: o.client_secret,
@@ -89,7 +90,7 @@ module.exports = function (o) {
 
       // The authorization server authenticates the client and validates
       // the authorization grant, and if valid, issues an access token.
-      ohauth.xhr("POST", url, null, null, {}, accessTokenDone);
+      ohauth.xhr('POST', url, null, null, {}, accessTokenDone);
       o.loading();
     }
 
@@ -97,7 +98,7 @@ module.exports = function (o) {
       o.done();
       if (err) return callback(err);
       var access_token = JSON.parse(xhr.response);
-      token("access_token", access_token.access_token);
+      token('access_token', access_token.access_token);
       callback(null, oauth);
     }
   };
@@ -124,10 +125,10 @@ module.exports = function (o) {
     function get_access_token(auth_code) {
       var url =
         o.url +
-        "/oauth2/token?" +
+        '/oauth2/token?' +
         ohauth.qsString({
           client_id: o.client_id,
-          grant_type: "authorization_code",
+          grant_type: 'authorization_code',
           code: auth_code,
           redirect_uri: o.redirect_uri,
           client_secret: o.client_secret,
@@ -135,7 +136,7 @@ module.exports = function (o) {
 
       // The authorization server authenticates the client and validates
       // the authorization grant, and if valid, issues an access token.
-      ohauth.xhr("POST", url, null, null, {}, accessTokenDone);
+      ohauth.xhr('POST', url, null, null, {}, accessTokenDone);
       o.loading();
     }
 
@@ -143,7 +144,7 @@ module.exports = function (o) {
       o.done();
       if (err) return callback(err);
       var access_token = JSON.parse(xhr.response);
-      token("access_token", access_token.access_token);
+      token('access_token', access_token.access_token);
       callback(null, oauth);
     }
 
@@ -159,7 +160,7 @@ module.exports = function (o) {
       if (o.auto) {
         return oauth.authenticate(run);
       } else {
-        callback("not authenticated", null);
+        callback('not authenticated', null);
         return;
       }
     } else {
@@ -171,7 +172,7 @@ module.exports = function (o) {
       return ohauth.xhr(
         options.method,
         url,
-        token("access_token"),
+        token('access_token'),
         options.content,
         options.options,
         done
@@ -188,7 +189,7 @@ module.exports = function (o) {
   // pre-authorize this object, if we can just get an access token from the start
   oauth.preauth = function (c) {
     if (!c) return;
-    if (c.access_token) token("access_token", c.access_token);
+    if (c.access_token) token('access_token', c.access_token);
     return oauth;
   };
 
@@ -196,8 +197,7 @@ module.exports = function (o) {
     if (!arguments.length) return o;
 
     o = _;
-    o.url = o.url || "https://www.openstreetmap.org";
-    o.landing = o.landing || "land.html";
+    o.url = o.url || 'https://www.openstreetmap.org';
     o.singlepage = o.singlepage || false;
 
     // Optional loading and loading-done functions for nice UI feedback.

@@ -58,6 +58,6 @@
         "semi-spacing": "error",
         "space-unary-ops": "error",
         "wrap-regex": "off",
-        "quotes": ["warn", "single"]
+        "quotes": ["error", "single"]
     }
 }
