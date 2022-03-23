@@ -26,7 +26,7 @@
     "eslint": "^7.16.0",
     "node-localstorage": "^2.1.6",
     "shx": "~0.3.3",
-    "tap": "^15.0.1",
+    "tap": "^16.0.1",
     "uglify-js": "^3.12.2"
   },
   "scripts": {
