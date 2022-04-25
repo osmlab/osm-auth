@@ -2,11 +2,11 @@
     "env": {
         "browser": true,
         "node": true,
-        "mocha": true
+        "es6": true
     },
     "parserOptions": {
-        "ecmaVersion": 5,
-        "sourceType": "script"
+        "ecmaVersion": 6,
+        "sourceType": "module"
     },
     "extends": [
         "eslint:recommended"

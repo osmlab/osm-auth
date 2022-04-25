@@ -1,4 +1,4 @@
-// Type definitions for osm-auth 1.0.1
+// Type definitions for osm-auth 2
 
 declare namespace OSMAuth {
     interface OSMAuthConstructor {

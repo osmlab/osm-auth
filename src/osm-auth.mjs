@@ -1,14 +1,13 @@
-'use strict';
+import ohauth from 'ohauth';
+import store from 'store';
 
-var ohauth = require('ohauth');
-var store = require('store');
 
 // # osm-auth
 //
 // This code is only compatible with IE10+ because the [XDomainRequest](http://bit.ly/LfO7xo)
 // object, IE<10's idea of [CORS](http://en.wikipedia.org/wiki/Cross-origin_resource_sharing),
 // does not support custom headers, which this uses everywhere.
-module.exports = function (o) {
+export function osmAuth(o) {
   var oauth = {};
 
   oauth.authenticated = function () {
@@ -40,9 +39,9 @@ module.exports = function (o) {
 
     if (!o.singlepage) {
       // Create a 600x550 popup window in the center of the screen
-      var w = 600,
-        h = 550,
-        settings = [
+      var w = 600;
+      var h = 550;
+      var settings = [
           ['width', w],
           ['height', h],
           ['left', screen.width / 2 - w / 2],
@@ -51,8 +50,8 @@ module.exports = function (o) {
           .map(function (x) {
             return x.join('=');
           })
-          .join(','),
-        popup = window.open('about:blank', 'oauth_window', settings);
+          .join(',');
+      var popup = window.open('about:blank', 'oauth_window', settings);
       oauth.popupWindow = popup;
       popup.location = url;
 
@@ -229,4 +228,4 @@ module.exports = function (o) {
   oauth.options(o);
 
   return oauth;
-};
+}

@@ -1,23 +1,22 @@
-if (typeof localStorage === 'undefined' || localStorage === null) {
-  var LocalStorage = require('node-localstorage').LocalStorage;
-  global.localStorage = new LocalStorage('./scratch');
-}
+import { test } from 'tap';
+import { osmAuth } from '../src/osm-auth.mjs';
 
-var test = require('tap').test;
-var osmAuth = require('../.');
+import { LocalStorage } from 'node-localstorage';
+global.localStorage = new LocalStorage('./scratch');
 
-test('osmauth', function (t) {
-  t.test('.options', function (t) {
-    t.test('gets and sets new options', function (t) {
+
+test('osmauth', t => {
+  t.test('.options', t => {
+    t.test('gets and sets new options', t => {
       localStorage.clear();
-      var keys = {
+      const keys = {
         url: 'https://www.openstreetmap.org',
         client_id: 'h55M4tEsJDLVSFOUZ5EhbpJubiFdZh5YdRFA7Sn5gsQ',
         client_secret: 'Ud8j4TWzQaNR6_HDSv_MprKDpS2Ewe1jIMTQNXEOAcs',
         redirect_uri: 'http://127.0.0.1:8080/land.html',
         scope: 'read_prefs write_api',
       };
-      var auth = osmAuth(keys);
+      const auth = osmAuth(keys);
       t.same(auth.options(), keys);
 
       auth.options({ url: 'foo' });
@@ -28,10 +27,10 @@ test('osmauth', function (t) {
     t.end();
   });
 
-  t.test('pre authorization', function (t) {
-    t.test('is not initially authorized', function (t) {
+  t.test('pre authorization', t => {
+    t.test('is not initially authorized', t => {
       localStorage.clear();
-      var auth = osmAuth({
+      const auth = osmAuth({
         url: 'https://www.openstreetmap.org',
         client_id: 'h55M4tEsJDLVSFOUZ5EhbpJubiFdZh5YdRFA7Sn5gsQ',
         client_secret: 'Ud8j4TWzQaNR6_HDSv_MprKDpS2Ewe1jIMTQNXEOAcs',
@@ -42,9 +41,9 @@ test('osmauth', function (t) {
       t.end();
     });
 
-    t.test('can be preauthorized', function (t) {
+    t.test('can be preauthorized', t => {
       localStorage.clear();
-      var auth = osmAuth({
+      const auth = osmAuth({
         url: 'https://www.openstreetmap.org',
         client_id: 'h55M4tEsJDLVSFOUZ5EhbpJubiFdZh5YdRFA7Sn5gsQ',
         client_secret: 'Ud8j4TWzQaNR6_HDSv_MprKDpS2Ewe1jIMTQNXEOAcs',

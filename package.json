@@ -1,6 +1,6 @@
 {
   "name": "osm-auth",
-  "version": "1.1.1",
+  "version": "2.0.0",
   "license": "ISC",
   "repository": "github:osmlab/osm-auth",
   "description": "A usable example of JavaScript OAuth with OpenStreetMap",
@@ -13,30 +13,40 @@
     "Bryan Housel <bhousel@gmail.com> (https://github.com/bhousel)",
     "Tom MacWright <tom@macwright.org> (https://github.com/tmcw)"
   ],
-  "main": "index.js",
-  "types": "index.d.ts",
+  "type": "module",
+  "source": "./src/osm-auth.mjs",
+  "types": "./src/osm-auth.d.ts",
+  "main": "./dist/osm-auth.cjs",
+  "module": "./src/osm-auth.mjs",
+  "exports": {
+    "import": "./src/osm-auth.mjs",
+    "require": "./dist/osm-auth.cjs"
+  },
+  "sideEffects": false,
+  "scripts": {
+    "all": "run-s clean test",
+    "build": "run-p build:**",
+    "build:browser": "esbuild ./src/osm-auth.mjs --platform=browser --format=iife --global-name=osmAuth --bundle --sourcemap --outfile=./dist/osm-auth.iife.js",
+    "build:cjs": "esbuild ./src/osm-auth.mjs --platform=node --format=cjs --sourcemap --outfile=./dist/osm-auth.cjs",
+    "clean": "shx rm -rf dist",
+    "lint": "eslint src/osm-auth.mjs test/*.js",
+    "start": "npx http-server",
+    "tap": "c8 tap --reporter terse --no-cov test/*.js",
+    "test": "run-s build lint tap"
+  },
   "dependencies": {
     "ohauth": "git+https://github.com/HelNershingThapa/ohauth.git",
     "store": "~2.0.12"
   },
   "devDependencies": {
-    "browserify": "^17.0.0",
+    "c8": "^7.11.0",
+    "esbuild": "^0.14.31",
+    "eslint": "^8.12.0",
     "http-server": "^14.1.0",
-    "eslint": "^8.13.0",
     "node-localstorage": "^2.1.6",
-    "shx": "~0.3.3",
-    "tap": "^16.1.0",
-    "uglify-js": "^3.12.2"
-  },
-  "scripts": {
-    "all": "npm run test",
-    "clean": "shx rm -f osmauth.js osmauth.min.js",
-    "prebuild": "npm run clean",
-    "build": "browserify index.js -s osmAuth > osmauth.js",
-    "postbuild": "uglifyjs osmauth.js -c > osmauth.min.js",
-    "lint": "eslint index.js test/*.js",
-    "start": "npx http-server",
-    "test": "npm run build && npm run lint && tap --reporter terse --no-coverage test/*.js"
+    "npm-run-all": "^4.1.5",
+    "shx": "^0.3.4",
+    "tap": "^16.1.0"
   },
   "engines": {
     "node": ">=14"
