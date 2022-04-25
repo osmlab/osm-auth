@@ -26,7 +26,7 @@
     "eslint": "^8.13.0",
     "node-localstorage": "^2.1.6",
     "shx": "~0.3.3",
-    "tap": "^16.0.1",
+    "tap": "^16.1.0",
     "uglify-js": "^3.12.2"
   },
   "scripts": {
@@ -40,6 +40,6 @@
     "test": "npm run build && npm run lint && tap --reporter terse --no-coverage test/*.js"
   },
   "engines": {
-    "node": ">=10"
+    "node": ">=14"
   }
 }
