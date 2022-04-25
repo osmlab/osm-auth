@@ -16,8 +16,7 @@
   "main": "index.js",
   "types": "index.d.ts",
   "dependencies": {
-    "ohauth": "~1.0.1",
-    "resolve-url": "~0.2.1",
+    "ohauth": "git+https://github.com/HelNershingThapa/ohauth.git",
     "store": "~2.0.12"
   },
   "devDependencies": {
