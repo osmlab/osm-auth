@@ -146,10 +146,10 @@ document.getElementById("authenticate").onclick = function () {
 
 ## `.osmAuth(options)`
 
-Constructs an `osmAuth` instance.
+Constructs an `osmAuth` instance.<br/>
 At a minimum, `options` must contain OAuth2 client ID, secret, redirect URI, and scope(s):
 
-```
+```js
 {
   client_id: "JWXSAzNp64sIRMStTnkhMRaMxSR964V4sFgn3KUZNTA",
   client_secret: "6umOXfkZqH5CVUtv6iDqN7k8o7mKbQvTrHvbDQH36hs",
@@ -170,79 +170,85 @@ Additional options are:
 
 ## `.logout()`
 
-Removes any stored authentication tokens (legacy OAuth1 tokens too)
-Returns: `self`
+Removes any stored authentication tokens (legacy OAuth1 tokens too)<br/>
+<br/>
+Returns: `self`<br/>
 
 
 ## `.authenticated()`
 
-Test whether the user is currently authenticated
-Returns: `true` if authenticated, `false` if not
+Test whether the user is currently authenticated<br/>
+<br/>
+Returns: `true` if authenticated, `false` if not<br/>
 
 
 ## `.authenticate(callback)`
 
-First logs out, then runs the authentiation flow, finally calls the callback.
-Param:   `callback`  An "errback"-style callback (`err`, `result`), called when complete
-Returns:  none
+First logs out, then runs the authentiation flow, finally calls the callback.<br/>
+<br/>
+Param:   `callback`  An "errback"-style callback (`err`, `result`), called when complete<br/>
+Returns:  none<br/>
 
 
 ## `.bringPopupWindowToFront()`
 
-Tries to bring an existing authentication popup to the front.
-Returns: `true` on success or `false` if there is no authentication popup or if it couldn't be brought to the front (e.g. because of cross-origin restrictions).
+Tries to bring an existing authentication popup to the front.<br/>
+<br/>
+Returns: `true` on success or `false` if there is no authentication popup or if it couldn't be brought to the front (e.g. because of cross-origin restrictions).<br/>
 
 
 ## `.bootstrapToken(auth_code, callback)`
 
 The authorization code is a temporary code that a client can exchange for an access token. If using this library in single-page mode, you'll need to call this once your application has an `auth_code` and wants to get an access_token.
-
-Param:  `auth_code`  The OAuth2 `auth_code`
-Param:  `callback`   An "errback"-style callback (`err`, `result`), called when complete
-Returns:  none
+<br/>
+Param:  `auth_code`  The OAuth2 `auth_code`<br/>
+Param:  `callback`   An "errback"-style callback (`err`, `result`), called when complete<br/>
+Returns:  none<br/>
 
 
 ## `.xhr(options, callback)`
 
-A `XMLHttpRequest` wrapper that does authenticated calls if the user has logged in.
-See: https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest
-
-Param: `options`:
-  `options.method`   Passed to `xhr.open`  (e.g. 'GET', 'POST')
-  `options.prefix`   If `true` path contains a path, if `false` path contains the full url
-  `options.path`     The URL path (e.g. "/api/0.6/user/details") (or full url, if `prefix`=`false`)
-  `options.content`  Passed to `xhr.send`
-  `options.headers`  optional `Object` containing request headers
-Param: `callback`  An "errback"-style callback (`err`, `result`), called when complete
-Return: `XMLHttpRequest` if authenticated, otherwise `null`
+A `XMLHttpRequest` wrapper that does authenticated calls if the user has logged in.<br/>
+See: https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest<br/>
+<br/>
+Param: `options`:<br/>
+  `options.method`   Passed to `xhr.open`  (e.g. 'GET', 'POST')<br/>
+  `options.prefix`   If `true` path contains a path, if `false` path contains the full url<br/>
+  `options.path`     The URL path (e.g. "/api/0.6/user/details") (or full url, if `prefix`=`false`)<br/>
+  `options.content`  Passed to `xhr.send`<br/>
+  `options.headers`  optional `Object` containing request headers<br/>
+Param: `callback`  An "errback"-style callback (`err`, `result`), called when complete<br/>
+Return: `XMLHttpRequest` if authenticated, otherwise `null`<br/>
 
 
 ## `rawxhr(method, url, access_token, data, headers, callback)`
 
-Creates the XMLHttpRequest set up with a header and response handling.
-See: https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest
-
-Param:  `method`         Passed to `xhr.open`  (e.g. 'GET', 'POST')
-Param:  `url`            Passed to `xhr.open`
-Param:  `access_token`   The OAuth2 bearer token
-Param:  `data`           Passed to `xhr.send`
-Param:  `headers`        `Object` containing request headers
-Param:  `callback`       An "errback"-style callback (`err`, `result`), called when complete
-Return: `XMLHttpRequest`
+Creates the XMLHttpRequest set up with a header and response handling.<br/>
+See: https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest<br/>
+<br/>
+Param:  `method`         Passed to `xhr.open`  (e.g. 'GET', 'POST')<br/>
+Param:  `url`            Passed to `xhr.open`<br/>
+Param:  `access_token`   The OAuth2 bearer token<br/>
+Param:  `data`           Passed to `xhr.send`<br/>
+Param:  `headers`        `Object` containing request headers<br/>
+Param:  `callback`       An "errback"-style callback (`err`, `result`), called when complete<br/>
+Return: `XMLHttpRequest`<br/>
 
 
 ## `.preauth(val)`
 
-Pre-authorize this object, if we already have the bearer token from the start.
-Param:   `val`   `Object` containing `access_token` property
-Return:  `self`
+Pre-authorize this object, if we already have the bearer token from the start.<br/>
+<br/>
+Param:   `val`   `Object` containing `access_token` property<br/>
+Return:  `self`<br/>
 
 
 ## `.options(options)`
 
-Options  (getter / setter)
- If passed with no arguments, just return the options
- If passed an Object, set the options then attempt to pre-authorize
-
-Param:  `val?`   Object containing options
-Return:  current `options` (if getting), or `self` (if setting)
+Options  (getter / setter)<br/>
+ If passed with no arguments, just return the options<br/>
+ If passed an Object, set the options then attempt to pre-authorize<br/>
+<br/>
+Param:  `val?`   Object containing options<br/>
+Return:  current `options` (if getting), or `self` (if setting)<br/>
+<br/>
