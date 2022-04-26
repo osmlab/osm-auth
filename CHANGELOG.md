@@ -15,6 +15,12 @@ _Breaking changes, which may affect downstream projects, are marked with a_ :war
 [#xx]: https://github.com/osmlab/osm-auth/issues/xx
 -->
 
+## 1.1.2
+##### 2022-Apr-26
+* Remove ecstatic, to avoid deprecation warnings
+* Test on Node 14, 16, 18
+
+
 ## 1.1.1
 ##### 2021-May-24
 * Remove xtend, to avoid deprecation warnings
