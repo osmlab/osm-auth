@@ -11,10 +11,10 @@ test('osmauth', t => {
       localStorage.clear();
       const keys = {
         url: 'https://www.openstreetmap.org',
-        client_id: 'h55M4tEsJDLVSFOUZ5EhbpJubiFdZh5YdRFA7Sn5gsQ',
-        client_secret: 'Ud8j4TWzQaNR6_HDSv_MprKDpS2Ewe1jIMTQNXEOAcs',
+        client_id: 'JWXSAzNp64sIRMStTnkhMRaMxSR964V4sFgn3KUZNTA',
+        client_secret: '6umOXfkZqH5CVUtv6iDqN7k8o7mKbQvTrHvbDQH36hs',
         redirect_uri: 'http://127.0.0.1:8080/land.html',
-        scope: 'read_prefs write_api',
+        scope: 'read_prefs'
       };
       const auth = osmAuth(keys);
       t.same(auth.options(), keys);
@@ -32,10 +32,10 @@ test('osmauth', t => {
       localStorage.clear();
       const auth = osmAuth({
         url: 'https://www.openstreetmap.org',
-        client_id: 'h55M4tEsJDLVSFOUZ5EhbpJubiFdZh5YdRFA7Sn5gsQ',
-        client_secret: 'Ud8j4TWzQaNR6_HDSv_MprKDpS2Ewe1jIMTQNXEOAcs',
+        client_id: 'JWXSAzNp64sIRMStTnkhMRaMxSR964V4sFgn3KUZNTA',
+        client_secret: '6umOXfkZqH5CVUtv6iDqN7k8o7mKbQvTrHvbDQH36hs',
         redirect_uri: 'http://127.0.0.1:8080/land.html',
-        scope: 'read_prefs write_api',
+        scope: 'read_prefs'
       });
       t.notOk(auth.authenticated());
       t.end();
@@ -45,11 +45,11 @@ test('osmauth', t => {
       localStorage.clear();
       const auth = osmAuth({
         url: 'https://www.openstreetmap.org',
-        client_id: 'h55M4tEsJDLVSFOUZ5EhbpJubiFdZh5YdRFA7Sn5gsQ',
-        client_secret: 'Ud8j4TWzQaNR6_HDSv_MprKDpS2Ewe1jIMTQNXEOAcs',
+        client_id: 'JWXSAzNp64sIRMStTnkhMRaMxSR964V4sFgn3KUZNTA',
+        client_secret: '6umOXfkZqH5CVUtv6iDqN7k8o7mKbQvTrHvbDQH36hs',
         redirect_uri: 'http://127.0.0.1:8080/land.html',
-        scope: 'read_prefs write_api',
-        access_token: 'foo',
+        scope: 'read_prefs',
+        access_token: 'foo'
       });
       t.ok(auth.authenticated());
       t.end();

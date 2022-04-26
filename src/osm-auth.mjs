@@ -1,27 +1,66 @@
-import ohauth from 'ohauth';
+import { utilQsString, utilStringQs } from '@id-sdk/util';
 import store from 'store';
 
 
-// # osm-auth
-//
-// This code is only compatible with IE10+ because the [XDomainRequest](http://bit.ly/LfO7xo)
-// object, IE<10's idea of [CORS](http://en.wikipedia.org/wiki/Cross-origin_resource_sharing),
-// does not support custom headers, which this uses everywhere.
+/**
+ * osmAuth
+ * Easy authentication with OpenStreetMap over OAuth2.
+ * @module
+ *
+ * @param    o   `Object` containing options:
+ * @param    o.scope          OAuth2 scopes requested (e.g. "read_prefs write_api")
+ * @param    o.client_id      OAuth2 client ID
+ * @param    o.client_secret  OAuth2 client secret
+ * @param    o.redirect_uri   OAuth2 redirect URI (e.g. "http://127.0.0.1:8080/land.html")
+ * @param    o.access_token   Can pre-authorize with an OAuth2 bearer token if you have one
+ * @param    o.url            A base url (default: "https://www.openstreetmap.org")
+ * @param    o.auto           If `true`, attempt to authenticate automatically when calling `.xhr()` (default: `false`)
+ * @param    o.singlepage     If `true`, use page redirection instead of a popup (default: `false`)
+ * @param    o.loading        Function called when auth-related xhr calls start
+ * @param    o.done           Function called when auth-related xhr calls end
+ * @return  `self`
+ */
 export function osmAuth(o) {
   var oauth = {};
 
+  /**
+   * authenticated
+   * Test whether the user is currently authenticated
+   * @return `true` if authenticated, `false` if not
+   */
   oauth.authenticated = function () {
-    return !!token('access_token');
+    return !!token('oauth2_access_token');
   };
 
+
+  /**
+   * logout
+   * Removes any stored authentication tokens (legacy OAuth1 tokens too)
+   *
+   * @return  `self`
+   */
   oauth.logout = function () {
-    token('access_token', '');
+    token('oauth2_access_token', '');         // OAuth2
+    token('oauth_token', '');                 // OAuth1
+    token('oauth_token_secret', '');          // OAuth1
+    token('oauth_request_token_secret', '');  // OAuth1
     return oauth;
   };
 
-  // TODO: detect lack of click event
+
+  /**
+   * authenticate
+   * First logs out, then runs the authentiation flow, finally calls the callback.
+   * TODO: detect lack of click event  (probably can settimeout it)
+   *
+   * @param   callback   An "errback"-style callback (`err`, `result`), called when complete
+   * @return  none
+   */
   oauth.authenticate = function (callback) {
-    if (oauth.authenticated()) return callback();
+    if (oauth.authenticated()) {
+      callback(null, oauth);
+      return;
+    }
 
     oauth.logout();
 
@@ -30,7 +69,7 @@ export function osmAuth(o) {
     var url =
       o.url +
       '/oauth2/authorize?' +
-      ohauth.qsString({
+      utilQsString({
         client_id: o.client_id,
         redirect_uri: o.redirect_uri,
         response_type: 'code',
@@ -47,10 +86,9 @@ export function osmAuth(o) {
           ['left', screen.width / 2 - w / 2],
           ['top', screen.height / 2 - h / 2],
         ]
-          .map(function (x) {
-            return x.join('=');
-          })
-          .join(',');
+        .map(function (x) { return x.join('='); })
+        .join(',');
+
       var popup = window.open('about:blank', 'oauth_window', settings);
       oauth.popupWindow = popup;
       popup.location = url;
@@ -65,21 +103,20 @@ export function osmAuth(o) {
     // Called by a function in the redirect URL page, in the popup window. The
     // window closes itself.
     window.authComplete = function (url) {
-      var params = ohauth.stringQs(url.split('?')[1]);
-      get_access_token(params.code);
+      var params = utilStringQs(url.split('?')[1]);
+      getAccessToken(params.code);
       delete window.authComplete;
     };
 
     // ## Getting an access token
-    //
     // The client requests an access token by authenticating with the
     // authorization server and presenting the `auth_code`, brought
     // in from a function call on a landing page popup.
-    function get_access_token(auth_code) {
+    function getAccessToken(auth_code) {
       var url =
         o.url +
         '/oauth2/token?' +
-        ohauth.qsString({
+        utilQsString({
           client_id: o.client_id,
           grant_type: 'authorization_code',
           code: auth_code,
@@ -89,43 +126,63 @@ export function osmAuth(o) {
 
       // The authorization server authenticates the client and validates
       // the authorization grant, and if valid, issues an access token.
-      ohauth.xhr('POST', url, null, null, {}, accessTokenDone);
+      oauth.rawxhr('POST', url, null, null, null, accessTokenDone);
       o.loading();
     }
 
     function accessTokenDone(err, xhr) {
       o.done();
-      if (err) return callback(err);
+      if (err) {
+        callback(err);
+        return;
+      }
       var access_token = JSON.parse(xhr.response);
-      token('access_token', access_token.access_token);
+      token('oauth2_access_token', access_token.access_token);
       callback(null, oauth);
     }
   };
 
+
+  /**
+   * bringPopupWindowToFront
+   *
+   * @return  `true` if it succeeded, `false` if not
+   */
   oauth.bringPopupWindowToFront = function () {
-    var brougtPopupToFront = false;
+    var broughtPopupToFront = false;
     try {
       // This may cause a cross-origin error:
       // `DOMException: Blocked a frame with origin "..." from accessing a cross-origin frame.`
       if (oauth.popupWindow && !oauth.popupWindow.closed) {
         oauth.popupWindow.focus();
-        brougtPopupToFront = true;
+        broughtPopupToFront = true;
       }
     } catch (err) {
       // Bringing popup window to front failed (probably because of the cross-origin error mentioned above)
     }
-    return brougtPopupToFront;
+    return broughtPopupToFront;
   };
 
+
+  /**
+   * bootstrapToken
+   * The authorization code is a temporary code that a client can exchange for an access token.
+   * If using this library in single-page mode, you'll need to call this once your application
+   * has an `auth_code` and wants to get an access_token.
+   *
+   * @param   auth_code  The OAuth2 `auth_code`
+   * @param   callback   An "errback"-style callback (`err`, `result`), called when complete
+   * @return  none
+   */
   oauth.bootstrapToken = function (auth_code, callback) {
     // ## Getting an access token
     // The client requests an access token by authenticating with the
     // authorization server and presenting the authorization_code
-    function get_access_token(auth_code) {
+    function getAccessToken(auth_code) {
       var url =
         o.url +
         '/oauth2/token?' +
-        ohauth.qsString({
+        utilQsString({
           client_id: o.client_id,
           grant_type: 'authorization_code',
           code: auth_code,
@@ -135,25 +192,39 @@ export function osmAuth(o) {
 
       // The authorization server authenticates the client and validates
       // the authorization grant, and if valid, issues an access token.
-      ohauth.xhr('POST', url, null, null, {}, accessTokenDone);
+      oauth.rawxhr('POST', url, null, null, null, accessTokenDone);
       o.loading();
     }
 
     function accessTokenDone(err, xhr) {
       o.done();
-      if (err) return callback(err);
+      if (err) {
+        callback(err);
+        return;
+      }
       var access_token = JSON.parse(xhr.response);
-      token('access_token', access_token.access_token);
+      token('oauth2_access_token', access_token.access_token);
       callback(null, oauth);
     }
 
-    get_access_token(auth_code);
+    getAccessToken(auth_code);
   };
 
-  // # xhr
-  //
-  // A single XMLHttpRequest wrapper that does authenticated calls if the
-  // user has logged in.
+
+  /**
+   * xhr
+   * A single `XMLHttpRequest` wrapper that does authenticated calls if the user has logged in.
+   * https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest
+   *
+   * @param    options
+   * @param    options.method   Passed to `xhr.open`  (e.g. 'GET', 'POST')
+   * @param    options.prefix   If `true` path contains a path, if `false` path contains the full url
+   * @param    options.path     The URL path (e.g. "/api/0.6/user/details") (or full url, if `prefix`=`false`)
+   * @param    options.content  Passed to `xhr.send`
+   * @param    options.headers  `Object` containing request headers
+   * @param    callback  An "errback"-style callback (`err`, `result`), called when complete
+   * @return  ?
+   */
   oauth.xhr = function (options, callback) {
     if (!oauth.authenticated()) {
       if (o.auto) {
@@ -167,36 +238,101 @@ export function osmAuth(o) {
     }
 
     function run() {
-      var url = options.prefix !== false ? o.url + options.path : options.path;
-      return ohauth.xhr(
+      var url = options.prefix !== false ? (o.url + options.path) : options.path;
+      return oauth.rawxhr(
         options.method,
         url,
-        token('access_token'),
+        token('oauth2_access_token'),
         options.content,
-        options.options,
+        options.headers,
         done
       );
     }
 
     function done(err, xhr) {
-      if (err) return callback(err);
-      else if (xhr.responseXML) return callback(err, xhr.responseXML);
-      else return callback(err, xhr.response);
+      if (err) {
+        callback(err);
+      } else if (xhr.responseXML) {
+        callback(err, xhr.responseXML);
+      } else {
+        callback(err, xhr.response);
+      }
     }
   };
 
-  // pre-authorize this object, if we can just get an access token from the start
-  oauth.preauth = function (c) {
-    if (!c) return;
-    if (c.access_token) token('access_token', c.access_token);
+
+  /**
+   * rawxhr
+   * Creates the XMLHttpRequest set up with a header and response handling
+   * https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest
+   *
+   * @param    method         Passed to `xhr.open`  (e.g. 'GET', 'POST')
+   * @param    url            Passed to `xhr.open`
+   * @param    access_token   OAuth2 bearer token
+   * @param    data           Passed to `xhr.send`
+   * @param    headers        `Object` containing request headers
+   * @param    callback       An "errback"-style callback (`err`, `result`), called when complete
+   * @return  `XMLHttpRequest`
+   */
+  oauth.rawxhr = function (method, url, access_token, data, headers, callback) {
+    headers = headers || { 'Content-Type': 'application/x-www-form-urlencoded' };
+
+    if (access_token) {
+      headers.Authorization = 'Bearer ' + access_token;
+    }
+
+    var xhr = new XMLHttpRequest();
+
+    xhr.onreadystatechange = function () {
+      if (4 === xhr.readyState && 0 !== xhr.status) {
+        if (/^20\d$/.test(xhr.status)) {   // a 20x status code - OK
+          callback(null, xhr);
+        } else {
+          callback(xhr, null);
+        }
+      }
+    };
+    xhr.onerror = function (e) {
+      callback(e, null);
+    };
+
+    xhr.open(method, url, true);
+    for (var h in headers) xhr.setRequestHeader(h, headers[h]);
+
+    xhr.send(data);
+    return xhr;
+  };
+
+
+  /**
+   * preauth
+   * Pre-authorize this object, if we already have access token from the start
+   *
+   * @param    val   `Object` containing `access_token` property
+   * @return  `self`
+   */
+  oauth.preauth = function (val) {
+    if (val && val.access_token) {
+      token('oauth2_access_token', val.access_token);
+    }
     return oauth;
   };
 
-  oauth.options = function (_) {
+
+  /**
+   * options  (getter / setter)
+   * If passed with no arguments, just return the options
+   * If passed an Object, set the options then attempt to pre-authorize
+   *
+   * @param    val?   Object containing options
+   * @return   current `options` (if getting), or `self` (if setting)
+   */
+  oauth.options = function (val) {
     if (!arguments.length) return o;
 
-    o = _;
+    o = val;
     o.url = o.url || 'https://www.openstreetmap.org';
+    o.auto = o.auto || false;
     o.singlepage = o.singlepage || false;
 
     // Optional loading and loading-done functions for nice UI feedback.
@@ -205,6 +341,9 @@ export function osmAuth(o) {
     o.done = o.done || function () {};
     return oauth.preauth(o);
   };
+
+
+  // Everything below here is initialization/setup code
 
   // get/set tokens. These are prefixed with the base URL so that `osm-auth`
   // can be used with multiple APIs and the keys in `localStorage`
@@ -224,7 +363,7 @@ export function osmAuth(o) {
     };
   }
 
-  // potentially pre-authorize
+  // Handle options and attempt to pre-authorize
   oauth.options(o);
 
   return oauth;

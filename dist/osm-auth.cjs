@@ -23,22 +23,27 @@ __export(osm_auth_exports, {
   osmAuth: () => osmAuth
 });
 module.exports = __toCommonJS(osm_auth_exports);
-var import_ohauth = __toESM(require("ohauth"), 1);
+var import_util = require("@id-sdk/util");
 var import_store = __toESM(require("store"), 1);
 function osmAuth(o) {
   var oauth = {};
   oauth.authenticated = function() {
-    return !!token("access_token");
+    return !!token("oauth2_access_token");
   };
   oauth.logout = function() {
-    token("access_token", "");
+    token("oauth2_access_token", "");
+    token("oauth_token", "");
+    token("oauth_token_secret", "");
+    token("oauth_request_token_secret", "");
     return oauth;
   };
   oauth.authenticate = function(callback) {
-    if (oauth.authenticated())
-      return callback();
+    if (oauth.authenticated()) {
+      callback(null, oauth);
+      return;
+    }
     oauth.logout();
-    var url = o.url + "/oauth2/authorize?" + import_ohauth.default.qsString({
+    var url = o.url + "/oauth2/authorize?" + (0, import_util.utilQsString)({
       client_id: o.client_id,
       redirect_uri: o.redirect_uri,
       response_type: "code",
@@ -65,62 +70,66 @@ function osmAuth(o) {
       }
     }
     window.authComplete = function(url2) {
-      var params = import_ohauth.default.stringQs(url2.split("?")[1]);
-      get_access_token(params.code);
+      var params = (0, import_util.utilStringQs)(url2.split("?")[1]);
+      getAccessToken(params.code);
       delete window.authComplete;
     };
-    function get_access_token(auth_code) {
-      var url2 = o.url + "/oauth2/token?" + import_ohauth.default.qsString({
+    function getAccessToken(auth_code) {
+      var url2 = o.url + "/oauth2/token?" + (0, import_util.utilQsString)({
         client_id: o.client_id,
         grant_type: "authorization_code",
         code: auth_code,
         redirect_uri: o.redirect_uri,
         client_secret: o.client_secret
       });
-      import_ohauth.default.xhr("POST", url2, null, null, {}, accessTokenDone);
+      oauth.rawxhr("POST", url2, null, null, null, accessTokenDone);
       o.loading();
     }
     function accessTokenDone(err, xhr) {
       o.done();
-      if (err)
-        return callback(err);
+      if (err) {
+        callback(err);
+        return;
+      }
       var access_token = JSON.parse(xhr.response);
-      token("access_token", access_token.access_token);
+      token("oauth2_access_token", access_token.access_token);
       callback(null, oauth);
     }
   };
   oauth.bringPopupWindowToFront = function() {
-    var brougtPopupToFront = false;
+    var broughtPopupToFront = false;
     try {
       if (oauth.popupWindow && !oauth.popupWindow.closed) {
         oauth.popupWindow.focus();
-        brougtPopupToFront = true;
+        broughtPopupToFront = true;
       }
     } catch (err) {
     }
-    return brougtPopupToFront;
+    return broughtPopupToFront;
   };
   oauth.bootstrapToken = function(auth_code, callback) {
-    function get_access_token(auth_code2) {
-      var url = o.url + "/oauth2/token?" + import_ohauth.default.qsString({
+    function getAccessToken(auth_code2) {
+      var url = o.url + "/oauth2/token?" + (0, import_util.utilQsString)({
         client_id: o.client_id,
         grant_type: "authorization_code",
         code: auth_code2,
         redirect_uri: o.redirect_uri,
         client_secret: o.client_secret
       });
-      import_ohauth.default.xhr("POST", url, null, null, {}, accessTokenDone);
+      oauth.rawxhr("POST", url, null, null, null, accessTokenDone);
       o.loading();
     }
     function accessTokenDone(err, xhr) {
       o.done();
-      if (err)
-        return callback(err);
+      if (err) {
+        callback(err);
+        return;
+      }
       var access_token = JSON.parse(xhr.response);
-      token("access_token", access_token.access_token);
+      token("oauth2_access_token", access_token.access_token);
       callback(null, oauth);
     }
-    get_access_token(auth_code);
+    getAccessToken(auth_code);
   };
   oauth.xhr = function(options, callback) {
     if (!oauth.authenticated()) {
@@ -135,29 +144,54 @@ function osmAuth(o) {
     }
     function run() {
       var url = options.prefix !== false ? o.url + options.path : options.path;
-      return import_ohauth.default.xhr(options.method, url, token("access_token"), options.content, options.options, done);
+      return oauth.rawxhr(options.method, url, token("oauth2_access_token"), options.content, options.headers, done);
     }
     function done(err, xhr) {
-      if (err)
-        return callback(err);
-      else if (xhr.responseXML)
-        return callback(err, xhr.responseXML);
-      else
-        return callback(err, xhr.response);
+      if (err) {
+        callback(err);
+      } else if (xhr.responseXML) {
+        callback(err, xhr.responseXML);
+      } else {
+        callback(err, xhr.response);
+      }
     }
   };
-  oauth.preauth = function(c) {
-    if (!c)
-      return;
-    if (c.access_token)
-      token("access_token", c.access_token);
+  oauth.rawxhr = function(method, url, access_token, data, headers, callback) {
+    headers = headers || { "Content-Type": "application/x-www-form-urlencoded" };
+    if (access_token) {
+      headers.Authorization = "Bearer " + access_token;
+    }
+    var xhr = new XMLHttpRequest();
+    xhr.onreadystatechange = function() {
+      if (xhr.readyState === 4 && xhr.status !== 0) {
+        if (/^20\d$/.test(xhr.status)) {
+          callback(null, xhr);
+        } else {
+          callback(xhr, null);
+        }
+      }
+    };
+    xhr.onerror = function(e) {
+      callback(e, null);
+    };
+    xhr.open(method, url, true);
+    for (var h in headers)
+      xhr.setRequestHeader(h, headers[h]);
+    xhr.send(data);
+    return xhr;
+  };
+  oauth.preauth = function(val) {
+    if (val && val.access_token) {
+      token("oauth2_access_token", val.access_token);
+    }
     return oauth;
   };
-  oauth.options = function(_) {
+  oauth.options = function(val) {
     if (!arguments.length)
       return o;
-    o = _;
+    o = val;
     o.url = o.url || "https://www.openstreetmap.org";
+    o.auto = o.auto || false;
     o.singlepage = o.singlepage || false;
     o.loading = o.loading || function() {
     };

@@ -30,12 +30,13 @@
     "build:cjs": "esbuild ./src/osm-auth.mjs --platform=node --format=cjs --sourcemap --outfile=./dist/osm-auth.cjs",
     "clean": "shx rm -rf dist",
     "lint": "eslint src/osm-auth.mjs test/*.js",
-    "start": "npx http-server",
+    "start": "npx http-server ./ -c-1",
     "tap": "c8 tap --reporter terse --no-cov test/*.js",
     "test": "run-s build lint tap"
   },
   "dependencies": {
-    "ohauth": "git+https://github.com/HelNershingThapa/ohauth.git",
+    "@id-sdk/util": "~3.0.0-pre.10",
+    "simple-oauth2": "^4.3.0",
     "store": "~2.0.12"
   },
   "devDependencies": {

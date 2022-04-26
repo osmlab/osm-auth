@@ -3,9 +3,7 @@
 
 ## osm-auth
 
-Easy authentication with [OpenStreetMap](http://www.openstreetmap.org/)
-over [OAuth 2.0](https://oauth.net/2/) with
-[CORS](http://en.wikipedia.org/wiki/Cross-origin_resource_sharing).
+Easy authentication with [OpenStreetMap](http://www.openstreetmap.org/) over [OAuth 2.0](https://oauth.net/2/).
 
 
 ### Demo
@@ -79,10 +77,10 @@ Register a new OAuth2.0 application on openstreetmap.org:
 
 ```js
 var auth = osmAuth({
-  client_id: "IEt_7zJAqJ5dUW_uTg29jPIba0-xB61k-OKyFVH6mAw",
-  client_secret: "1Z-TAOcQMFELTVSx0l36fJDb2LrymA8A4JnY243sZw0",
+  client_id: "JWXSAzNp64sIRMStTnkhMRaMxSR964V4sFgn3KUZNTA",
+  client_secret: "6umOXfkZqH5CVUtv6iDqN7k8o7mKbQvTrHvbDQH36hs",
   redirect_uri: "http://127.0.0.1:8080/land.html",
-  scope: "read_prefs write_api",
+  scope: "read_prefs",
   auto: true, // show a login form if the user is not authenticated and
   // you try to do a call
 });
@@ -108,10 +106,10 @@ document.getElementById("authenticate").onclick = function () {
 ```
 
     var auth = osmAuth({
-      client_id: "IEt_7zJAqJ5dUW_uTg29jPIba0-xB61k-OKyFVH6mAw",
-      client_secret: "1Z-TAOcQMFELTVSx0l36fJDb2LrymA8A4JnY243sZw0",
+      client_id: "JWXSAzNp64sIRMStTnkhMRaMxSR964V4sFgn3KUZNTA",
+      client_secret: "6umOXfkZqH5CVUtv6iDqN7k8o7mKbQvTrHvbDQH36hs",
       redirect_uri: "http://127.0.0.1:8080/land.html",
-      scope: "read_prefs write_api",
+      scope: "read_prefs",
       auto: true,
       singlepage: true, // Load the auth-window in the current window, with a redirect,
       landing: window.location.href // Come back to the current page
@@ -150,10 +148,10 @@ At a minimum, options must contain OAuth client ID, secret, redirect URI and sco
 
 ```
 {
-    client_id: "IEt_7zJAqJ5dUW_uTg29jPIba0-xB61k-OKyFVH6mAw",
-    client_secret: "1Z-TAOcQMFELTVSx0l36fJDb2LrymA8A4JnY243sZw0",
+    client_id: "JWXSAzNp64sIRMStTnkhMRaMxSR964V4sFgn3KUZNTA",
+    client_secret: "6umOXfkZqH5CVUtv6iDqN7k8o7mKbQvTrHvbDQH36hs",
     redirect_uri: "http://127.0.0.1:8080/land.html",
-    scope: "read_prefs write_api",
+    scope: "read_prefs",
 }
 ```
 
