@@ -3,9 +3,9 @@
 **osm-auth** is an open source project. You can submit bug reports, help out,
 or learn more by visiting our project page on GitHub:  :octocat: https://github.com/osmlab/osm-auth
 
-Please star our project on GitHub to show your support! :star:
+Please star our project on GitHub to show your support! ⭐️
 
-_Breaking changes, which may affect downstream projects, are marked with a_ :warning:
+_Breaking changes, which may affect downstream projects, are marked with a_ ⚠️
 
 <!--
 # A.B.C
@@ -14,6 +14,29 @@ _Breaking changes, which may affect downstream projects, are marked with a_ :war
 
 [#xx]: https://github.com/osmlab/osm-auth/issues/xx
 -->
+
+## 2.0.0  (OAuth v2.0)
+##### 2022-Apr-27
+* ⚠️ Breaking change:  This library is now focused on supporting OAuth 2.0 ([#77], [#93])
+* ⚠️ `xhr` and `rawxhr` options have changed slightly - check docs if you are using `options` with custom headers.
+* ⚠️  osm-auth is marked as `"type": "module"` now
+* ⚠️  Replace browserify with [esbuild](https://esbuild.github.io/) for super fast build speed. Package outputs are now:
+  * `"module": "./src/osm-auth.mjs"` - ESM, works with `import`
+  * `"main": "./dist/osm-auth.cjs"` - CJS bundle, works with `require()`
+  * `"browser": "./dist/osm-auth.iife.js"` - IIFE bundle, works in browser `<script>` tag
+  * Not testing on older environments like Internet Explorer or ES5.  No promises that this will work there.
+* Improve documentation around the use of all functions, some returns have changed ([#53])
+
+[#77]: https://github.com/osmlab/osm-auth/issues/77
+[#93]: https://github.com/osmlab/osm-auth/issues/93
+[#53]: https://github.com/osmlab/osm-auth/issues/53
+
+
+## 1.1.2  (OAuth v1.0a)
+##### 2022-Apr-26
+* Remove ecstatic, to avoid deprecation warnings
+* Test on Node 14, 16, 18
+
 
 ## 1.1.1
 ##### 2021-May-24
@@ -24,7 +47,7 @@ _Breaking changes, which may affect downstream projects, are marked with a_ :war
 
 ## 1.1.0
 ##### 2020-Jul-27
-* ([#67]) Improve interaction with popup window
+* Improve interaction with popup window ([#67])
 * Add function `bringPopupWindowToFront()`
 
 [#67]: https://github.com/osmlab/osm-auth/issues/67
@@ -32,14 +55,14 @@ _Breaking changes, which may affect downstream projects, are marked with a_ :war
 
 ## 1.0.2
 ##### 2017-Jun-25
-* ([#20]) Use HTTPS protocol by default for openstreetmap.org
+* Use HTTPS protocol by default for openstreetmap.org ([#20])
 
 [#20]: https://github.com/osmlab/osm-auth/issues/20
 
 
 ## 1.0.1
 ##### 2016-Oct-24
-* ([#17]) Bugfix: Properly sign requests that include a querystring
+* Bugfix: Properly sign requests that include a querystring ([#17])
 
 [#17]: https://github.com/osmlab/osm-auth/issues/17
 
@@ -47,7 +70,7 @@ _Breaking changes, which may affect downstream projects, are marked with a_ :war
 ## 1.0.0
 ##### 2016-Oct-23
 * Upgrade all dependencies
-* ([#16]) xhr should return an XMLHttpRequest
+* xhr should return an XMLHttpRequest ([#16])
 
 [#16]: https://github.com/osmlab/osm-auth/issues/16
 
@@ -69,7 +92,7 @@ _Breaking changes, which may affect downstream projects, are marked with a_ :war
 
 ## 0.2.6
 ##### 2014-Aug-20
-* ([#6]) Strip querystring as well
+* Strip querystring as well ([#6])
 * Reverse key and secret order to reflect osm.org ordering
 * Update ohauth dependency
 
@@ -78,14 +101,14 @@ _Breaking changes, which may affect downstream projects, are marked with a_ :war
 
 ## 0.2.5
 ##### 2013-Nov-21
-* ([#11]) Fix non-form-urlencoded POST parameters case
+* Fix non-form-urlencoded POST parameters case ([#11])
 
 [#11]: https://github.com/osmlab/osm-auth/issues/11
 
 
 ## 0.2.4
 ##### 2013-Nov-21
-* ([#10]) Better failure mode if localStorage is paranoid/full
+* Better failure mode if localStorage is paranoid/full ([#10])
 
 [#10]: https://github.com/osmlab/osm-auth/issues/10
 
@@ -108,14 +131,14 @@ _Breaking changes, which may affect downstream projects, are marked with a_ :war
 
 ## 0.2.0
 ##### 2013-Apr-17
-* ([#8]) :warning: Don't use a nested object for keys
+* :warning: Don't use a nested object for keys ([#8])
 
 [#8]: https://github.com/osmlab/osm-auth/issues/8
 
 
 ## 0.1.1
 ##### 2013-Apr-17
-* ([#7]) Update ohauth dependency
+* Update ohauth dependency ([#7])
 
 [#7]: https://github.com/osmlab/osm-auth/issues/7
 
