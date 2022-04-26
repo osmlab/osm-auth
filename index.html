@@ -2,134 +2,117 @@
 <html>
 
 <head>
-    <title>osm-auth</title>
-    <link rel="stylesheet" type="text/css" href="" />
-    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
-    <style>
-        body {
-            width: 300px;
-            margin: 40px auto;
-            font: normal 12px/20px "Helvetica Neue", sans-serif;
-        }
+  <title>osm-auth</title>
+  <link rel="stylesheet" type="text/css" href="" />
+  <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+  <style>
+    body {
+      width: 300px;
+      margin: 40px auto;
+      font: normal 12px/20px "Helvetica Neue", sans-serif;
+    }
 
-        button {
-            border-radius: 5px;
-            background: #54af29;
-            border-color: #2c7505;
-            color: #fff;
-            width: 145px;
-            font-size: 25px;
-            text-shadow: 1px 1px -1px #2c7505;
-            padding: 10px;
-        }
+    button {
+      border-radius: 5px;
+      background: #54af29;
+      border-color: #2c7505;
+      color: #fff;
+      width: 145px;
+      font-size: 25px;
+      text-shadow: 1px 1px -1px #2c7505;
+      padding: 10px;
+    }
 
-        button.done {
-            background: #2c7505;
-        }
+    button.done { background: #2c7505; }
+    button:hover { background: #2c7505; }
 
-        button:hover {
-            background: #2c7505;
-        }
+    #user {
+      display: none;
+      font: normal 15px/20px "Helvetica Neue", sans-serif;
+      text-align: center;
+    }
 
-        #user {
-            display: none;
-            font: normal 15px/20px "Helvetica Neue", sans-serif;
-            text-align: center;
-        }
+    h1, h2 { margin: 10px 0; }
+    p { text-align: center; color: #666; }
 
-        h1,
-        h2 {
-            margin: 10px 0;
-        }
-
-        p {
-            text-align: center;
-            color: #666;
-        }
-    </style>
+  </style>
 </head>
 
 <body>
-    <button id="authenticate">login</button>
-    <button id="logout">logout</button>
-    <div id="user">
-        <h1 id="display_name"></h1>
-        <h2 id="id"></h2>
-        Changesets: <span id="count"></span>
-    </div>
-    <p>
-        <a href="https://github.com/osmlab/osm-auth">osm-auth</a> is a minimal example of authenticating and interacting with the
-        <a href="http://www.openstreetmap.org/">openstreetmap</a> API.
-    </p>
-    <script src="dist/osm-auth.iife.js"></script>
-    <script>
-        var auth = osmAuth.osmAuth({
-            client_id: "JWXSAzNp64sIRMStTnkhMRaMxSR964V4sFgn3KUZNTA",
-            client_secret: "6umOXfkZqH5CVUtv6iDqN7k8o7mKbQvTrHvbDQH36hs",
-            scope: "read_prefs",
-            redirect_uri: "http://127.0.0.1:8080/land.html"
+  <button id="authenticate">login</button>
+  <button id="logout">logout</button>
+  <div id="user">
+    <h1 id="display_name"></h1>
+    <h2 id="id"></h2>
+    Changesets: <span id="count"></span>
+  </div>
+  <p>
+    <a href="https://github.com/osmlab/osm-auth">osm-auth</a> is a minimal example of authenticating and interacting with the
+    <a href="http://www.openstreetmap.org/">openstreetmap</a> API.
+  </p>
+  <script src="dist/osm-auth.iife.js"></script>
+  <script>
+    var auth = osmAuth.osmAuth({
+      client_id: "JWXSAzNp64sIRMStTnkhMRaMxSR964V4sFgn3KUZNTA",
+      client_secret: "6umOXfkZqH5CVUtv6iDqN7k8o7mKbQvTrHvbDQH36hs",
+      scope: "read_prefs",
+      redirect_uri: "http://127.0.0.1:8080/land.html"
+    });
+
+    function done(err, res) {
+      if (err) {
+        document.getElementById("user").innerHTML = "Error! Try clearing your browser cache";
+        document.getElementById("user").style.display = "block";
+        return;
+      }
+      var u = res.getElementsByTagName("user")[0];
+      var changesets = res.getElementsByTagName("changesets")[0];
+      var o = {
+        display_name: u.getAttribute("display_name"),
+        id: u.getAttribute("id"),
+        count: changesets.getAttribute("count"),
+      };
+      for (var k in o) {
+        document.getElementById(k).innerHTML = o[k];
+      }
+      document.getElementById("user").style.display = "block";
+    }
+
+    document.getElementById("authenticate").onclick = function() {
+      if (!auth.bringPopupWindowToFront()) {
+        auth.authenticate(function() {
+          update();
         });
+      }
+    };
 
-        function done(err, res) {
-            if (err) {
-                document.getElementById("user").innerHTML =
-                    "error! try clearing your browser cache";
-                document.getElementById("user").style.display = "block";
-                return;
-            }
-            var u = res.getElementsByTagName("user")[0];
-            var changesets = res.getElementsByTagName("changesets")[0];
-            var o = {
-                display_name: u.getAttribute("display_name"),
-                id: u.getAttribute("id"),
-                count: changesets.getAttribute("count"),
-            };
-            for (var k in o) {
-                document.getElementById(k).innerHTML = o[k];
-            }
-            document.getElementById("user").style.display = "block";
-        }
+    function showDetails() {
+      auth.xhr({ method: "GET", path: "/api/0.6/user/details" }, done);
+    }
 
-        document.getElementById("authenticate").onclick = function() {
-            if (!auth.bringPopupWindowToFront()) {
-                auth.authenticate(function() {
-                    update();
-                });
-            }
-        };
+    function hideDetails() {
+      document.getElementById("user").style.display = "none";
+    }
 
-        function showDetails() {
-            auth.xhr({
-                    method: "GET",
-                    path: "/api/0.6/user/details",
-                },
-                done
-            );
-        }
+    document.getElementById("logout").onclick = function() {
+      auth.logout();
+      update();
+    };
 
-        function hideDetails() {
-            document.getElementById("user").style.display = "none";
-        }
+    function update() {
+      if (auth.authenticated()) {
+        document.getElementById("authenticate").className = "done";
+        document.getElementById("logout").className = "";
+        showDetails();
+      } else {
+        document.getElementById("authenticate").className = "";
+        document.getElementById("logout").className = "done";
+        hideDetails();
+      }
+    }
 
-        document.getElementById("logout").onclick = function() {
-            auth.logout();
-            update();
-        };
-
-        function update() {
-            if (auth.authenticated()) {
-                document.getElementById("authenticate").className = "done";
-                document.getElementById("logout").className = "";
-                showDetails();
-            } else {
-                document.getElementById("authenticate").className = "";
-                document.getElementById("logout").className = "done";
-                hideDetails();
-            }
-        }
-
-        update();
-    </script>
+    update();
+  </script>
 </body>
 
 </html>

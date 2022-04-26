@@ -4,7 +4,7 @@ import store from 'store';
 
 /**
  * osmAuth
- * Easy authentication with OpenStreetMap over OAuth2.
+ * Easy authentication with OpenStreetMap over OAuth 2.0.
  * @module
  *
  * @param    o   `Object` containing options:
@@ -145,7 +145,7 @@ export function osmAuth(o) {
 
   /**
    * bringPopupWindowToFront
-   *
+   * Tries to bring an existing authentication popup to the front.
    * @return  `true` if it succeeded, `false` if not
    */
   oauth.bringPopupWindowToFront = function () {
@@ -213,28 +213,29 @@ export function osmAuth(o) {
 
   /**
    * xhr
-   * A single `XMLHttpRequest` wrapper that does authenticated calls if the user has logged in.
+   * A `XMLHttpRequest` wrapper that does authenticated calls if the user has logged in.
    * https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest
    *
-   * @param    options
-   * @param    options.method   Passed to `xhr.open`  (e.g. 'GET', 'POST')
-   * @param    options.prefix   If `true` path contains a path, if `false` path contains the full url
-   * @param    options.path     The URL path (e.g. "/api/0.6/user/details") (or full url, if `prefix`=`false`)
-   * @param    options.content  Passed to `xhr.send`
-   * @param    options.headers  `Object` containing request headers
-   * @param    callback  An "errback"-style callback (`err`, `result`), called when complete
-   * @return  ?
+   * @param   options
+   * @param   options.method   Passed to `xhr.open`  (e.g. 'GET', 'POST')
+   * @param   options.prefix   If `true` path contains a path, if `false` path contains the full url
+   * @param   options.path     The URL path (e.g. "/api/0.6/user/details") (or full url, if `prefix`=`false`)
+   * @param   options.content  Passed to `xhr.send`
+   * @param   options.headers  `Object` containing request headers
+   * @param   callback  An "errback"-style callback (`err`, `result`), called when complete
+   * @return  `XMLHttpRequest` if authenticated, otherwise `null`
    */
   oauth.xhr = function (options, callback) {
-    if (!oauth.authenticated()) {
+    if (oauth.authenticated()) {
+      return run();
+    } else {
       if (o.auto) {
-        return oauth.authenticate(run);
+        oauth.authenticate(run);
+        return;
       } else {
         callback('not authenticated', null);
         return;
       }
-    } else {
-      return run();
     }
 
     function run() {
@@ -324,8 +325,8 @@ export function osmAuth(o) {
    * If passed with no arguments, just return the options
    * If passed an Object, set the options then attempt to pre-authorize
    *
-   * @param    val?   Object containing options
-   * @return   current `options` (if getting), or `self` (if setting)
+   * @param   val?   Object containing options
+   * @return  current `options` (if getting), or `self` (if setting)
    */
   oauth.options = function (val) {
     if (!arguments.length) return o;

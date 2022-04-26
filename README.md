@@ -1,14 +1,14 @@
 [![build](https://github.com/osmlab/osm-auth/workflows/build/badge.svg)](https://github.com/osmlab/osm-auth/actions?query=workflow%3A%22build%22)
 [![npm version](https://badge.fury.io/js/osm-auth.svg)](https://badge.fury.io/js/osm-auth)
 
-## osm-auth
+# osm-auth
 
 Easy authentication with [OpenStreetMap](http://www.openstreetmap.org/) over [OAuth 2.0](https://oauth.net/2/).
 
 
-### Demo
+## Demo
 
-Try it out now at: http://osmlab.github.io/osm-auth/
+Try it out now at: https://osmlab.github.io/osm-auth/
 
 Or you can run the demo locally by cloning this project, then run:
 
@@ -55,14 +55,22 @@ When you load this file in a `<script>` tag, you'll get a `osmAuth` global to us
 </script>
 ```
 
-
 &nbsp;
 
 
 **Requires `land.html` to be accessible, or a page that does the same thing -
 calls an auth complete function - to be available.**
 
-### Getting Keys
+
+### Support
+
+This project is tested in supported node versions and modern browsers.
+We attempt to use JavaScript syntax that will work in legacy environments like ES5 or Internet Explorer, but offer no guarantee that it will work.
+If you're targeting an environment like this, you're probably already building your own bundle with something like [Babel](https://babeljs.io/docs/en/index.html).
+
+
+## Registering an application
+See: https://wiki.openstreetmap.org/wiki/OAuth#OAuth_2.0_2
 
 Register a new OAuth2.0 application on openstreetmap.org:
 
@@ -73,6 +81,12 @@ Register a new OAuth2.0 application on openstreetmap.org:
 5. Fill in the form & submit
 6. Copy & Paste the client ID, secret, redirect URI and scope(s) into the osmAuth config object as below
 
+👉 Important:
+- Remember to copy the `client_secret` after setting up your application. It won't be available later.
+- The "Redirect URIs" are URIs that OSM is allowed to redirect the user back to.  You can supply multiple Redirect URIs separated by spaces, and change them later.
+- Redirect URIs must use `https`, except for `127.0.0.1`, which may use `http`
+
+
 ### Example
 
 ```js
@@ -81,30 +95,24 @@ var auth = osmAuth({
   client_secret: "6umOXfkZqH5CVUtv6iDqN7k8o7mKbQvTrHvbDQH36hs",
   redirect_uri: "http://127.0.0.1:8080/land.html",
   scope: "read_prefs",
-  auto: true, // show a login form if the user is not authenticated and
-  // you try to do a call
+  auto: true  // show a login form if the user is not authenticated and you try to do a call
 });
 
 document.getElementById("authenticate").onclick = function () {
   // Signed method call - since `auto` is true above, this will
   // automatically start an authentication process if the user isn't
   // authenticated yet.
-  auth.xhr(
-    {
-      method: "GET",
-      path: "/api/0.6/user/details",
-    },
-    function (err, details) {
-      // details is an XML DOM of user details
+  auth.xhr({ method: "GET", path: "/api/0.6/user/details" },
+    function (err, result) {
+      // result is an XML DOM containing the user details
     }
   );
 };
 ```
 
-#### Example with single-page
+### Example with single-page
 
-```
-
+```js
     var auth = osmAuth({
       client_id: "JWXSAzNp64sIRMStTnkhMRaMxSR964V4sFgn3KUZNTA",
       client_secret: "6umOXfkZqH5CVUtv6iDqN7k8o7mKbQvTrHvbDQH36hs",
@@ -117,81 +125,124 @@ document.getElementById("authenticate").onclick = function () {
 
     var urlParams = new URLSearchParams(window.location.search);
     if(urlParams.has('code')){
-        // The authorization code passed via the URL has to be passed into 'auth.bootstrapToken'. 
-        // The callback is triggered when the final roundtrip is done
-         auth.bootstrapToken(urlParams.get('code'),
-                (error) => {
-                    if(error !== null){
-                        console.log("Something is wrong: ", error);
-                        return;
-                    }
-
-                    /* Do authenticated stuff here*/
-                }, this.auth);
+      // The authorization code passed via the URL has to be passed into 'auth.bootstrapToken'.
+      // The callback is triggered when the final roundtrip is done
+       auth.bootstrapToken(urlParams.get('code'), (error) => {
+        if(error !== null){
+          console.log("Something is wrong: ", error);
+          return;
+        }
+        /* Do authenticated stuff here*/
+      }, this.auth);
     } else {
-
-        // Attempt to do something authenticated to trigger authentication
-
+      // Attempt to do something authenticated to trigger authentication
     }
 
 ```
 
-### Support
 
-[CORS-supporting browsers](http://caniuse.com/#feat=cors)
 
-### API
+# API
 
-`.osmAuth(options)`
+## `.osmAuth(options)`
 
-At a minimum, options must contain OAuth client ID, secret, redirect URI and scope(s):
+Constructs an `osmAuth` instance.
+At a minimum, `options` must contain OAuth2 client ID, secret, redirect URI, and scope(s):
 
 ```
 {
-    client_id: "JWXSAzNp64sIRMStTnkhMRaMxSR964V4sFgn3KUZNTA",
-    client_secret: "6umOXfkZqH5CVUtv6iDqN7k8o7mKbQvTrHvbDQH36hs",
-    redirect_uri: "http://127.0.0.1:8080/land.html",
-    scope: "read_prefs",
+  client_id: "JWXSAzNp64sIRMStTnkhMRaMxSR964V4sFgn3KUZNTA",
+  client_secret: "6umOXfkZqH5CVUtv6iDqN7k8o7mKbQvTrHvbDQH36hs",
+  redirect_uri: "http://127.0.0.1:8080/land.html",
+  scope: "read_prefs"
 }
 ```
 
 Additional options are:
 
-- `url` for a base url (default: "https://www.openstreetmap.org")
-- `landing` for a landing page name (default: "land.html")
-- `loading`: a function called when auth-related xhr calls start
-- `done`: a function called when auth-related xhr calls end
-- `singlepage`: use full-page redirection instead of a popup for mobile
+ - `access_token` - Can pre-authorize with an OAuth2 bearer token if you have one
+ - `url` - A base url (default: "https://www.openstreetmap.org")
+ - `auto` - If `true`, attempt to authenticate automatically when calling `.xhr()` (default: `false`)
+ - `singlepage` - If `true`, use page redirection instead of a popup (default: `false`)
+ - `loading` - Function called when auth-related xhr calls start
+ - `done` - Function called when auth-related xhr calls end
 
-`.logout()`
 
-`.authenticated()`: am I authenticated?
+## `.logout()`
 
-`.authenticate(callback)`
+Removes any stored authentication tokens (legacy OAuth1 tokens too)
+Returns: `self`
 
-Tries to authenticate. Calls callback if successful.
 
-`.bringPopupWindowToFront()`
+## `.authenticated()`
 
-Tries to bring an existing authentication popup to the front. Returns `true` on success or `false` if there is no
-authentication popup or if it couldn't be brought to the front (e.g. because of cross-origin restrictions).
+Test whether the user is currently authenticated
+Returns: `true` if authenticated, `false` if not
 
-`.xhr(options, callback)`
 
-[XMLHttpRequest](http://en.wikipedia.org/wiki/XMLHttpRequest).
-Main options are `url` and `method`.
+## `.authenticate(callback)`
 
-`.options(options)`
+First logs out, then runs the authentiation flow, finally calls the callback.
+Param:   `callback`  An "errback"-style callback (`err`, `result`), called when complete
+Returns:  none
 
-Set new options.
 
-### Based on
+## `.bringPopupWindowToFront()`
 
-Uses [ohauth](https://github.com/osmlab/ohauth) and
-[store.js](https://github.com/marcuswestin/store.js) behind the scenes.
+Tries to bring an existing authentication popup to the front.
+Returns: `true` on success or `false` if there is no authentication popup or if it couldn't be brought to the front (e.g. because of cross-origin restrictions).
 
-Built for and used by OpenStreetMap's [iD editor](https://github.com/openstreetmap/iD).
 
-### See Also
+## `.bootstrapToken(auth_code, callback)`
 
-- [OAuth in Javascript](http://mapbox.com/osmdev/2013/01/15/oauth-in-javascript/)
+The authorization code is a temporary code that a client can exchange for an access token. If using this library in single-page mode, you'll need to call this once your application has an `auth_code` and wants to get an access_token.
+
+Param:  `auth_code`  The OAuth2 `auth_code`
+Param:  `callback`   An "errback"-style callback (`err`, `result`), called when complete
+Returns:  none
+
+
+## `.xhr(options, callback)`
+
+A `XMLHttpRequest` wrapper that does authenticated calls if the user has logged in.
+See: https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest
+
+Param: `options`:
+  `options.method`   Passed to `xhr.open`  (e.g. 'GET', 'POST')
+  `options.prefix`   If `true` path contains a path, if `false` path contains the full url
+  `options.path`     The URL path (e.g. "/api/0.6/user/details") (or full url, if `prefix`=`false`)
+  `options.content`  Passed to `xhr.send`
+  `options.headers`  optional `Object` containing request headers
+Param: `callback`  An "errback"-style callback (`err`, `result`), called when complete
+Return: `XMLHttpRequest` if authenticated, otherwise `null`
+
+
+## `rawxhr(method, url, access_token, data, headers, callback)`
+
+Creates the XMLHttpRequest set up with a header and response handling.
+See: https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest
+
+Param:  `method`         Passed to `xhr.open`  (e.g. 'GET', 'POST')
+Param:  `url`            Passed to `xhr.open`
+Param:  `access_token`   The OAuth2 bearer token
+Param:  `data`           Passed to `xhr.send`
+Param:  `headers`        `Object` containing request headers
+Param:  `callback`       An "errback"-style callback (`err`, `result`), called when complete
+Return: `XMLHttpRequest`
+
+
+## `.preauth(val)`
+
+Pre-authorize this object, if we already have the bearer token from the start.
+Param:   `val`   `Object` containing `access_token` property
+Return:  `self`
+
+
+## `.options(options)`
+
+Options  (getter / setter)
+ If passed with no arguments, just return the options
+ If passed an Object, set the options then attempt to pre-authorize
+
+Param:  `val?`   Object containing options
+Return:  current `options` (if getting), or `self` (if setting)

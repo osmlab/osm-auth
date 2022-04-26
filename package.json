@@ -3,7 +3,7 @@
   "version": "2.0.0",
   "license": "ISC",
   "repository": "github:osmlab/osm-auth",
-  "description": "A usable example of JavaScript OAuth with OpenStreetMap",
+  "description": "A usable example of JavaScript OAuth 2.0 with OpenStreetMap",
   "keywords": [
     "oauth",
     "openstreetmap",
@@ -26,7 +26,7 @@
   "scripts": {
     "all": "run-s clean test",
     "build": "run-p build:**",
-    "build:browser": "esbuild ./src/osm-auth.mjs --platform=browser --format=iife --global-name=osmAuth --bundle --sourcemap --outfile=./dist/osm-auth.iife.js",
+    "build:browser": "esbuild ./src/osm-auth.mjs --platform=browser --format=iife --global-name=osmAuth --bundle --minify --external:diacritics --external:aes-js --sourcemap --outfile=./dist/osm-auth.iife.js",
     "build:cjs": "esbuild ./src/osm-auth.mjs --platform=node --format=cjs --sourcemap --outfile=./dist/osm-auth.cjs",
     "clean": "shx rm -rf dist",
     "lint": "eslint src/osm-auth.mjs test/*.js",
@@ -36,7 +36,6 @@
   },
   "dependencies": {
     "@id-sdk/util": "~3.0.0-pre.10",
-    "simple-oauth2": "^4.3.0",
     "store": "~2.0.12"
   },
   "devDependencies": {

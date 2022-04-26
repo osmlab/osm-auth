@@ -132,15 +132,16 @@ function osmAuth(o) {
     getAccessToken(auth_code);
   };
   oauth.xhr = function(options, callback) {
-    if (!oauth.authenticated()) {
+    if (oauth.authenticated()) {
+      return run();
+    } else {
       if (o.auto) {
-        return oauth.authenticate(run);
+        oauth.authenticate(run);
+        return;
       } else {
         callback("not authenticated", null);
         return;
       }
-    } else {
-      return run();
     }
     function run() {
       var url = options.prefix !== false ? o.url + options.path : options.path;
