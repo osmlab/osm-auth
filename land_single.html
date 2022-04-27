@@ -2,17 +2,21 @@
 <html><head></head>
   <body>
     <script>
-      function stringQs(str) {
-        return str.split('&')
-          .filter(function (pair) { return pair !== ''; })
-          .reduce(function(obj, pair) {
-            var parts = pair.split('=');
-            obj[decodeURIComponent(parts[0])] = (null === parts[1]) ? '' : decodeURIComponent(parts[1]);
-            return obj;
-          }, {});
+      function utilStringQs(str) {
+        var i = 0; // advance past any leading '?' or '#' characters
+        while (i < str.length && (str[i] === '?' || str[i] === '#')) i++;
+        str = str.slice(i);
+
+        return str.split('&').reduce(function(obj, pair) {
+          var parts = pair.split('=');
+          if (parts.length === 2) {
+            obj[parts[0]] = decodeURIComponent(parts[1]);
+          }
+          return obj;
+        }, {});
       }
 
-      var oauth_token = stringQs(window.location.href.split('?')[1]).oauth_token;
+      var oauth_token = utilStringQs(window.location.href.split('?')[1]).oauth_token;
       location.href = '/?oauth_token=' + oauth_token;
     </script>
   </body>

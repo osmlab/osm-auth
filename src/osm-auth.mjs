@@ -1,4 +1,3 @@
-import { utilQsString, utilStringQs } from '@id-sdk/util';
 import store from 'store';
 
 
@@ -368,4 +367,37 @@ export function osmAuth(o) {
   oauth.options(o);
 
   return oauth;
+}
+
+
+/** Transforms object into query string
+ * @param obj
+ * @param noencode
+ * @returns query string
+ */
+function utilQsString(obj) {
+  return Object.keys(obj)
+    .sort()
+    .map(function(key) {
+      return (encodeURIComponent(key) + '=' + encodeURIComponent(obj[key]));
+    })
+    .join('&');
+}
+
+/** Transforms query string into object
+ * @param str
+ * @returns object
+ */
+function utilStringQs(str) {
+  var i = 0; // advance past any leading '?' or '#' characters
+  while (i < str.length && (str[i] === '?' || str[i] === '#')) i++;
+  str = str.slice(i);
+
+  return str.split('&').reduce(function(obj, pair) {
+    var parts = pair.split('=');
+    if (parts.length === 2) {
+      obj[parts[0]] = decodeURIComponent(parts[1]);
+    }
+    return obj;
+  }, {});
 }

@@ -23,7 +23,6 @@ __export(osm_auth_exports, {
   osmAuth: () => osmAuth
 });
 module.exports = __toCommonJS(osm_auth_exports);
-var import_util = require("@id-sdk/util");
 var import_store = __toESM(require("store"), 1);
 function osmAuth(o) {
   var oauth = {};
@@ -43,7 +42,7 @@ function osmAuth(o) {
       return;
     }
     oauth.logout();
-    var url = o.url + "/oauth2/authorize?" + (0, import_util.utilQsString)({
+    var url = o.url + "/oauth2/authorize?" + utilQsString({
       client_id: o.client_id,
       redirect_uri: o.redirect_uri,
       response_type: "code",
@@ -70,12 +69,12 @@ function osmAuth(o) {
       }
     }
     window.authComplete = function(url2) {
-      var params = (0, import_util.utilStringQs)(url2.split("?")[1]);
+      var params = utilStringQs(url2.split("?")[1]);
       getAccessToken(params.code);
       delete window.authComplete;
     };
     function getAccessToken(auth_code) {
-      var url2 = o.url + "/oauth2/token?" + (0, import_util.utilQsString)({
+      var url2 = o.url + "/oauth2/token?" + utilQsString({
         client_id: o.client_id,
         grant_type: "authorization_code",
         code: auth_code,
@@ -109,7 +108,7 @@ function osmAuth(o) {
   };
   oauth.bootstrapToken = function(auth_code, callback) {
     function getAccessToken(auth_code2) {
-      var url = o.url + "/oauth2/token?" + (0, import_util.utilQsString)({
+      var url = o.url + "/oauth2/token?" + utilQsString({
         client_id: o.client_id,
         grant_type: "authorization_code",
         code: auth_code2,
@@ -219,6 +218,24 @@ function osmAuth(o) {
   }
   oauth.options(o);
   return oauth;
+}
+function utilQsString(obj) {
+  return Object.keys(obj).sort().map(function(key) {
+    return encodeURIComponent(key) + "=" + encodeURIComponent(obj[key]);
+  }).join("&");
+}
+function utilStringQs(str) {
+  var i = 0;
+  while (i < str.length && (str[i] === "?" || str[i] === "#"))
+    i++;
+  str = str.slice(i);
+  return str.split("&").reduce(function(obj, pair) {
+    var parts = pair.split("=");
+    if (parts.length === 2) {
+      obj[parts[0]] = decodeURIComponent(parts[1]);
+    }
+    return obj;
+  }, {});
 }
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
