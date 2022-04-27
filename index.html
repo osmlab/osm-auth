@@ -52,11 +52,12 @@
   </p>
   <script src="dist/osm-auth.iife.js"></script>
   <script>
+    var redirectPath = window.location.origin + window.location.pathname;
     var auth = osmAuth.osmAuth({
       client_id: "JWXSAzNp64sIRMStTnkhMRaMxSR964V4sFgn3KUZNTA",
       client_secret: "6umOXfkZqH5CVUtv6iDqN7k8o7mKbQvTrHvbDQH36hs",
       scope: "read_prefs",
-      redirect_uri: "http://127.0.0.1:8080/land.html"
+      redirect_uri: redirectPath + "land.html"
     });
 
     function done(err, res) {

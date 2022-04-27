@@ -93,10 +93,11 @@ Register a new OAuth2.0 application on openstreetmap.org:
 ### Example
 
 ```js
+var redirectPath = window.location.origin + window.location.pathname;
 var auth = osmAuth({
   client_id: "JWXSAzNp64sIRMStTnkhMRaMxSR964V4sFgn3KUZNTA",
   client_secret: "6umOXfkZqH5CVUtv6iDqN7k8o7mKbQvTrHvbDQH36hs",
-  redirect_uri: "http://127.0.0.1:8080/land.html",
+  redirect_uri: redirectPath + "land.html",
   scope: "read_prefs",
   auto: true  // show a login form if the user is not authenticated and you try to do a call
 });
@@ -114,36 +115,7 @@ document.getElementById("authenticate").onclick = function () {
 ```
 
 ### Example with single-page
-
-```js
-    var auth = osmAuth({
-      client_id: "JWXSAzNp64sIRMStTnkhMRaMxSR964V4sFgn3KUZNTA",
-      client_secret: "6umOXfkZqH5CVUtv6iDqN7k8o7mKbQvTrHvbDQH36hs",
-      redirect_uri: "http://127.0.0.1:8080/land.html",
-      scope: "read_prefs",
-      auto: true,
-      singlepage: true, // Load the auth-window in the current window, with a redirect,
-      landing: window.location.href // Come back to the current page
-    });
-
-    var urlParams = new URLSearchParams(window.location.search);
-    if(urlParams.has('code')){
-      // The authorization code passed via the URL has to be passed into 'auth.bootstrapToken'.
-      // The callback is triggered when the final roundtrip is done
-       auth.bootstrapToken(urlParams.get('code'), (error) => {
-        if(error !== null){
-          console.log("Something is wrong: ", error);
-          return;
-        }
-        /* Do authenticated stuff here*/
-      }, this.auth);
-    } else {
-      // Attempt to do something authenticated to trigger authentication
-    }
-
-```
-
-
+coming soon
 
 # API
 
@@ -153,10 +125,11 @@ Constructs an `osmAuth` instance.<br/>
 At a minimum, `options` must contain OAuth2 client ID, secret, redirect URI, and scope(s):
 
 ```js
+var redirectPath = window.location.origin + window.location.pathname;
 {
   client_id: "JWXSAzNp64sIRMStTnkhMRaMxSR964V4sFgn3KUZNTA",
   client_secret: "6umOXfkZqH5CVUtv6iDqN7k8o7mKbQvTrHvbDQH36hs",
-  redirect_uri: "http://127.0.0.1:8080/land.html",
+  redirect_uri: redirectPath + "land.html",
   scope: "read_prefs"
 }
 ```
