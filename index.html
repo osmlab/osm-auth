@@ -7,7 +7,7 @@
   <meta http-equiv="content-type" content="text/html; charset=utf-8" />
   <style>
     body {
-      width: 300px;
+      max-width: 400px;
       margin: 40px auto;
       font: normal 12px/20px "Helvetica Neue", sans-serif;
     }
@@ -18,6 +18,7 @@
       border-color: #2c7505;
       color: #fff;
       width: 145px;
+      margin: 0 10px;
       font-size: 25px;
       text-shadow: 1px 1px -1px #2c7505;
       padding: 10px;
@@ -26,30 +27,80 @@
     button.done { background: #2c7505; }
     button:hover { background: #2c7505; }
 
+    #buttons {
+      display: flex;
+      flex-flow: row nowrap;
+      justify-content: center;
+      margin-top: 20px;
+    }
+
+    h1 { margin: 5px 0 0 0; }
+    h2 { margin: 10px 0 0 0; }
+    p  { margin: 5px 0 0 0; }
+
     #user {
+      display: flex;
+      flex-flow: row nowrap;
+      justify-content: flex-start;
+      margin-top: 20px;
+      background: #ececec;
+      padding: 1px 10px;
+      border-radius: 8px;
+    }
+
+    #error {
       display: none;
-      font: normal 15px/20px "Helvetica Neue", sans-serif;
+      margin-top: 20px;
       text-align: center;
     }
 
-    h1, h2 { margin: 10px 0; }
-    p { text-align: center; color: #666; }
+    #userdetail, #useravatar {
+      padding: 10px;
+    }
+
+    #avatar {
+      height: 80px;
+      width: 80px;
+      object-fit: cover;
+      border: 1px solid #ccc;
+      border-radius: 40px;
+    }
+
+    footer {
+      margin-top: 20px;
+      text-align: center;
+      color: #666;
+    }
+    footer img {
+      vertical-align: middle;
+      padding: 0 8px;
+    }
 
   </style>
 </head>
 
 <body>
-  <button id="authenticate">login</button>
-  <button id="logout">logout</button>
-  <div id="user">
-    <h1 id="display_name"></h1>
-    <h2 id="id"></h2>
-    Changesets: <span id="count"></span>
+  <div id="buttons">
+    <button id="authenticate">login</button>
+    <button id="logout">logout</button>
   </div>
-  <p>
-    <a href="https://github.com/osmlab/osm-auth">osm-auth</a> is a minimal example of authenticating and interacting with the
-    <a href="http://www.openstreetmap.org/">openstreetmap</a> API.
-  </p>
+  <div id="error"></div>
+  <div id="user">
+    <div id="useravatar">
+      <img id="avatar" alt="user" src="docs/icon-avatar.svg"/>
+    </div>
+    <div id="userdetail">
+      <h1 id="display_name">username</h1>
+      <h2>User ID: <span id="userid"></span></h2>
+      <p>Changesets: <span id="count"></span></p>
+    </div>
+  </div>
+  <footer>
+    <a href="https://github.com/osmlab/osm-auth">
+      <img width="20" height="20" src="docs/GitHub-Mark-32px.png"/>osm-auth</a> is a minimal example of authenticating and interacting with the
+    <a href="http://www.openstreetmap.org/">OpenStreetMap API</a> over OAuth 2.0.
+  </footer>
+
   <script src="dist/osm-auth.iife.js"></script>
   <script>
     var redirectPath = window.location.origin + window.location.pathname;
@@ -60,24 +111,31 @@
       redirect_uri: redirectPath + "land.html"
     });
 
-    function done(err, res) {
+
+    function done(err, result) {
       if (err) {
-        document.getElementById("user").innerHTML = "Error! Try clearing your browser cache";
-        document.getElementById("user").style.display = "block";
+        document.getElementById("error").textContent = "Error! Try clearing your browser cache.";
+        document.getElementById("user").style.display = "none";
+        document.getElementById("error").style.display = "block";
         return;
       }
-      var u = res.getElementsByTagName("user")[0];
-      var changesets = res.getElementsByTagName("changesets")[0];
-      var o = {
-        display_name: u.getAttribute("display_name"),
-        id: u.getAttribute("id"),
-        count: changesets.getAttribute("count"),
-      };
-      for (var k in o) {
-        document.getElementById(k).innerHTML = o[k];
+
+      var user = result.getElementsByTagName("user")[0];
+      var changesets = result.getElementsByTagName("changesets")[0];
+      var avatar = result.getElementsByTagName("img")[0];
+
+      document.getElementById("display_name").textContent = user.getAttribute("display_name");
+      document.getElementById("avatar").alt = user.getAttribute("display_name");
+      document.getElementById("userid").textContent = user.getAttribute("id");
+      document.getElementById("count").textContent = changesets.getAttribute("count");
+      if (avatar) {
+        document.getElementById("avatar").src = avatar.getAttribute("href");
       }
-      document.getElementById("user").style.display = "block";
+
+      document.getElementById("error").style.display = "none";
+      document.getElementById("user").style.display = "flex";
     }
+
 
     document.getElementById("authenticate").onclick = function() {
       if (!auth.bringPopupWindowToFront()) {
@@ -92,6 +150,7 @@
     }
 
     function hideDetails() {
+      document.getElementById("error").style.display = "none";
       document.getElementById("user").style.display = "none";
     }
 
