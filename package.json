@@ -11,6 +11,7 @@
   ],
   "contributors": [
     "Bryan Housel <bhousel@gmail.com> (https://github.com/bhousel)",
+    "Hel Nershing Thapa (https://github.com/HelNershingThapa)",
     "Tom MacWright <tom@macwright.org> (https://github.com/tmcw)"
   ],
   "type": "module",
@@ -22,7 +23,6 @@
     "import": "./src/osm-auth.mjs",
     "require": "./dist/osm-auth.cjs"
   },
-  "sideEffects": false,
   "scripts": {
     "all": "run-s clean test",
     "build": "run-p build:**",

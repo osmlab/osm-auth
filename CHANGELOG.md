@@ -17,8 +17,8 @@ _Breaking changes, which may affect downstream projects, are marked with a_ ⚠�
 
 ## 2.0.0  (OAuth v2.0)
 ##### 2022-Apr-27
-* ⚠️ Breaking change:  This library is now focused on supporting OAuth 2.0 ([#77], [#93])
-* ⚠️ `xhr` and `rawxhr` options have changed slightly - check docs if you are using `options` with custom headers.
+* ⚠️  Breaking change:  This library is now focused on supporting OAuth 2.0 ([#77], [#93], thanks [@HelNershingThapa]!)
+* ⚠️  `xhr` and `rawxhr` options have changed slightly - check docs if you are using `options` with custom headers.
 * ⚠️  osm-auth is marked as `"type": "module"` now
 * ⚠️  Replace browserify with [esbuild](https://esbuild.github.io/) for super fast build speed. Package outputs are now:
   * `"module": "./src/osm-auth.mjs"` - ESM, works with `import`
@@ -30,6 +30,7 @@ _Breaking changes, which may affect downstream projects, are marked with a_ ⚠�
 [#77]: https://github.com/osmlab/osm-auth/issues/77
 [#93]: https://github.com/osmlab/osm-auth/issues/93
 [#53]: https://github.com/osmlab/osm-auth/issues/53
+[@HelNershingThapa]: https://github.com/HelNershingThapa
 
 
 ## 1.1.2  (OAuth v1.0a)
