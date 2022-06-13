@@ -82,8 +82,8 @@ export function osmAuth(o) {
       var settings = [
           ['width', w],
           ['height', h],
-          ['left', screen.width / 2 - w / 2],
-          ['top', screen.height / 2 - h / 2],
+          ['left', window.screen.width / 2 - w / 2],
+          ['top', window.screen.height / 2 - h / 2],
         ]
         .map(function (x) { return x.join('='); })
         .join(',');
