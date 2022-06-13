@@ -94,7 +94,7 @@ Register a new OAuth2.0 application on openstreetmap.org:
 
 ```js
 var redirectPath = window.location.origin + window.location.pathname;
-var auth = osmAuth({
+var auth = osmAuth.osmAuth({
   client_id: "JWXSAzNp64sIRMStTnkhMRaMxSR964V4sFgn3KUZNTA",
   client_secret: "6umOXfkZqH5CVUtv6iDqN7k8o7mKbQvTrHvbDQH36hs",
   redirect_uri: redirectPath + "land.html",
