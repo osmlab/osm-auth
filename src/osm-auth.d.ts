@@ -11,9 +11,9 @@ declare namespace OSMAuth {
     authenticated(): boolean;
     authenticate(callback: (err: null | any, result?: any) => any): any;
     bringPopupWindowToFront(): boolean;
-    bootstrapToken(oauth_token: string, callback: (err: null | any, result?: any) => any) => any): any;
-    xhr(options: OSMAuthXHROptions, callback: (err: null | any, result?: any) => any) => any): XMLHttpRequest | null;
-    rawxhr(method: string, url: string, access_token: string | null, data: any | null, headers: object | null, callback: (err: null | any, result?: any) => any) => any): XMLHttpRequest;
+    bootstrapToken(oauth_token: string, callback: (err: null | any, result?: any) => any): any;
+    xhr(options: OSMAuthXHROptions, callback: (err: null | any, result?: any) => any): XMLHttpRequest | null;
+    rawxhr(method: string, url: string, access_token: string | null, data: any | null, headers: object | null, callback: (err: null | any, result?: any) => any): XMLHttpRequest;
     preauth(options: OSMAuthOptions): OSMAuthInstance;
     options(): OSMAuthOptions;
     options(options: OSMAuthOptions): OSMAuthInstance;
@@ -43,6 +43,6 @@ declare namespace OSMAuth {
 
 declare var osmAuth: OSMAuth.OSMAuthConstructor;
 
-declare module "osm-auth" {
+declare module 'osm-auth' {
   export = osmAuth;
 }
