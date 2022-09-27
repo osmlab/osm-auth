@@ -16,7 +16,10 @@ var __copyProps = (to, from, except, desc) => {
   }
   return to;
 };
-var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target, mod));
+var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
+  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
+  mod
+));
 var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 var osm_auth_exports = {};
 __export(osm_auth_exports, {
@@ -54,8 +57,8 @@ function osmAuth(o) {
       var settings = [
         ["width", w],
         ["height", h],
-        ["left", screen.width / 2 - w / 2],
-        ["top", screen.height / 2 - h / 2]
+        ["left", window.screen.width / 2 - w / 2],
+        ["top", window.screen.height / 2 - h / 2]
       ].map(function(x) {
         return x.join("=");
       }).join(",");
@@ -144,7 +147,14 @@ function osmAuth(o) {
     }
     function run() {
       var url = options.prefix !== false ? o.url + options.path : options.path;
-      return oauth.rawxhr(options.method, url, token("oauth2_access_token"), options.content, options.headers, done);
+      return oauth.rawxhr(
+        options.method,
+        url,
+        token("oauth2_access_token"),
+        options.content,
+        options.headers,
+        done
+      );
     }
     function done(err, xhr) {
       if (err) {
@@ -163,7 +173,7 @@ function osmAuth(o) {
     }
     var xhr = new XMLHttpRequest();
     xhr.onreadystatechange = function() {
-      if (xhr.readyState === 4 && xhr.status !== 0) {
+      if (4 === xhr.readyState && 0 !== xhr.status) {
         if (/^20\d$/.test(xhr.status)) {
           callback(null, xhr);
         } else {
