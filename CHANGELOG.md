@@ -12,8 +12,16 @@ _Breaking changes, which may affect downstream projects, are marked with a_ тЪая
 ##### YYYY-MMM-DD
 *
 
-[#xx]: https://github.com/osmlab/osm-auth/issues/xx
+[#xxx]: https://github.com/osmlab/osm-auth/issues/xxx
 -->
+
+## 2.0.1
+##### 2022-Sep-27
+* Fix `osm-auth.d.ts` types declaration ([#106], thanks [@caspg])
+
+[#106]: https://github.com/osmlab/osm-auth/issues/106
+[@caspg]: https://github.com/caspg
+
 
 ## 2.0.0  (OAuth v2.0)
 ##### 2022-Apr-27
