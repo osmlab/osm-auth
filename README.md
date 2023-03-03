@@ -138,7 +138,7 @@ Additional options are:
 
  - `access_token` - Can pre-authorize with an OAuth2 bearer token if you have one
  - `url` - A base url (default: "https://www.openstreetmap.org")
- - `auto` - If `true`, attempt to authenticate automatically when calling `.xhr()` (default: `false`)
+ - `auto` - If `true`, attempt to authenticate automatically when calling `.xhr()` or `fetch()` (default: `false`)
  - `singlepage` - If `true`, use page redirection instead of a popup (default: `false`)
  - `loading` - Function called when auth-related xhr calls start
  - `done` - Function called when auth-related xhr calls end
@@ -180,6 +180,20 @@ The authorization code is a temporary code that a client can exchange for an acc
 Param:  `auth_code`  The OAuth2 `auth_code`<br/>
 Param:  `callback`   An "errback"-style callback (`err`, `result`), called when complete<br/>
 Returns:  none<br/>
+
+
+## `.fetch(path, options)`
+
+A `fetch` wrapper that does authenticated calls if the user has logged in.<br/>
+See: https://developer.mozilla.org/en-US/docs/Web/API/fetch<br/>
+<br/>
+Param: `path`  The URL path (e.g. "/api/0.6/user/details") (or full url, if `options.prefix`=`false`)<br/>
+Param: `options`:<br/>
+  `options.method`   Passed to `fetch`  (e.g. 'GET', 'POST')<br/>
+  `options.prefix`   If `true` path contains a path, if `false` path contains the full url<br/>
+  `options.body`  Passed to `fetch`<br/>
+  `options.headers`  optional `Object` containing request headers<br/>
+Return: `Promise` that resolves to a `Response` if authenticated, otherwise `null`<br/>
 
 
 ## `.xhr(options, callback)`
