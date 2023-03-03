@@ -17,6 +17,10 @@ var __copyProps = (to, from, except, desc) => {
   return to;
 };
 var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
+  // If the importer is in node compatibility mode or this is not an ESM
+  // file that has been converted to a CommonJS file using a Babel-
+  // compatible transform (i.e. "__esModule" has not been set), then set
+  // "default" to the CommonJS "module.exports" for node compatibility.
   isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
   mod
 ));
@@ -132,6 +136,42 @@ function osmAuth(o) {
       callback(null, oauth);
     }
     getAccessToken(auth_code);
+  };
+  oauth.fetch = function(path, options, callback) {
+    if (oauth.authenticated()) {
+      return run();
+    } else {
+      if (o.auto) {
+        oauth.authenticate(run);
+        return;
+      } else {
+        callback("not authenticated", null);
+        return;
+      }
+    }
+    function run() {
+      var url = options.prefix !== false ? o.url + path : path;
+      var headers = options.headers || { "Content-Type": "application/x-www-form-urlencoded" };
+      headers.Authorization = "Bearer " + token("oauth2_access_token");
+      return fetch(url, {
+        method: options.method,
+        body: options.body,
+        headers
+      }).then((resp) => {
+        var contentType = resp.headers.get("content-type").split(";")[0];
+        switch (contentType) {
+          case "text/html":
+          case "text/xml":
+            return resp.text().then(
+              (txt) => new window.DOMParser().parseFromString(txt, contentType)
+            );
+          case "application/html":
+            return resp.json();
+          default:
+            return resp.text();
+        }
+      });
+    }
   };
   oauth.xhr = function(options, callback) {
     if (oauth.authenticated()) {
