@@ -8,6 +8,7 @@ declare namespace OSMAuth {
   interface OSMAuthInstance {
     popupWindow?: Window
     logout(): OSMAuthInstance;
+    fetch(path: string, options: OSMAuthFetchOptions): Promise;
     authenticated(): boolean;
     authenticate(callback: (err: null | any, result?: any) => any): any;
     bringPopupWindowToFront(): boolean;
@@ -30,6 +31,13 @@ declare namespace OSMAuth {
     singlepage?: boolean;
     loading?: () => any;
     done?: () => any;
+  }
+
+  interface OSMAuthFetchOptions {
+    method: 'POST' | 'PUT' | 'GET' | 'DELETE';
+    body?: string;
+    prefix?: boolean;
+    headers?: object;
   }
 
   interface OSMAuthXHROptions {

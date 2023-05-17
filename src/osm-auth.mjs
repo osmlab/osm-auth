@@ -209,6 +209,58 @@ export function osmAuth(o) {
     getAccessToken(auth_code);
   };
 
+  /**
+   * fetch
+   * A `fetch` wrapper that does authenticated calls if the user has logged in.
+   * https://developer.mozilla.org/en-US/docs/Web/API/fetch
+   *
+   * @param   path             The URL path (e.g. "/api/0.6/user/details") (or full url, if `options.prefix`=`false`)
+   * @param   options
+   * @param   options.method   Passed to `fetch`  (e.g. 'GET', 'POST')
+   * @param   options.prefix   If `true` path contains a path, if `false` path contains the full url
+   * @param   options.body     Passed to `fetch`
+   * @param   options.headers  `Object` containing request headers
+   * @return  `Promise` that resolves to a `Response` if authenticated, otherwise `null`
+   */
+  oauth.fetch = function (path, options, callback) {
+    if (oauth.authenticated()) {
+      return run();
+    } else {
+      if (o.auto) {
+        oauth.authenticate(run);
+        return;
+      } else {
+        callback('not authenticated', null);
+        return;
+      }
+    }
+
+    function run() {
+      var url = options.prefix !== false ? o.url + path : path;
+      var headers = options.headers || { 'Content-Type': 'application/x-www-form-urlencoded' };
+      headers.Authorization = 'Bearer ' + token('oauth2_access_token');
+      return fetch(url, {
+        method: options.method,
+        body: options.body,
+        headers: headers,
+      }).then((resp) => {
+        var contentType = resp.headers.get('content-type').split(';')[0];
+        switch (contentType) {
+          case 'text/html':
+          case 'text/xml':
+            return resp
+              .text()
+              .then((txt) =>
+                new window.DOMParser().parseFromString(txt, contentType)
+              );
+          case 'application/html':
+            return resp.json();
+          default:
+            return resp.text();
+        }
+      });
+    }
+  };
 
   /**
    * xhr
