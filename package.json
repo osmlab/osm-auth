@@ -1,6 +1,6 @@
 {
   "name": "osm-auth",
-  "version": "2.0.1",
+  "version": "2.1.0",
   "license": "ISC",
   "repository": "github:osmlab/osm-auth",
   "description": "A usable example of JavaScript OAuth 2.0 with OpenStreetMap",
@@ -11,6 +11,7 @@
   ],
   "contributors": [
     "Bryan Housel <bhousel@gmail.com> (https://github.com/bhousel)",
+    "Daniel Schep (https://github.com/dschep)",
     "Hel Nershing Thapa (https://github.com/HelNershingThapa)",
     "Tom MacWright <tom@macwright.org> (https://github.com/tmcw)"
   ],

@@ -55,7 +55,14 @@ function osmAuth(o) {
       response_type: "code",
       scope: o.scope
     });
-    if (!o.singlepage) {
+    if (o.singlepage) {
+      var params = utilStringQs(window.location.search.slice(1));
+      if (params.code) {
+        getAccessToken(params.code);
+      } else {
+        window.location = url;
+      }
+    } else {
       var w = 600;
       var h = 550;
       var settings = [
@@ -76,8 +83,8 @@ function osmAuth(o) {
       }
     }
     window.authComplete = function(url2) {
-      var params = utilStringQs(url2.split("?")[1]);
-      getAccessToken(params.code);
+      var params2 = utilStringQs(url2.split("?")[1]);
+      getAccessToken(params2.code);
       delete window.authComplete;
     };
     function getAccessToken(auth_code) {

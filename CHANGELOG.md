@@ -15,6 +15,16 @@ _Breaking changes, which may affect downstream projects, are marked with a_ тЪая
 [#xxx]: https://github.com/osmlab/osm-auth/issues/xxx
 -->
 
+## 2.1.0
+##### 2023-May-17
+* Add fetch wrapper ([#112], thanks [@dschep])
+* Fix singlepage authentication support ([#113], thanks [@dschep])
+
+[#112]: https://github.com/osmlab/osm-auth/issues/112
+[#113]: https://github.com/osmlab/osm-auth/issues/113
+[@dschep]: https://github.com/dschep
+
+
 ## 2.0.1
 ##### 2022-Sep-27
 * Fix `osm-auth.d.ts` types declaration ([#106], thanks [@caspg])
