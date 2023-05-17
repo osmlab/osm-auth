@@ -75,7 +75,14 @@ export function osmAuth(o) {
         scope: o.scope,
       });
 
-    if (!o.singlepage) {
+    if (o.singlepage) {
+      var params = utilStringQs(window.location.search.slice(1));
+      if (params.code) {
+        getAccessToken(params.code);
+      } else {
+        window.location = url;
+      }
+    } else {
       // Create a 600x550 popup window in the center of the screen
       var w = 600;
       var h = 550;

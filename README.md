@@ -115,7 +115,34 @@ document.getElementById("authenticate").onclick = function () {
 ```
 
 ### Example with single-page
-coming soon
+```js
+var redirectPath = window.location.origin + window.location.pathname;
+var auth = osmAuth.osmAuth({
+  client_id: "JWXSAzNp64sIRMStTnkhMRaMxSR964V4sFgn3KUZNTA",
+  client_secret: "6umOXfkZqH5CVUtv6iDqN7k8o7mKbQvTrHvbDQH36hs",
+  redirect_uri: redirectPath,
+  scope: "read_prefs",
+  auto: true  // show a login form if the user is not authenticated and you try to do a call
+  singlepage: true,
+});
+
+document.getElementById("authenticate").onclick = function () {
+  // Signed method call - since `auto` is true above, this will
+  // automatically start an authentication process if the user isn't
+  // authenticated yet.
+  auth.xhr({ method: "GET", path: "/api/0.6/user/details" },
+    function (err, result) {
+      // result is an XML DOM containing the user details
+    }
+  );
+};
+
+if (window.location.search.includes('code')) {
+  auth.authenticate(function() {
+    // Fully authed at this point
+  });
+}
+```
 
 # API
 
