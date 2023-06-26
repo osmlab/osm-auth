@@ -13,15 +13,13 @@ import store from 'store';
  * @param    o.url            A base url (default: "https://www.openstreetmap.org")
  * @param    o.auto           If `true`, attempt to authenticate automatically when calling `.xhr()` (default: `false`)
  * @param    o.singlepage     If `true`, use page redirection instead of a popup (default: `false`)
- * @param    o.pkce           Use Proof Key for Code Exchange (PKCE, https://datatracker.ietf.org/doc/html/rfc7636) to mitigate against code interception attacks (default: `true`)
  * @param    o.loading        Function called when auth-related xhr calls start
  * @param    o.done           Function called when auth-related xhr calls end
  * @return  `self`
  */
 export function osmAuth(o) {
   var oauth = {};
-  var usePkce = o.pkce !== false
-      && store.enabled; // can't use PKCE if in singlepage mode without non-volatile storage;
+  var usePkce = !o.singlepage || store.enabled; // can use PKCE if in singlepage mode only with working non-volatile storage
 
   /**
    * authenticated
@@ -392,6 +390,7 @@ export function osmAuth(o) {
     o.url = o.url || 'https://www.openstreetmap.org';
     o.auto = o.auto || false;
     o.singlepage = o.singlepage || false;
+    usePkce = !o.singlepage || store.enabled;
 
     // Optional loading and loading-done functions for nice UI feedback.
     // by default, no-ops

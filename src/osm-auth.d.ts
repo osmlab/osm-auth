@@ -28,7 +28,6 @@ declare namespace OSMAuth {
     url?: string;
     auto?: boolean;
     singlepage?: boolean;
-    pkce?: boolean;
     loading?: () => any;
     done?: () => any;
   }
