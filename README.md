@@ -167,6 +167,7 @@ Additional options are:
  - `url` - A base url (default: "https://www.openstreetmap.org")
  - `auto` - If `true`, attempt to authenticate automatically when calling `.xhr()` or `fetch()` (default: `false`)
  - `singlepage` - If `true`, use page redirection instead of a popup (default: `false`)
+ - `pkce` - Specifies whether to use [Proof Key for Code Exchange (PKCE)](https://datatracker.ietf.org/doc/html/rfc7636) in OAuth2 authentication (default: `true`)
  - `loading` - Function called when auth-related xhr calls start
  - `done` - Function called when auth-related xhr calls end
 
