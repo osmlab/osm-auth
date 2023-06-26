@@ -1,6 +1,5 @@
 import store from 'store';
 
-
 /**
  * osmAuth
  * Easy authentication with OpenStreetMap over OAuth 2.0.
@@ -15,12 +14,15 @@ import store from 'store';
  * @param    o.url            A base url (default: "https://www.openstreetmap.org")
  * @param    o.auto           If `true`, attempt to authenticate automatically when calling `.xhr()` (default: `false`)
  * @param    o.singlepage     If `true`, use page redirection instead of a popup (default: `false`)
+ * @param    o.pkce           Use Proof Key for Code Exchange (PKCE, https://datatracker.ietf.org/doc/html/rfc7636) to mitigate against code interception attacks (default: `true`)
  * @param    o.loading        Function called when auth-related xhr calls start
  * @param    o.done           Function called when auth-related xhr calls end
  * @return  `self`
  */
 export function osmAuth(o) {
   var oauth = {};
+  var usePkce = o.pkce !== false
+      && store.enabled; // can't use PKCE if in singlepage mode without non-volatile storage;
 
   /**
    * authenticated
@@ -63,6 +65,19 @@ export function osmAuth(o) {
 
     oauth.logout();
 
+    if (usePkce) {
+      generatePkceChallenge(function(pkce) {
+        if (o.singlepage) {
+          token('oauth2_pkce_code_verifier', pkce.code_verifier);
+        }
+        _authenticate(pkce, callback);
+      });
+    } else {
+      _authenticate(undefined, callback);
+    }
+  };
+
+  function _authenticate(pkce, callback) {
     // ## Request authorization to access resources from the user
     // and receive authorization code
     var url =
@@ -73,12 +88,16 @@ export function osmAuth(o) {
         redirect_uri: o.redirect_uri,
         response_type: 'code',
         scope: o.scope,
+        code_challenge: usePkce ? pkce.code_challenge : undefined,
+        code_challenge_method: usePkce ? pkce.code_challenge_method : undefined,
       });
 
     if (o.singlepage) {
       var params = utilStringQs(window.location.search.slice(1));
       if (params.code) {
-        getAccessToken(params.code);
+        var code_verifier = token('oauth2_pkce_code_verifier');
+        token('oauth2_pkce_code_verifier', '');
+        getAccessToken(params.code, code_verifier, accessTokenDone);
       } else {
         window.location = url;
       }
@@ -110,31 +129,9 @@ export function osmAuth(o) {
     // window closes itself.
     window.authComplete = function (url) {
       var params = utilStringQs(url.split('?')[1]);
-      getAccessToken(params.code);
+      getAccessToken(params.code, usePkce && pkce.code_verifier, accessTokenDone);
       delete window.authComplete;
     };
-
-    // ## Getting an access token
-    // The client requests an access token by authenticating with the
-    // authorization server and presenting the `auth_code`, brought
-    // in from a function call on a landing page popup.
-    function getAccessToken(auth_code) {
-      var url =
-        o.url +
-        '/oauth2/token?' +
-        utilQsString({
-          client_id: o.client_id,
-          grant_type: 'authorization_code',
-          code: auth_code,
-          redirect_uri: o.redirect_uri,
-          client_secret: o.client_secret,
-        });
-
-      // The authorization server authenticates the client and validates
-      // the authorization grant, and if valid, issues an access token.
-      oauth.rawxhr('POST', url, null, null, null, accessTokenDone);
-      o.loading();
-    }
 
     function accessTokenDone(err, xhr) {
       o.done();
@@ -146,7 +143,30 @@ export function osmAuth(o) {
       token('oauth2_access_token', access_token.access_token);
       callback(null, oauth);
     }
-  };
+  }
+
+
+  // ## Getting an access token
+  // The client requests an access token by authenticating with the
+  // authorization server and presenting the `auth_code`, brought
+  // in from a function call on a landing page popup.
+  function getAccessToken(auth_code, code_verifier, accessTokenDone) {
+    var url =
+      o.url +
+      '/oauth2/token?' +
+      utilQsString({
+        client_id: o.client_id,
+        redirect_uri: o.redirect_uri,
+        grant_type: 'authorization_code',
+        code: auth_code,
+        code_verifier: usePkce ? code_verifier : undefined,
+      });
+
+    // The authorization server authenticates the client and validates
+    // the authorization grant, and if valid, issues an access token.
+    oauth.rawxhr('POST', url, null, null, null, accessTokenDone);
+    o.loading();
+  }
 
 
   /**
@@ -181,26 +201,7 @@ export function osmAuth(o) {
    * @return  none
    */
   oauth.bootstrapToken = function (auth_code, callback) {
-    // ## Getting an access token
-    // The client requests an access token by authenticating with the
-    // authorization server and presenting the authorization_code
-    function getAccessToken(auth_code) {
-      var url =
-        o.url +
-        '/oauth2/token?' +
-        utilQsString({
-          client_id: o.client_id,
-          grant_type: 'authorization_code',
-          code: auth_code,
-          redirect_uri: o.redirect_uri,
-          client_secret: o.client_secret,
-        });
-
-      // The authorization server authenticates the client and validates
-      // the authorization grant, and if valid, issues an access token.
-      oauth.rawxhr('POST', url, null, null, null, accessTokenDone);
-      o.loading();
-    }
+    getAccessToken(auth_code, token('oauth2_code_verifier'), accessTokenDone);
 
     function accessTokenDone(err, xhr) {
       o.done();
@@ -210,10 +211,9 @@ export function osmAuth(o) {
       }
       var access_token = JSON.parse(xhr.response);
       token('oauth2_access_token', access_token.access_token);
+      token('oauth2_pkce_code_verifier', '');
       callback(null, oauth);
     }
-
-    getAccessToken(auth_code);
   };
 
   /**
@@ -436,6 +436,9 @@ export function osmAuth(o) {
  */
 function utilQsString(obj) {
   return Object.keys(obj)
+    .filter(function(key) {
+      return obj[key] !== undefined;
+    })
     .sort()
     .map(function(key) {
       return (encodeURIComponent(key) + '=' + encodeURIComponent(obj[key]));
@@ -459,4 +462,52 @@ function utilStringQs(str) {
     }
     return obj;
   }, {});
+}
+
+
+function generatePkceChallenge(callback) {
+  function base64(buffer) {
+    return btoa(String.fromCharCode.apply(null, new Uint8Array(buffer)))
+        .replace(/\//g, '_')
+        .replace(/\+/g, '-')
+        .replace(/[=]/g, '');
+  }
+
+  var code_verifier;
+  var supportsWebCryptoAPI = window.crypto
+      && window.crypto.getRandomValues
+      && window.crypto.subtle
+      && window.crypto.subtle.digest;
+  if (supportsWebCryptoAPI) {
+    // generate a random code_verifier
+    // https://datatracker.ietf.org/doc/html/rfc7636#section-7.1
+    var random = window.crypto.getRandomValues(new Uint8Array(32));
+    code_verifier = base64(random.buffer);
+    var verifier = Uint8Array.from(Array.from(code_verifier).map(function(char) {
+      return char.charCodeAt(0);
+    }));
+
+    // generate challenge for code verifier
+    window.crypto.subtle.digest('SHA-256', verifier).then(function(hash) {
+      var code_challenge = base64(hash);
+
+      callback({
+        code_challenge: code_challenge,
+        code_verifier: code_verifier,
+        code_challenge_method: 'S256'
+      });
+    });
+  } else {
+    // browser does not support Web Crypto API (e.g. IE11) -> fall back to "plain" method
+    var chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
+    code_verifier = '';
+    for (var i=0; i<64; i++) {
+      code_verifier += chars[Math.floor(Math.random() * chars.length)];
+    }
+    callback({
+      code_verifier: code_verifier,
+      code_challenge: code_verifier,
+      code_challenge_method: 'plain',
+    });
+  }
 }
