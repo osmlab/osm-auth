@@ -1,5 +1,6 @@
 import store from 'store';
 
+
 /**
  * osmAuth
  * Easy authentication with OpenStreetMap over OAuth 2.0.
@@ -19,7 +20,7 @@ import store from 'store';
  */
 export function osmAuth(o) {
   var oauth = {};
-  var usePkce = !o.singlepage || store.enabled; // can use PKCE if in singlepage mode only with working non-volatile storage
+  var usePkce = !o.singlepage || store.enabled; // in singlepage mode, PKCE requires working non-volatile storage
 
   /**
    * authenticated
@@ -64,9 +65,6 @@ export function osmAuth(o) {
 
     if (usePkce) {
       generatePkceChallenge(function(pkce) {
-        if (o.singlepage) {
-          token('oauth2_pkce_code_verifier', pkce.code_verifier);
-        }
         _authenticate(pkce, callback);
       });
     } else {
@@ -75,6 +73,8 @@ export function osmAuth(o) {
   };
 
   function _authenticate(pkce, callback) {
+    var state = generateState();
+
     // ## Request authorization to access resources from the user
     // and receive authorization code
     var url =
@@ -85,6 +85,7 @@ export function osmAuth(o) {
         redirect_uri: o.redirect_uri,
         response_type: 'code',
         scope: o.scope,
+        state: state,
         code_challenge: usePkce ? pkce.code_challenge : undefined,
         code_challenge_method: usePkce ? pkce.code_challenge_method : undefined,
       });
@@ -92,10 +93,18 @@ export function osmAuth(o) {
     if (o.singlepage) {
       var params = utilStringQs(window.location.search.slice(1));
       if (params.code) {
+        state = token('oauth2_state');
+        token('oauth2_state', '');
         var code_verifier = token('oauth2_pkce_code_verifier');
         token('oauth2_pkce_code_verifier', '');
         getAccessToken(params.code, code_verifier, accessTokenDone);
       } else {
+        // save OAuth2 state and PKCE challenge in local storage, for later use
+        // in the `/oauth/token` request
+        token('oauth2_state', state);
+        if (usePkce) {
+          token('oauth2_pkce_code_verifier', pkce.code_verifier);
+        }
         window.location = url;
       }
     } else {
@@ -118,7 +127,7 @@ export function osmAuth(o) {
       if (!popup) {
         var error = new Error('Popup was blocked');
         error.status = 'popup-blocked';
-        throw error;
+        callback(error);
       }
     }
 
@@ -126,6 +135,11 @@ export function osmAuth(o) {
     // window closes itself.
     window.authComplete = function (url) {
       var params = utilStringQs(url.split('?')[1]);
+      if (params.state !== state) {
+        error = new Error('Invalid state');
+        error.status = 'invalid-state';
+        callback(error);
+      }
       getAccessToken(params.code, usePkce && pkce.code_verifier, accessTokenDone);
       delete window.authComplete;
     };
@@ -209,6 +223,7 @@ export function osmAuth(o) {
       var access_token = JSON.parse(xhr.response);
       token('oauth2_access_token', access_token.access_token);
       token('oauth2_pkce_code_verifier', '');
+      token('oauth2_state', '');
       callback(null, oauth);
     }
   };
@@ -463,20 +478,22 @@ function utilStringQs(str) {
 }
 
 
-function generatePkceChallenge(callback) {
-  function base64(buffer) {
-    return btoa(String.fromCharCode.apply(null, new Uint8Array(buffer)))
-        .replace(/\//g, '_')
-        .replace(/\+/g, '-')
-        .replace(/[=]/g, '');
-  }
+function supportsWebCryptoAPI() {
+  return window && window.crypto
+    && window.crypto.getRandomValues
+    && window.crypto.subtle
+    && window.crypto.subtle.digest;
+}
 
+/**
+ * Generates a challenge/verifier pair for PKCE.
+ * If the browser does not support the Web Crypto API, the "plain" method is
+ * used as a fallback instead of a SHA-256 hash.
+ * @param {callback} callback called with the result of the generated PKCE challenge
+ */
+function generatePkceChallenge(callback) {
   var code_verifier;
-  var supportsWebCryptoAPI = window.crypto
-      && window.crypto.getRandomValues
-      && window.crypto.subtle
-      && window.crypto.subtle.digest;
-  if (supportsWebCryptoAPI) {
+  if (supportsWebCryptoAPI()) {
     // generate a random code_verifier
     // https://datatracker.ietf.org/doc/html/rfc7636#section-7.1
     var random = window.crypto.getRandomValues(new Uint8Array(32));
@@ -508,4 +525,36 @@ function generatePkceChallenge(callback) {
       code_challenge_method: 'plain',
     });
   }
+}
+
+/**
+ * Returns a random state to be used as the "state" of the OAuth2 authentication
+ * See https://datatracker.ietf.org/doc/html/rfc6749#section-10.12
+ */
+function generateState() {
+  var state;
+  if (supportsWebCryptoAPI()) {
+    var random = window.crypto.getRandomValues(new Uint8Array(32));
+    state = base64(random.buffer);
+  } else {
+    // browser does not support Web Crypto API (e.g. IE11) -> fall back to "plain" method
+    var chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
+    state = '';
+    for (var i=0; i<64; i++) {
+      state += chars[Math.floor(Math.random() * chars.length)];
+    }
+  }
+  return state;
+}
+
+/** Converts binary buffer to base64 encoded string, as used in rfc7636
+ * @param obj
+ * @param noencode
+ * @returns query string
+ */
+function base64(buffer) {
+  return btoa(String.fromCharCode.apply(null, new Uint8Array(buffer)))
+      .replace(/\//g, '_')
+      .replace(/\+/g, '-')
+      .replace(/[=]/g, '');
 }
