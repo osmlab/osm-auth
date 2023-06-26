@@ -81,11 +81,10 @@ Register a new OAuth2.0 application on openstreetmap.org:
 2. Click 'My Settings'
 3. Click 'OAuth 2 applications'
 4. At the bottom, 'Register new application'
-5. Fill in the form & submit
+5. Fill in the form (keeping the _Confidential application?_ checkbox unchecked) & submit
 6. Copy & Paste the client ID, secret, redirect URI and scope(s) into the osmAuth config object as below
 
 👉 Important:
-- Remember to copy the `client_secret` after setting up your application. It won't be available later.
 - The "Redirect URIs" are URIs that OSM is allowed to redirect the user back to.  You can supply multiple Redirect URIs separated by spaces, and change them later.
 - Redirect URIs must use `https`, except for `127.0.0.1`, which may use `http`
 
@@ -96,7 +95,6 @@ Register a new OAuth2.0 application on openstreetmap.org:
 var redirectPath = window.location.origin + window.location.pathname;
 var auth = osmAuth.osmAuth({
   client_id: "JWXSAzNp64sIRMStTnkhMRaMxSR964V4sFgn3KUZNTA",
-  client_secret: "6umOXfkZqH5CVUtv6iDqN7k8o7mKbQvTrHvbDQH36hs",
   redirect_uri: redirectPath + "land.html",
   scope: "read_prefs",
   auto: true  // show a login form if the user is not authenticated and you try to do a call
@@ -119,7 +117,6 @@ document.getElementById("authenticate").onclick = function () {
 var redirectPath = window.location.origin + window.location.pathname;
 var auth = osmAuth.osmAuth({
   client_id: "JWXSAzNp64sIRMStTnkhMRaMxSR964V4sFgn3KUZNTA",
-  client_secret: "6umOXfkZqH5CVUtv6iDqN7k8o7mKbQvTrHvbDQH36hs",
   redirect_uri: redirectPath,
   scope: "read_prefs",
   auto: true  // show a login form if the user is not authenticated and you try to do a call
@@ -155,7 +152,6 @@ At a minimum, `options` must contain OAuth2 client ID, secret, redirect URI, and
 var redirectPath = window.location.origin + window.location.pathname;
 {
   client_id: "JWXSAzNp64sIRMStTnkhMRaMxSR964V4sFgn3KUZNTA",
-  client_secret: "6umOXfkZqH5CVUtv6iDqN7k8o7mKbQvTrHvbDQH36hs",
   redirect_uri: redirectPath + "land.html",
   scope: "read_prefs"
 }

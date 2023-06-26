@@ -8,7 +8,6 @@ import store from 'store';
  * @param    o   `Object` containing options:
  * @param    o.scope          OAuth2 scopes requested (e.g. "read_prefs write_api")
  * @param    o.client_id      OAuth2 client ID
- * @param    o.client_secret  OAuth2 client secret
  * @param    o.redirect_uri   OAuth2 redirect URI (e.g. "http://127.0.0.1:8080/land.html")
  * @param    o.access_token   Can pre-authorize with an OAuth2 bearer token if you have one
  * @param    o.url            A base url (default: "https://www.openstreetmap.org")

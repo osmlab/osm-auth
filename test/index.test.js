@@ -33,7 +33,6 @@ test('osmauth', t => {
       const auth = osmAuth({
         url: 'https://www.openstreetmap.org',
         client_id: 'JWXSAzNp64sIRMStTnkhMRaMxSR964V4sFgn3KUZNTA',
-        client_secret: '6umOXfkZqH5CVUtv6iDqN7k8o7mKbQvTrHvbDQH36hs',
         redirect_uri: 'http://127.0.0.1:8080/land.html',
         scope: 'read_prefs'
       });
@@ -46,7 +45,6 @@ test('osmauth', t => {
       const auth = osmAuth({
         url: 'https://www.openstreetmap.org',
         client_id: 'JWXSAzNp64sIRMStTnkhMRaMxSR964V4sFgn3KUZNTA',
-        client_secret: '6umOXfkZqH5CVUtv6iDqN7k8o7mKbQvTrHvbDQH36hs',
         redirect_uri: 'http://127.0.0.1:8080/land.html',
         scope: 'read_prefs',
         access_token: 'foo'
