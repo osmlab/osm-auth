@@ -33,6 +33,7 @@ module.exports = __toCommonJS(osm_auth_exports);
 var import_store = __toESM(require("store"), 1);
 function osmAuth(o) {
   var oauth = {};
+  var usePkce = !o.singlepage || import_store.default.enabled;
   oauth.authenticated = function() {
     return !!token("oauth2_access_token");
   };
@@ -49,17 +50,38 @@ function osmAuth(o) {
       return;
     }
     oauth.logout();
+    if (usePkce) {
+      generatePkceChallenge(function(pkce) {
+        _authenticate(pkce, callback);
+      });
+    } else {
+      _authenticate(void 0, callback);
+    }
+  };
+  function _authenticate(pkce, callback) {
+    var state = generateState();
     var url = o.url + "/oauth2/authorize?" + utilQsString({
       client_id: o.client_id,
       redirect_uri: o.redirect_uri,
       response_type: "code",
-      scope: o.scope
+      scope: o.scope,
+      state,
+      code_challenge: usePkce ? pkce.code_challenge : void 0,
+      code_challenge_method: usePkce ? pkce.code_challenge_method : void 0
     });
     if (o.singlepage) {
       var params = utilStringQs(window.location.search.slice(1));
       if (params.code) {
-        getAccessToken(params.code);
+        state = token("oauth2_state");
+        token("oauth2_state", "");
+        var code_verifier = token("oauth2_pkce_code_verifier");
+        token("oauth2_pkce_code_verifier", "");
+        getAccessToken(params.code, code_verifier, accessTokenDone);
       } else {
+        token("oauth2_state", state);
+        if (usePkce) {
+          token("oauth2_pkce_code_verifier", pkce.code_verifier);
+        }
         window.location = url;
       }
     } else {
@@ -79,25 +101,19 @@ function osmAuth(o) {
       if (!popup) {
         var error = new Error("Popup was blocked");
         error.status = "popup-blocked";
-        throw error;
+        callback(error);
       }
     }
     window.authComplete = function(url2) {
       var params2 = utilStringQs(url2.split("?")[1]);
-      getAccessToken(params2.code);
+      if (params2.state !== state) {
+        error = new Error("Invalid state");
+        error.status = "invalid-state";
+        callback(error);
+      }
+      getAccessToken(params2.code, usePkce && pkce.code_verifier, accessTokenDone);
       delete window.authComplete;
     };
-    function getAccessToken(auth_code) {
-      var url2 = o.url + "/oauth2/token?" + utilQsString({
-        client_id: o.client_id,
-        grant_type: "authorization_code",
-        code: auth_code,
-        redirect_uri: o.redirect_uri,
-        client_secret: o.client_secret
-      });
-      oauth.rawxhr("POST", url2, null, null, null, accessTokenDone);
-      o.loading();
-    }
     function accessTokenDone(err, xhr) {
       o.done();
       if (err) {
@@ -108,7 +124,18 @@ function osmAuth(o) {
       token("oauth2_access_token", access_token.access_token);
       callback(null, oauth);
     }
-  };
+  }
+  function getAccessToken(auth_code, code_verifier, accessTokenDone) {
+    var url = o.url + "/oauth2/token?" + utilQsString({
+      client_id: o.client_id,
+      redirect_uri: o.redirect_uri,
+      grant_type: "authorization_code",
+      code: auth_code,
+      code_verifier: usePkce ? code_verifier : void 0
+    });
+    oauth.rawxhr("POST", url, null, null, null, accessTokenDone);
+    o.loading();
+  }
   oauth.bringPopupWindowToFront = function() {
     var broughtPopupToFront = false;
     try {
@@ -121,17 +148,7 @@ function osmAuth(o) {
     return broughtPopupToFront;
   };
   oauth.bootstrapToken = function(auth_code, callback) {
-    function getAccessToken(auth_code2) {
-      var url = o.url + "/oauth2/token?" + utilQsString({
-        client_id: o.client_id,
-        grant_type: "authorization_code",
-        code: auth_code2,
-        redirect_uri: o.redirect_uri,
-        client_secret: o.client_secret
-      });
-      oauth.rawxhr("POST", url, null, null, null, accessTokenDone);
-      o.loading();
-    }
+    getAccessToken(auth_code, token("oauth2_code_verifier"), accessTokenDone);
     function accessTokenDone(err, xhr) {
       o.done();
       if (err) {
@@ -140,9 +157,10 @@ function osmAuth(o) {
       }
       var access_token = JSON.parse(xhr.response);
       token("oauth2_access_token", access_token.access_token);
+      token("oauth2_pkce_code_verifier", "");
+      token("oauth2_state", "");
       callback(null, oauth);
     }
-    getAccessToken(auth_code);
   };
   oauth.fetch = function(path, options, callback) {
     if (oauth.authenticated()) {
@@ -250,6 +268,7 @@ function osmAuth(o) {
     o.url = o.url || "https://www.openstreetmap.org";
     o.auto = o.auto || false;
     o.singlepage = o.singlepage || false;
+    usePkce = !o.singlepage || import_store.default.enabled;
     o.loading = o.loading || function() {
     };
     o.done = o.done || function() {
@@ -277,7 +296,9 @@ function osmAuth(o) {
   return oauth;
 }
 function utilQsString(obj) {
-  return Object.keys(obj).sort().map(function(key) {
+  return Object.keys(obj).filter(function(key) {
+    return obj[key] !== void 0;
+  }).sort().map(function(key) {
     return encodeURIComponent(key) + "=" + encodeURIComponent(obj[key]);
   }).join("&");
 }
@@ -293,6 +314,55 @@ function utilStringQs(str) {
     }
     return obj;
   }, {});
+}
+function supportsWebCryptoAPI() {
+  return window && window.crypto && window.crypto.getRandomValues && window.crypto.subtle && window.crypto.subtle.digest;
+}
+function generatePkceChallenge(callback) {
+  var code_verifier;
+  if (supportsWebCryptoAPI()) {
+    var random = window.crypto.getRandomValues(new Uint8Array(32));
+    code_verifier = base64(random.buffer);
+    var verifier = Uint8Array.from(Array.from(code_verifier).map(function(char) {
+      return char.charCodeAt(0);
+    }));
+    window.crypto.subtle.digest("SHA-256", verifier).then(function(hash) {
+      var code_challenge = base64(hash);
+      callback({
+        code_challenge,
+        code_verifier,
+        code_challenge_method: "S256"
+      });
+    });
+  } else {
+    var chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
+    code_verifier = "";
+    for (var i = 0; i < 64; i++) {
+      code_verifier += chars[Math.floor(Math.random() * chars.length)];
+    }
+    callback({
+      code_verifier,
+      code_challenge: code_verifier,
+      code_challenge_method: "plain"
+    });
+  }
+}
+function generateState() {
+  var state;
+  if (supportsWebCryptoAPI()) {
+    var random = window.crypto.getRandomValues(new Uint8Array(32));
+    state = base64(random.buffer);
+  } else {
+    var chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
+    state = "";
+    for (var i = 0; i < 64; i++) {
+      state += chars[Math.floor(Math.random() * chars.length)];
+    }
+  }
+  return state;
+}
+function base64(buffer) {
+  return btoa(String.fromCharCode.apply(null, new Uint8Array(buffer))).replace(/\//g, "_").replace(/\+/g, "-").replace(/[=]/g, "");
 }
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
