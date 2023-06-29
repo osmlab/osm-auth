@@ -34,6 +34,13 @@
       margin-top: 20px;
     }
 
+    label.single {
+      display: flex;
+      flex-flow: row nowrap;
+      justify-content: center;
+      margin-top: 20px;
+    }
+
     h1 { margin: 5px 0 0 0; }
     h2 { margin: 10px 0 0 0; }
     p  { margin: 5px 0 0 0; }
@@ -84,6 +91,7 @@
     <button id="authenticate">login</button>
     <button id="logout">logout</button>
   </div>
+  <label class="single">Single page: <input type="checkbox" class="single"></input></label>
   <div id="error"></div>
   <div id="user">
     <div id="useravatar">
@@ -107,8 +115,15 @@
     var auth = osmAuth.osmAuth({
       client_id: "JWXSAzNp64sIRMStTnkhMRaMxSR964V4sFgn3KUZNTA",
       scope: "read_prefs",
-      redirect_uri: redirectPath + "land.html"
+      redirect_uri: redirectPath,
+      singlepage: true
     });
+    if (window.location.search.includes('code')) {
+      auth.authenticate(function() {
+        history.pushState({}, null, window.location.pathname);
+        update();
+      });
+    }
 
 
     function done(err, result) {
@@ -137,6 +152,15 @@
 
 
     document.getElementById("authenticate").onclick = function() {
+      var o = auth.options();
+      if (document.querySelector('input.single').checked) {
+        o.redirect_uri = redirectPath;
+        o.singlepage = true;
+      } else {
+        o.redirect_uri = redirectPath + "land.html"
+        o.singlepage = false;
+      }
+      auth.options(o);
       if (!auth.bringPopupWindowToFront()) {
         auth.authenticate(function() {
           update();
