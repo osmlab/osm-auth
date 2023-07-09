@@ -118,7 +118,7 @@
       redirect_uri: redirectPath,
       singlepage: true
     });
-    if (window.location.search.includes('code')) {
+    if (window.location.search.slice(1).split('&').some(p => p.startsWith('code='))) {
       auth.authenticate(function() {
         history.pushState({}, null, window.location.pathname);
         update();
