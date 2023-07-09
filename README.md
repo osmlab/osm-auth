@@ -134,7 +134,7 @@ document.getElementById("authenticate").onclick = function () {
   );
 };
 
-if (window.location.search.includes('code')) {
+if (window.location.search.slice(1).split('&').some(p => p.startsWith('code='))) {
   auth.authenticate(function() {
     // Fully authed at this point
   });
