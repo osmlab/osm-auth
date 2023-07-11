@@ -20,7 +20,6 @@ import store from 'store';
  */
 export function osmAuth(o) {
   var oauth = {};
-  var usePkce = !o.singlepage || store.enabled; // in singlepage mode, PKCE requires working non-volatile storage
 
   /**
    * authenticated
@@ -63,13 +62,9 @@ export function osmAuth(o) {
 
     oauth.logout();
 
-    if (usePkce) {
-      generatePkceChallenge(function(pkce) {
-        _authenticate(pkce, callback);
-      });
-    } else {
-      _authenticate(undefined, callback);
-    }
+    generatePkceChallenge(function(pkce) {
+      _authenticate(pkce, callback);
+    });
   };
 
   function _authenticate(pkce, callback) {
@@ -86,11 +81,18 @@ export function osmAuth(o) {
         response_type: 'code',
         scope: o.scope,
         state: state,
-        code_challenge: usePkce ? pkce.code_challenge : undefined,
-        code_challenge_method: usePkce ? pkce.code_challenge_method : undefined,
+        code_challenge: pkce.code_challenge,
+        code_challenge_method: pkce.code_challenge_method,
       });
 
     if (o.singlepage) {
+      if (!store.enabled) {
+        // in singlepage mode, PKCE requires working non-volatile storage
+        var error = new Error('local storage unavailable, but require in singlepage mode');
+        error.status = 'pkce-localstorage-unavailable';
+        callback(error);
+        return;
+      }
       var params = utilStringQs(window.location.search.slice(1));
       if (params.code) {
         state = token('oauth2_state');
@@ -102,9 +104,7 @@ export function osmAuth(o) {
         // save OAuth2 state and PKCE challenge in local storage, for later use
         // in the `/oauth/token` request
         token('oauth2_state', state);
-        if (usePkce) {
-          token('oauth2_pkce_code_verifier', pkce.code_verifier);
-        }
+        token('oauth2_pkce_code_verifier', pkce.code_verifier);
         window.location = url;
       }
     } else {
@@ -125,7 +125,7 @@ export function osmAuth(o) {
       popup.location = url;
 
       if (!popup) {
-        var error = new Error('Popup was blocked');
+        error = new Error('Popup was blocked');
         error.status = 'popup-blocked';
         callback(error);
       }
@@ -141,7 +141,7 @@ export function osmAuth(o) {
         callback(error);
         return;
       }
-      getAccessToken(params.code, usePkce && pkce.code_verifier, accessTokenDone);
+      getAccessToken(params.code, pkce.code_verifier, accessTokenDone);
       delete window.authComplete;
     };
 
@@ -171,7 +171,7 @@ export function osmAuth(o) {
         redirect_uri: o.redirect_uri,
         grant_type: 'authorization_code',
         code: auth_code,
-        code_verifier: usePkce ? code_verifier : undefined,
+        code_verifier: code_verifier,
       });
 
     // The authorization server authenticates the client and validates
@@ -406,7 +406,6 @@ export function osmAuth(o) {
     o.url = o.url || 'https://www.openstreetmap.org';
     o.auto = o.auto || false;
     o.singlepage = o.singlepage || false;
-    usePkce = !o.singlepage || store.enabled;
 
     // Optional loading and loading-done functions for nice UI feedback.
     // by default, no-ops
