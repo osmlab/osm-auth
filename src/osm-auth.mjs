@@ -139,6 +139,7 @@ export function osmAuth(o) {
         error = new Error('Invalid state');
         error.status = 'invalid-state';
         callback(error);
+        return;
       }
       getAccessToken(params.code, usePkce && pkce.code_verifier, accessTokenDone);
       delete window.authComplete;
