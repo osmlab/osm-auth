@@ -33,7 +33,6 @@ module.exports = __toCommonJS(osm_auth_exports);
 var import_store = __toESM(require("store"), 1);
 function osmAuth(o) {
   var oauth = {};
-  var usePkce = !o.singlepage || import_store.default.enabled;
   oauth.authenticated = function() {
     return !!token("oauth2_access_token");
   };
@@ -50,13 +49,9 @@ function osmAuth(o) {
       return;
     }
     oauth.logout();
-    if (usePkce) {
-      generatePkceChallenge(function(pkce) {
-        _authenticate(pkce, callback);
-      });
-    } else {
-      _authenticate(void 0, callback);
-    }
+    generatePkceChallenge(function(pkce) {
+      _authenticate(pkce, callback);
+    });
   };
   function _authenticate(pkce, callback) {
     var state = generateState();
@@ -66,22 +61,22 @@ function osmAuth(o) {
       response_type: "code",
       scope: o.scope,
       state,
-      code_challenge: usePkce ? pkce.code_challenge : void 0,
-      code_challenge_method: usePkce ? pkce.code_challenge_method : void 0
+      code_challenge: pkce.code_challenge,
+      code_challenge_method: pkce.code_challenge_method
     });
     if (o.singlepage) {
+      if (!import_store.default.enabled) {
+        var error = new Error("local storage unavailable, but require in singlepage mode");
+        error.status = "pkce-localstorage-unavailable";
+        callback(error);
+        return;
+      }
       var params = utilStringQs(window.location.search.slice(1));
       if (params.code) {
-        state = token("oauth2_state");
-        token("oauth2_state", "");
-        var code_verifier = token("oauth2_pkce_code_verifier");
-        token("oauth2_pkce_code_verifier", "");
-        getAccessToken(params.code, code_verifier, accessTokenDone);
+        oauth.bootstrapToken(params.code, callback);
       } else {
         token("oauth2_state", state);
-        if (usePkce) {
-          token("oauth2_pkce_code_verifier", pkce.code_verifier);
-        }
+        token("oauth2_pkce_code_verifier", pkce.code_verifier);
         window.location = url;
       }
     } else {
@@ -99,7 +94,7 @@ function osmAuth(o) {
       oauth.popupWindow = popup;
       popup.location = url;
       if (!popup) {
-        var error = new Error("Popup was blocked");
+        error = new Error("Popup was blocked");
         error.status = "popup-blocked";
         callback(error);
       }
@@ -110,8 +105,9 @@ function osmAuth(o) {
         error = new Error("Invalid state");
         error.status = "invalid-state";
         callback(error);
+        return;
       }
-      getAccessToken(params2.code, usePkce && pkce.code_verifier, accessTokenDone);
+      getAccessToken(params2.code, pkce.code_verifier, accessTokenDone);
       delete window.authComplete;
     };
     function accessTokenDone(err, xhr) {
@@ -131,7 +127,7 @@ function osmAuth(o) {
       redirect_uri: o.redirect_uri,
       grant_type: "authorization_code",
       code: auth_code,
-      code_verifier: usePkce ? code_verifier : void 0
+      code_verifier
     });
     oauth.rawxhr("POST", url, null, null, null, accessTokenDone);
     o.loading();
@@ -148,7 +144,18 @@ function osmAuth(o) {
     return broughtPopupToFront;
   };
   oauth.bootstrapToken = function(auth_code, callback) {
-    getAccessToken(auth_code, token("oauth2_code_verifier"), accessTokenDone);
+    var state = token("oauth2_state");
+    token("oauth2_state", "");
+    var params = utilStringQs(window.location.search.slice(1));
+    if (params.state !== state) {
+      var error = new Error("Invalid state");
+      error.status = "invalid-state";
+      callback(error);
+      return;
+    }
+    var code_verifier = token("oauth2_pkce_code_verifier");
+    token("oauth2_pkce_code_verifier", "");
+    getAccessToken(auth_code, code_verifier, accessTokenDone);
     function accessTokenDone(err, xhr) {
       o.done();
       if (err) {
@@ -157,8 +164,6 @@ function osmAuth(o) {
       }
       var access_token = JSON.parse(xhr.response);
       token("oauth2_access_token", access_token.access_token);
-      token("oauth2_pkce_code_verifier", "");
-      token("oauth2_state", "");
       callback(null, oauth);
     }
   };
@@ -268,7 +273,6 @@ function osmAuth(o) {
     o.url = o.url || "https://www.openstreetmap.org";
     o.auto = o.auto || false;
     o.singlepage = o.singlepage || false;
-    usePkce = !o.singlepage || import_store.default.enabled;
     o.loading = o.loading || function() {
     };
     o.done = o.done || function() {
