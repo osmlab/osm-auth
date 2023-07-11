@@ -95,11 +95,7 @@ export function osmAuth(o) {
       }
       var params = utilStringQs(window.location.search.slice(1));
       if (params.code) {
-        state = token('oauth2_state');
-        token('oauth2_state', '');
-        var code_verifier = token('oauth2_pkce_code_verifier');
-        token('oauth2_pkce_code_verifier', '');
-        getAccessToken(params.code, code_verifier, accessTokenDone);
+        oauth.bootstrapToken(params.code, callback);
       } else {
         // save OAuth2 state and PKCE challenge in local storage, for later use
         // in the `/oauth/token` request
@@ -213,7 +209,18 @@ export function osmAuth(o) {
    * @return  none
    */
   oauth.bootstrapToken = function (auth_code, callback) {
-    getAccessToken(auth_code, token('oauth2_code_verifier'), accessTokenDone);
+    var state = token('oauth2_state');
+    token('oauth2_state', '');
+    var params = utilStringQs(window.location.search.slice(1));
+    if (params.state !== state) {
+      var error = new Error('Invalid state');
+      error.status = 'invalid-state';
+      callback(error);
+      return;
+    }
+    var code_verifier = token('oauth2_pkce_code_verifier');
+    token('oauth2_pkce_code_verifier', '');
+    getAccessToken(auth_code, code_verifier, accessTokenDone);
 
     function accessTokenDone(err, xhr) {
       o.done();
@@ -223,8 +230,6 @@ export function osmAuth(o) {
       }
       var access_token = JSON.parse(xhr.response);
       token('oauth2_access_token', access_token.access_token);
-      token('oauth2_pkce_code_verifier', '');
-      token('oauth2_state', '');
       callback(null, oauth);
     }
   };
