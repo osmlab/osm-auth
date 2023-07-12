@@ -49,8 +49,24 @@ function osmAuth(o) {
       return;
     }
     oauth.logout();
-    generatePkceChallenge(function(pkce) {
+    _generatePkceChallenge(function(pkce) {
       _authenticate(pkce, callback);
+    });
+  };
+  oauth.authenticateAsync = function() {
+    if (oauth.authenticated()) {
+      return Promise.resolve(oauth);
+    }
+    oauth.logout();
+    return new Promise((resolve, reject) => {
+      var errback = (err, result) => {
+        if (err) {
+          reject(new Error(err));
+        } else {
+          resolve(result);
+        }
+      };
+      _generatePkceChallenge((pkce) => _authenticate(pkce, errback));
     });
   };
   function _authenticate(pkce, callback) {
@@ -107,7 +123,7 @@ function osmAuth(o) {
         callback(error);
         return;
       }
-      getAccessToken(params2.code, pkce.code_verifier, accessTokenDone);
+      _getAccessToken(params2.code, pkce.code_verifier, accessTokenDone);
       delete window.authComplete;
     };
     function accessTokenDone(err, xhr) {
@@ -121,7 +137,7 @@ function osmAuth(o) {
       callback(null, oauth);
     }
   }
-  function getAccessToken(auth_code, code_verifier, accessTokenDone) {
+  function _getAccessToken(auth_code, code_verifier, accessTokenDone) {
     var url = o.url + "/oauth2/token?" + utilQsString({
       client_id: o.client_id,
       redirect_uri: o.redirect_uri,
@@ -155,7 +171,7 @@ function osmAuth(o) {
     }
     var code_verifier = token("oauth2_pkce_code_verifier");
     token("oauth2_pkce_code_verifier", "");
-    getAccessToken(auth_code, code_verifier, accessTokenDone);
+    _getAccessToken(auth_code, code_verifier, accessTokenDone);
     function accessTokenDone(err, xhr) {
       o.done();
       if (err) {
@@ -167,55 +183,38 @@ function osmAuth(o) {
       callback(null, oauth);
     }
   };
-  oauth.fetch = function(path, options, callback) {
+  oauth.fetch = function(resource, options) {
     if (oauth.authenticated()) {
-      return run();
+      return _doFetch();
     } else {
       if (o.auto) {
-        oauth.authenticate(run);
-        return;
+        return oauth.authenticateAsync().then(_doFetch);
       } else {
-        callback("not authenticated", null);
-        return;
+        return Promise.reject(new Error("not authenticated"));
       }
     }
-    function run() {
-      var url = options.prefix !== false ? o.url + path : path;
-      var headers = options.headers || { "Content-Type": "application/x-www-form-urlencoded" };
-      headers.Authorization = "Bearer " + token("oauth2_access_token");
-      return fetch(url, {
-        method: options.method,
-        body: options.body,
-        headers
-      }).then((resp) => {
-        var contentType = resp.headers.get("content-type").split(";")[0];
-        switch (contentType) {
-          case "text/html":
-          case "text/xml":
-            return resp.text().then(
-              (txt) => new window.DOMParser().parseFromString(txt, contentType)
-            );
-          case "application/html":
-            return resp.json();
-          default:
-            return resp.text();
-        }
-      });
+    function _doFetch() {
+      options = options || {};
+      if (!options.headers) {
+        options.headers = { "Content-Type": "application/x-www-form-urlencoded" };
+      }
+      options.headers.Authorization = "Bearer " + token("oauth2_access_token");
+      return fetch(resource, options);
     }
   };
   oauth.xhr = function(options, callback) {
     if (oauth.authenticated()) {
-      return run();
+      return _doXHR();
     } else {
       if (o.auto) {
-        oauth.authenticate(run);
+        oauth.authenticate(_doXHR);
         return;
       } else {
         callback("not authenticated", null);
         return;
       }
     }
-    function run() {
+    function _doXHR() {
       var url = options.prefix !== false ? o.url + options.path : options.path;
       return oauth.rawxhr(
         options.method,
@@ -322,7 +321,7 @@ function utilStringQs(str) {
 function supportsWebCryptoAPI() {
   return window && window.crypto && window.crypto.getRandomValues && window.crypto.subtle && window.crypto.subtle.digest;
 }
-function generatePkceChallenge(callback) {
+function _generatePkceChallenge(callback) {
   var code_verifier;
   if (supportsWebCryptoAPI()) {
     var random = window.crypto.getRandomValues(new Uint8Array(32));

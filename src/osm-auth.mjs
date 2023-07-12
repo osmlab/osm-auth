@@ -12,7 +12,7 @@ import store from 'store';
  * @param    o.redirect_uri   OAuth2 redirect URI (e.g. "http://127.0.0.1:8080/land.html")
  * @param    o.access_token   Can pre-authorize with an OAuth2 bearer token if you have one
  * @param    o.url            A base url (default: "https://www.openstreetmap.org")
- * @param    o.auto           If `true`, attempt to authenticate automatically when calling `.xhr()` (default: `false`)
+ * @param    o.auto           If `true`, attempt to authenticate automatically when calling `.xhr()` or `.fetch()` (default: `false`)
  * @param    o.singlepage     If `true`, use page redirection instead of a popup (default: `false`)
  * @param    o.loading        Function called when auth-related xhr calls start
  * @param    o.done           Function called when auth-related xhr calls end
@@ -24,9 +24,10 @@ export function osmAuth(o) {
   /**
    * authenticated
    * Test whether the user is currently authenticated
-   * @return `true` if authenticated, `false` if not
+   *
+   * @return {boolean} `true` if authenticated, `false` if not
    */
-  oauth.authenticated = function () {
+  oauth.authenticated = function() {
     return !!token('oauth2_access_token');
   };
 
@@ -51,10 +52,10 @@ export function osmAuth(o) {
    * First logs out, then runs the authentiation flow, finally calls the callback.
    * TODO: detect lack of click event  (probably can settimeout it)
    *
-   * @param   callback   An "errback"-style callback (`err`, `result`), called when complete
+   * @param   {function}  callback  Errback-style callback `(err, result)`, called when complete
    * @return  none
    */
-  oauth.authenticate = function (callback) {
+  oauth.authenticate = function(callback) {
     if (oauth.authenticated()) {
       callback(null, oauth);
       return;
@@ -62,11 +63,45 @@ export function osmAuth(o) {
 
     oauth.logout();
 
-    generatePkceChallenge(function(pkce) {
+    _generatePkceChallenge(function(pkce) {
       _authenticate(pkce, callback);
     });
   };
 
+
+  /**
+   * authenticateAsync
+   * Promisified version of `authenticate`
+   * @return  {Promise}  Promise settled with whatever `_authenticate` did
+   */
+  oauth.authenticateAsync = function() {
+    if (oauth.authenticated()) {
+      return Promise.resolve(oauth);
+    }
+
+    oauth.logout();
+
+    return new Promise((resolve, reject) => {
+      var errback = (err, result) => {
+        if (err) {
+          reject(new Error(err));
+        } else {
+          resolve(result);
+        }
+      };
+
+      _generatePkceChallenge(pkce => _authenticate(pkce, errback));
+    });
+  };
+
+
+  /**
+   * _authenticate
+   * internal authenticate
+   *
+   * @param  {Object}    pkce      Object containing PKCE code challenge properties
+   * @param  {function}  callback  Errback-style callback that accepts `(err, result)`
+   */
   function _authenticate(pkce, callback) {
     var state = generateState();
 
@@ -137,7 +172,7 @@ export function osmAuth(o) {
         callback(error);
         return;
       }
-      getAccessToken(params.code, pkce.code_verifier, accessTokenDone);
+      _getAccessToken(params.code, pkce.code_verifier, accessTokenDone);
       delete window.authComplete;
     };
 
@@ -154,11 +189,16 @@ export function osmAuth(o) {
   }
 
 
-  // ## Getting an access token
-  // The client requests an access token by authenticating with the
-  // authorization server and presenting the `auth_code`, brought
-  // in from a function call on a landing page popup.
-  function getAccessToken(auth_code, code_verifier, accessTokenDone) {
+  /**
+   * _getAccessToken
+   * The client requests an access token by authenticating with the
+   * authorization server and presenting the `auth_code`, brought
+   * in from a function call on a landing page popup.
+   * @param  {string}    auth_code
+   * @param  {string}    code_verifier
+   * @param  {function}  accessTokenDone  Errback-style callback `(err, result)`, called when complete
+   */
+  function _getAccessToken(auth_code, code_verifier, accessTokenDone) {
     var url =
       o.url +
       '/oauth2/token?' +
@@ -167,7 +207,7 @@ export function osmAuth(o) {
         redirect_uri: o.redirect_uri,
         grant_type: 'authorization_code',
         code: auth_code,
-        code_verifier: code_verifier,
+        code_verifier: code_verifier
       });
 
     // The authorization server authenticates the client and validates
@@ -180,9 +220,10 @@ export function osmAuth(o) {
   /**
    * bringPopupWindowToFront
    * Tries to bring an existing authentication popup to the front.
-   * @return  `true` if it succeeded, `false` if not
+   *
+   * @return {boolean} `true` if it succeeded, `false` if not
    */
-  oauth.bringPopupWindowToFront = function () {
+  oauth.bringPopupWindowToFront = function() {
     var broughtPopupToFront = false;
     try {
       // This may cause a cross-origin error:
@@ -204,11 +245,11 @@ export function osmAuth(o) {
    * If using this library in single-page mode, you'll need to call this once your application
    * has an `auth_code` and wants to get an access_token.
    *
-   * @param   auth_code  The OAuth2 `auth_code`
-   * @param   callback   An "errback"-style callback (`err`, `result`), called when complete
+   * @param   {string}   auth_code  The OAuth2 `auth_code`
+   * @param   {function} callback   Errback-style callback `(err, result)`, called when complete
    * @return  none
    */
-  oauth.bootstrapToken = function (auth_code, callback) {
+  oauth.bootstrapToken = function(auth_code, callback) {
     var state = token('oauth2_state');
     token('oauth2_state', '');
     var params = utilStringQs(window.location.search.slice(1));
@@ -220,7 +261,7 @@ export function osmAuth(o) {
     }
     var code_verifier = token('oauth2_pkce_code_verifier');
     token('oauth2_pkce_code_verifier', '');
-    getAccessToken(auth_code, code_verifier, accessTokenDone);
+    _getAccessToken(auth_code, code_verifier, accessTokenDone);
 
     function accessTokenDone(err, xhr) {
       o.done();
@@ -234,79 +275,58 @@ export function osmAuth(o) {
     }
   };
 
+
   /**
    * fetch
-   * A `fetch` wrapper that does authenticated calls if the user has logged in.
+   * A `fetch` wrapper that includes the Authorization header if the user is authenticated.
    * https://developer.mozilla.org/en-US/docs/Web/API/fetch
    *
-   * @param   path             The URL path (e.g. "/api/0.6/user/details") (or full url, if `options.prefix`=`false`)
-   * @param   options
-   * @param   options.method   Passed to `fetch`  (e.g. 'GET', 'POST')
-   * @param   options.prefix   If `true` path contains a path, if `false` path contains the full url
-   * @param   options.body     Passed to `fetch`
-   * @param   options.headers  `Object` containing request headers
-   * @return  `Promise` that resolves to a `Response` if authenticated, otherwise `null`
+   * @param  {string}   resource    Resource passed to `fetch`
+   * @param  {Object}   options     Options passed to `fetch`
+   * @return {Promise}  Promise that wraps `authenticateAsync` then `fetch`
    */
-  oauth.fetch = function (path, options, callback) {
+  oauth.fetch = function(resource, options) {
     if (oauth.authenticated()) {
-      return run();
+      return _doFetch();
     } else {
       if (o.auto) {
-        oauth.authenticate(run);
-        return;
+        return oauth.authenticateAsync().then(_doFetch);
       } else {
-        callback('not authenticated', null);
-        return;
+        return Promise.reject(new Error('not authenticated'));
       }
     }
 
-    function run() {
-      var url = options.prefix !== false ? o.url + path : path;
-      var headers = options.headers || { 'Content-Type': 'application/x-www-form-urlencoded' };
-      headers.Authorization = 'Bearer ' + token('oauth2_access_token');
-      return fetch(url, {
-        method: options.method,
-        body: options.body,
-        headers: headers,
-      }).then((resp) => {
-        var contentType = resp.headers.get('content-type').split(';')[0];
-        switch (contentType) {
-          case 'text/html':
-          case 'text/xml':
-            return resp
-              .text()
-              .then((txt) =>
-                new window.DOMParser().parseFromString(txt, contentType)
-              );
-          case 'application/html':
-            return resp.json();
-          default:
-            return resp.text();
-        }
-      });
+    function _doFetch() {
+      options = options || {};
+      if (!options.headers) {
+        options.headers = { 'Content-Type': 'application/x-www-form-urlencoded' };
+      }
+      options.headers.Authorization = 'Bearer ' + token('oauth2_access_token');
+      return fetch(resource, options);
     }
   };
+
 
   /**
    * xhr
    * A `XMLHttpRequest` wrapper that does authenticated calls if the user has logged in.
    * https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest
    *
-   * @param   options
-   * @param   options.method   Passed to `xhr.open`  (e.g. 'GET', 'POST')
-   * @param   options.prefix   If `true` path contains a path, if `false` path contains the full url
-   * @param   options.path     The URL path (e.g. "/api/0.6/user/details") (or full url, if `prefix`=`false`)
-   * @param   options.content  Passed to `xhr.send`
-   * @param   options.headers  `Object` containing request headers
-   * @param   callback  An "errback"-style callback (`err`, `result`), called when complete
-   * @return  `XMLHttpRequest` if authenticated, otherwise `null`
+   * @param   {Object} options
+   * @param    options.method   Passed to `xhr.open`  (e.g. 'GET', 'POST')
+   * @param    options.prefix   If `true` path contains a path, if `false` path contains the full url
+   * @param    options.path     The URL path (e.g. "/api/0.6/user/details") (or full url, if `prefix`=`false`)
+   * @param    options.content  Passed to `xhr.send`
+   * @param    options.headers  `Object` containing request headers
+   * @param   {function}         callback  Errback-style callback `(err, result)`, called when complete
+   * @return  {XMLHttpRequest}  `XMLHttpRequest` if authenticated, otherwise `null`
    */
   oauth.xhr = function (options, callback) {
     if (oauth.authenticated()) {
-      return run();
+      return _doXHR();
     } else {
       if (o.auto) {
-        oauth.authenticate(run);
+        oauth.authenticate(_doXHR);
         return;
       } else {
         callback('not authenticated', null);
@@ -314,7 +334,7 @@ export function osmAuth(o) {
       }
     }
 
-    function run() {
+    function _doXHR() {
       var url = options.prefix !== false ? (o.url + options.path) : options.path;
       return oauth.rawxhr(
         options.method,
@@ -351,7 +371,7 @@ export function osmAuth(o) {
    * @param    callback       An "errback"-style callback (`err`, `result`), called when complete
    * @return  `XMLHttpRequest`
    */
-  oauth.rawxhr = function (method, url, access_token, data, headers, callback) {
+  oauth.rawxhr = function(method, url, access_token, data, headers, callback) {
     headers = headers || { 'Content-Type': 'application/x-www-form-urlencoded' };
 
     if (access_token) {
@@ -385,10 +405,10 @@ export function osmAuth(o) {
    * preauth
    * Pre-authorize this object, if we already have access token from the start
    *
-   * @param    val   `Object` containing `access_token` property
+   * @param   {Object}  val  Object containing `access_token` property
    * @return  `self`
    */
-  oauth.preauth = function (val) {
+  oauth.preauth = function(val) {
     if (val && val.access_token) {
       token('oauth2_access_token', val.access_token);
     }
@@ -404,7 +424,7 @@ export function osmAuth(o) {
    * @param   val?   Object containing options
    * @return  current `options` (if getting), or `self` (if setting)
    */
-  oauth.options = function (val) {
+  oauth.options = function(val) {
     if (!arguments.length) return o;
 
     o = val;
@@ -447,10 +467,11 @@ export function osmAuth(o) {
 }
 
 
-/** Transforms object into query string
- * @param obj
- * @param noencode
- * @returns query string
+/**
+ * utilQsString
+ * Transforms object of `key=value` pairs into query string
+ * @param   {Object}  Object of `key=value` pairs
+ * @returns {string}  query string
  */
 function utilQsString(obj) {
   return Object.keys(obj)
@@ -464,9 +485,11 @@ function utilQsString(obj) {
     .join('&');
 }
 
-/** Transforms query string into object
- * @param str
- * @returns object
+/**
+ * utilStringQs
+ * Transforms query string into object of `key=value` pairs
+ * @param   {string}  query string
+ * @returns {Object}  Object of `key=value` pairs
  */
 function utilStringQs(str) {
   var i = 0; // advance past any leading '?' or '#' characters
@@ -483,6 +506,11 @@ function utilStringQs(str) {
 }
 
 
+/**
+ * supportsWebCryptoAPI
+ * https://developer.mozilla.org/en-US/docs/Web/API/Web_Crypto_API
+ * @returns {boolean}  `true` if WebCryptoAPI is available
+ */
 function supportsWebCryptoAPI() {
   return window && window.crypto
     && window.crypto.getRandomValues
@@ -490,13 +518,14 @@ function supportsWebCryptoAPI() {
     && window.crypto.subtle.digest;
 }
 
+
 /**
  * Generates a challenge/verifier pair for PKCE.
- * If the browser does not support the Web Crypto API, the "plain" method is
+ * If the browser does not support the WebCryptoAPI, the "plain" method is
  * used as a fallback instead of a SHA-256 hash.
  * @param {callback} callback called with the result of the generated PKCE challenge
  */
-function generatePkceChallenge(callback) {
+function _generatePkceChallenge(callback) {
   var code_verifier;
   if (supportsWebCryptoAPI()) {
     // generate a random code_verifier
@@ -532,6 +561,7 @@ function generatePkceChallenge(callback) {
   }
 }
 
+
 /**
  * Returns a random state to be used as the "state" of the OAuth2 authentication
  * See https://datatracker.ietf.org/doc/html/rfc6749#section-10.12
@@ -552,14 +582,16 @@ function generateState() {
   return state;
 }
 
-/** Converts binary buffer to base64 encoded string, as used in rfc7636
- * @param obj
- * @param noencode
- * @returns query string
+
+/**
+ * base64
+ * Converts binary buffer to base64 encoded string, as used in rfc7636
+ * @param    {ArrayBuffer}  buffer
+ * @returns  {string}       base64 encoded
  */
 function base64(buffer) {
   return btoa(String.fromCharCode.apply(null, new Uint8Array(buffer)))
-      .replace(/\//g, '_')
-      .replace(/\+/g, '-')
-      .replace(/[=]/g, '');
+    .replace(/\//g, '_')
+    .replace(/\+/g, '-')
+    .replace(/[=]/g, '');
 }
