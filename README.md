@@ -189,6 +189,15 @@ Param:   `callback`  An "errback"-style callback (`err`, `result`), called when 
 Returns:  none<br/>
 
 
+## `.authenticateAsync()`
+
+Promisified version of `.authenticate()`<br/>
+First logs out, then runs the authentication flow and resolves if successful, or rejects if not.<br/>
+<br/>
+Param:   `callback`  An "errback"-style callback (`err`, `result`), called when complete<br/>
+Returns:  `Promise` settled with whatever authenticate did.<br/>
+
+
 ## `.bringPopupWindowToFront()`
 
 Tries to bring an existing authentication popup to the front.<br/>
@@ -205,18 +214,14 @@ Param:  `callback`   An "errback"-style callback (`err`, `result`), called when 
 Returns:  none<br/>
 
 
-## `.fetch(path, options)`
+## `.fetch(resource, options)`
 
-A `fetch` wrapper that does authenticated calls if the user has logged in.<br/>
+A `fetch` wrapper that includes the Authorization header if the user is authenticated.<br/>
 See: https://developer.mozilla.org/en-US/docs/Web/API/fetch<br/>
 <br/>
-Param: `path`  The URL path (e.g. "/api/0.6/user/details") (or full url, if `options.prefix`=`false`)<br/>
-Param: `options`:<br/>
-  `options.method`   Passed to `fetch`  (e.g. 'GET', 'POST')<br/>
-  `options.prefix`   If `true` path contains a path, if `false` path contains the full url<br/>
-  `options.body`  Passed to `fetch`<br/>
-  `options.headers`  optional `Object` containing request headers<br/>
-Return: `Promise` that resolves to a `Response` if authenticated, otherwise `null`<br/>
+Param: `resource`  Resource passed to `fetch`<br/>
+Param: `options`   Options passed to `fetch`<br/>
+Return: `Promise` that wraps `authenticateAsync` then `fetch`<br/>
 
 
 ## `.xhr(options, callback)`
