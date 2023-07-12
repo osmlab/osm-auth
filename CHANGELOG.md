@@ -15,6 +15,17 @@ _Breaking changes, which may affect downstream projects, are marked with a_ тЪая
 [#xxx]: https://github.com/osmlab/osm-auth/issues/xxx
 -->
 
+## 2.2.0
+##### 2023-Jul-12
+* Make the fetch wrapper more compatible with fetch ([#117], [#118])
+* Implement PKCE for OAuth2 authentication ([#114], thanks [@tyrasd])
+
+[#118]: https://github.com/osmlab/osm-auth/issues/118
+[#117]: https://github.com/osmlab/osm-auth/issues/117
+[#114]: https://github.com/osmlab/osm-auth/issues/114
+[@tyrasd]: https://github.com/tyrasd
+
+
 ## 2.1.0
 ##### 2023-May-17
 * Add fetch wrapper ([#112], thanks [@dschep])
