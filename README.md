@@ -118,7 +118,7 @@ var redirectPath = window.location.origin + window.location.pathname;
 var auth = osmAuth.osmAuth({
   client_id: "JWXSAzNp64sIRMStTnkhMRaMxSR964V4sFgn3KUZNTA",
   redirect_uri: redirectPath,
-  scope: "read_prefs",
+  scope: "read_prefs", // scopes should be separated by a space, e.g. "read_prefs write_prefs". See https://wiki.openstreetmap.org/wiki/OAuth#OAuth_2.0 for all scopes  
   auto: true  // show a login form if the user is not authenticated and you try to do a call
   singlepage: true,
 });
