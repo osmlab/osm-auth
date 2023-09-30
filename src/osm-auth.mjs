@@ -63,8 +63,14 @@ export function osmAuth(o) {
 
     oauth.logout();
 
-    _generatePkceChallenge(function(pkce) {
-      _authenticate(pkce, callback);
+    _preopenPopup(function(error, popup) {
+      if (error) {
+        callback(error);
+      } else {
+        _generatePkceChallenge(function(pkce) {
+          _authenticate(pkce, popup, callback);
+        });
+      }
     });
   };
 
@@ -90,9 +96,48 @@ export function osmAuth(o) {
         }
       };
 
-      _generatePkceChallenge(pkce => _authenticate(pkce, errback));
+      _preopenPopup((error, popup) => {
+        if (error) {
+          errback(error);
+        } else {
+          _generatePkceChallenge(pkce => _authenticate(pkce, popup, errback));
+        }
+      });
     });
   };
+
+
+  /**
+   * opens an empty popup to be later used for the authentication page
+   * @param   {function}  callback  Errback-style callback `(err, result)`, called when complete
+   * @return  none
+   */
+  function _preopenPopup(callback) {
+    if (o.singlepage) {
+      callback(null, undefined);
+      return;
+    }
+
+    // Create a 600x550 popup window in the center of the screen
+    var w = 600;
+    var h = 550;
+    var settings = [
+        ['width', w],
+        ['height', h],
+        ['left', window.screen.width / 2 - w / 2],
+        ['top', window.screen.height / 2 - h / 2],
+      ]
+      .map(function (x) { return x.join('='); })
+      .join(',');
+    var popup = window.open('about:blank', 'oauth_window', settings);
+    if (popup) {
+      callback(null, popup);
+    } else {
+      var error = new Error('Popup was blocked');
+      error.status = 'popup-blocked';
+      callback(error);
+    }
+  }
 
 
   /**
@@ -100,9 +145,10 @@ export function osmAuth(o) {
    * internal authenticate
    *
    * @param  {Object}    pkce      Object containing PKCE code challenge properties
+   * @param  {Window}    popup     Popup Window to use for the authentication page, should be undefined when using singlepage mode
    * @param  {function}  callback  Errback-style callback that accepts `(err, result)`
    */
-  function _authenticate(pkce, callback) {
+  function _authenticate(pkce, popup, callback) {
     var state = generateState();
 
     // ## Request authorization to access resources from the user
@@ -139,27 +185,8 @@ export function osmAuth(o) {
         window.location = url;
       }
     } else {
-      // Create a 600x550 popup window in the center of the screen
-      var w = 600;
-      var h = 550;
-      var settings = [
-          ['width', w],
-          ['height', h],
-          ['left', window.screen.width / 2 - w / 2],
-          ['top', window.screen.height / 2 - h / 2],
-        ]
-        .map(function (x) { return x.join('='); })
-        .join(',');
-
-      var popup = window.open('about:blank', 'oauth_window', settings);
       oauth.popupWindow = popup;
       popup.location = url;
-
-      if (!popup) {
-        error = new Error('Popup was blocked');
-        error.status = 'popup-blocked';
-        callback(error);
-      }
     }
 
     // Called by a function in the redirect URL page, in the popup window. The
