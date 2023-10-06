@@ -118,9 +118,9 @@ export function osmAuth(o) {
       return;
     }
 
-    // Create a 600x550 popup window in the center of the screen
-    var w = 600;
-    var h = 550;
+    // Create a 550x610 popup window in the center of the screen
+    var w = 550;
+    var h = 610;
     var settings = [
         ['width', w],
         ['height', h],
