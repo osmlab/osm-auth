@@ -49,8 +49,14 @@ function osmAuth(o) {
       return;
     }
     oauth.logout();
-    _generatePkceChallenge(function(pkce) {
-      _authenticate(pkce, callback);
+    _preopenPopup(function(error, popup) {
+      if (error) {
+        callback(error);
+      } else {
+        _generatePkceChallenge(function(pkce) {
+          _authenticate(pkce, popup, callback);
+        });
+      }
     });
   };
   oauth.authenticateAsync = function() {
@@ -66,10 +72,40 @@ function osmAuth(o) {
           resolve(result);
         }
       };
-      _generatePkceChallenge((pkce) => _authenticate(pkce, errback));
+      _preopenPopup((error, popup) => {
+        if (error) {
+          errback(error);
+        } else {
+          _generatePkceChallenge((pkce) => _authenticate(pkce, popup, errback));
+        }
+      });
     });
   };
-  function _authenticate(pkce, callback) {
+  function _preopenPopup(callback) {
+    if (o.singlepage) {
+      callback(null, void 0);
+      return;
+    }
+    var w = 550;
+    var h = 610;
+    var settings = [
+      ["width", w],
+      ["height", h],
+      ["left", window.screen.width / 2 - w / 2],
+      ["top", window.screen.height / 2 - h / 2]
+    ].map(function(x) {
+      return x.join("=");
+    }).join(",");
+    var popup = window.open("about:blank", "oauth_window", settings);
+    if (popup) {
+      callback(null, popup);
+    } else {
+      var error = new Error("Popup was blocked");
+      error.status = "popup-blocked";
+      callback(error);
+    }
+  }
+  function _authenticate(pkce, popup, callback) {
     var state = generateState();
     var url = o.url + "/oauth2/authorize?" + utilQsString({
       client_id: o.client_id,
@@ -96,24 +132,8 @@ function osmAuth(o) {
         window.location = url;
       }
     } else {
-      var w = 600;
-      var h = 550;
-      var settings = [
-        ["width", w],
-        ["height", h],
-        ["left", window.screen.width / 2 - w / 2],
-        ["top", window.screen.height / 2 - h / 2]
-      ].map(function(x) {
-        return x.join("=");
-      }).join(",");
-      var popup = window.open("about:blank", "oauth_window", settings);
       oauth.popupWindow = popup;
       popup.location = url;
-      if (!popup) {
-        error = new Error("Popup was blocked");
-        error.status = "popup-blocked";
-        callback(error);
-      }
     }
     window.authComplete = function(url2) {
       var params2 = utilStringQs(url2.split("?")[1]);
