@@ -11,7 +11,7 @@ import store from 'store';
  * @param    o.client_id      OAuth2 client ID
  * @param    o.redirect_uri   OAuth2 redirect URI (e.g. "http://127.0.0.1:8080/land.html")
  * @param    o.access_token   Can pre-authorize with an OAuth2 bearer token if you have one
- * @param    o.url            A base url (default: "https://www.openstreetmap.org")
+ * @param    o.url            A base url (default: "https://api.openstreetmap.org")
  * @param    o.auto           If `true`, attempt to authenticate automatically when calling `.xhr()` or `.fetch()` (default: `false`)
  * @param    o.singlepage     If `true`, use page redirection instead of a popup (default: `false`)
  * @param    o.loading        Function called when auth-related xhr calls start
@@ -428,7 +428,7 @@ export function osmAuth(o) {
     if (!arguments.length) return o;
 
     o = val;
-    o.url = o.url || 'https://www.openstreetmap.org';
+    o.url = o.url || 'https://api.openstreetmap.org';
     o.auto = o.auto || false;
     o.singlepage = o.singlepage || false;
 
