@@ -160,7 +160,7 @@ var redirectPath = window.location.origin + window.location.pathname;
 Additional options are:
 
  - `access_token` - Can pre-authorize with an OAuth2 bearer token if you have one
- - `url` - A base url (default: "https://www.openstreetmap.org")
+ - `url` - A base url (default: "https://api.openstreetmap.org")
  - `auto` - If `true`, attempt to authenticate automatically when calling `.xhr()` or `fetch()` (default: `false`)
  - `singlepage` - If `true`, use page redirection instead of a popup (default: `false`)
  - `loading` - Function called when auth-related xhr calls start
