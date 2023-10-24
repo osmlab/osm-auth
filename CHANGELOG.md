@@ -15,6 +15,20 @@ _Breaking changes, which may affect downstream projects, are marked with a_ тЪая
 [#xxx]: https://github.com/osmlab/osm-auth/issues/xxx
 -->
 
+## 2.3.0
+##### 2023-Oct-24
+* Add `apiUrl` property to support connecting to OSM API at `api.openstreetmap.org` ([#123], [operations#951])
+* Fix popup on Safari when accessing WebCryptoAPI ([#121], [#122], thanks [@tyrasd])
+* Fix double wrapping of `Error` object returned from authenticate ([0f48eb88])
+
+[#121]: https://github.com/osmlab/osm-auth/issues/121
+[#122]: https://github.com/osmlab/osm-auth/issues/122
+[#123]: https://github.com/osmlab/osm-auth/issues/123
+[operations#951]: https://github.com/openstreetmap/operations/issues/951
+[0f48eb88]: https://github.com/osmlab/osm-auth/commit/0f48eb88293e2d9edcc7e668fd31c68681f0aa77
+[@tyrasd]: https://github.com/tyrasd
+
+
 ## 2.2.0
 ##### 2023-Jul-12
 * Make the fetch wrapper more compatible with fetch ([#117], [#118])
