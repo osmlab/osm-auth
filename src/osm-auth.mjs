@@ -90,7 +90,7 @@ export function osmAuth(o) {
     return new Promise((resolve, reject) => {
       var errback = (err, result) => {
         if (err) {
-          reject(new Error(err));
+          reject(err);
         } else {
           resolve(result);
         }
