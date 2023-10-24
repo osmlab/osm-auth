@@ -235,7 +235,7 @@ function osmAuth(o) {
       }
     }
     function _doXHR() {
-      var url = options.prefix !== false ? o.url + options.path : options.path;
+      var url = options.prefix !== false ? o.apiUrl + options.path : options.path;
       return oauth.rawxhr(
         options.method,
         url,
@@ -289,6 +289,7 @@ function osmAuth(o) {
     if (!arguments.length)
       return o;
     o = val;
+    o.apiUrl = o.apiUrl || "https://api.openstreetmap.org";
     o.url = o.url || "https://www.openstreetmap.org";
     o.auto = o.auto || false;
     o.singlepage = o.singlepage || false;
