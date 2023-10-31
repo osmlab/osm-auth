@@ -1,23 +1,20 @@
 // Type definitions for osm-auth
 
 declare namespace OSMAuth {
-  interface OSMAuthConstructor {
-    new (options: OSMAuthOptions): OSMAuthInstance;
-  }
-
-  interface OSMAuthInstance {
+  class osmAuth {
+    constructor(options: OSMAuthOptions)
     popupWindow?: Window
-    logout(): OSMAuthInstance;
-    fetch(path: string, options: OSMAuthFetchOptions): Promise;
+    logout(): osmAuth;
+    fetch(path: string, options: OSMAuthFetchOptions): Promise<Response>;
     authenticated(): boolean;
     authenticate(callback: (err: null | any, result?: any) => any): any;
     bringPopupWindowToFront(): boolean;
     bootstrapToken(oauth_token: string, callback: (err: null | any, result?: any) => any): any;
     xhr(options: OSMAuthXHROptions, callback: (err: null | any, result?: any) => any): XMLHttpRequest | null;
     rawxhr(method: string, url: string, access_token: string | null, data: any | null, headers: object | null, callback: (err: null | any, result?: any) => any): XMLHttpRequest;
-    preauth(options: OSMAuthOptions): OSMAuthInstance;
+    preauth(options: OSMAuthOptions): osmAuth;
     options(): OSMAuthOptions;
-    options(options: OSMAuthOptions): OSMAuthInstance;
+    options(options: OSMAuthOptions): osmAuth;
   }
 
   interface OSMAuthOptions {
@@ -48,8 +45,7 @@ declare namespace OSMAuth {
   }
 }
 
-declare var osmAuth: OSMAuth.OSMAuthConstructor;
 
 declare module 'osm-auth' {
-  export = osmAuth;
+  export = OSMAuth;
 }
