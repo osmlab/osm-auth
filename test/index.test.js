@@ -1,13 +1,22 @@
-import { test } from 'tap';
+import { after, before, test } from 'node:test';
+import { strict as assert } from 'node:assert';
 import { osmAuth } from '../src/osm-auth.mjs';
 
 import { LocalStorage } from 'node-localstorage';
-global.localStorage = new LocalStorage('./scratch');
 
+let localStorage;
 
-test('osmauth', t => {
-  t.test('.options', t => {
-    t.test('gets and sets new options', t => {
+test('osmauth', async t => {
+  before(() => {
+    localStorage = new LocalStorage('./scratch');
+  });
+
+  after(() => {
+    localStorage._deleteLocation();
+  });
+
+  await t.test('.options', async t => {
+    await t.test('gets and sets new options', t => {
       localStorage.clear();
       const keys = {
         url: 'https://www.openstreetmap.org',
@@ -18,18 +27,15 @@ test('osmauth', t => {
         scope: 'read_prefs'
       };
       const auth = osmAuth(keys);
-      t.same(auth.options(), keys);
+      assert.deepEqual(auth.options(), keys);
 
       auth.options({ url: 'foo' });
-      t.same(auth.options().url, 'foo');
-      t.end();
+      assert.deepEqual(auth.options().url, 'foo');
     });
-
-    t.end();
   });
 
-  t.test('pre authorization', t => {
-    t.test('is not initially authorized', t => {
+  await t.test('pre authorization', async t => {
+    await t.test('is not initially authorized', t => {
       localStorage.clear();
       const auth = osmAuth({
         url: 'https://www.openstreetmap.org',
@@ -38,11 +44,10 @@ test('osmauth', t => {
         redirect_uri: 'http://127.0.0.1:8080/land.html',
         scope: 'read_prefs'
       });
-      t.notOk(auth.authenticated());
-      t.end();
+      assert.equal(auth.authenticated(), false);
     });
 
-    t.test('can be preauthorized', t => {
+    await t.test('can be preauthorized', t => {
       localStorage.clear();
       const auth = osmAuth({
         url: 'https://www.openstreetmap.org',
@@ -52,14 +57,7 @@ test('osmauth', t => {
         scope: 'read_prefs',
         access_token: 'foo'
       });
-      t.ok(auth.authenticated());
-      t.end();
+      assert.equal(auth.authenticated(), true);
     });
-
-    t.end();
   });
-
-  t.end();
 });
-
-localStorage._deleteLocation();

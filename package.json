@@ -32,8 +32,8 @@
     "clean": "shx rm -rf dist",
     "lint": "eslint src/osm-auth.mjs test/*.js",
     "start": "npx http-server ./ -c-1",
-    "tap": "c8 tap --reporter terse --no-cov test/*.js",
-    "test": "run-s build lint tap"
+    "test": "run-s build test:node",
+    "test:node": "c8 node --test test/"
   },
   "dependencies": {
     "store": "~2.0.12"
@@ -45,8 +45,7 @@
     "http-server": "^14.1.1",
     "node-localstorage": "^3.0.5",
     "npm-run-all": "^4.1.5",
-    "shx": "^0.3.4",
-    "tap": "^16.3.10"
+    "shx": "^0.3.4"
   },
   "engines": {
     "node": ">=18"
