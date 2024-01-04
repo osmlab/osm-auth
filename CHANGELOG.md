@@ -15,6 +15,17 @@ _Breaking changes, which may affect downstream projects, are marked with a_ тЪая
 [#xxx]: https://github.com/osmlab/osm-auth/issues/xxx
 -->
 
+## 2.4.0
+##### 2024-Jan-04
+* Remove `store` dependency ([#126])
+* Attempt to fix export errors from TypeScript declaration file ([#124], [#125], thansk [@pietervdvn])
+
+[#124]: https://github.com/osmlab/osm-auth/issues/124
+[#125]: https://github.com/osmlab/osm-auth/issues/125
+[#126]: https://github.com/osmlab/osm-auth/issues/126
+[@pietervdvn]: https://github.com/pietervdvn
+
+
 ## 2.3.0
 ##### 2023-Oct-24
 * Add `apiUrl` property to support connecting to OSM API at `api.openstreetmap.org` ([#123], [operations#951])
