@@ -1,5 +1,3 @@
-import store from 'store';
-
 
 /**
  * osmAuth
@@ -21,6 +19,37 @@ import store from 'store';
  */
 export function osmAuth(o) {
   var oauth = {};
+
+  // Mock localStorage if needed.
+  // Note that accessing localStorage may throw a `SecurityError`, so wrap in a try/catch.
+  var _store = null;
+  try {
+    _store = window.localStorage;
+  } catch (e) {
+    var _mock = new Map();
+    _store = {
+      isMocked: true,
+      hasItem: (k) => _mock.has(k),
+      getItem: (k) => _mock.get(k),
+      setItem: (k, v) => _mock.set(k, v),
+      removeItem: (k) => _mock.delete(k),
+      clear: () => _mock.clear()
+    };
+  }
+
+  /**
+   * token
+   * Get/Set tokens. These are prefixed with the base URL so that `osm-auth`
+   * can be used with multiple APIs and the keys in `localStorage` will not clash
+   * @param  {string}   k  key
+   * @param  {string?}  v  value
+   * @return {string?}  If getting, returns the stored value or `null`.  If setting, returns `undefined`.
+   */
+  function token(k, v) {
+    if (arguments.length === 1) return _store.getItem(o.url + k);
+    else if (arguments.length === 2) return _store.setItem(o.url + k, v);
+  }
+
 
   /**
    * authenticated
@@ -168,9 +197,9 @@ export function osmAuth(o) {
       });
 
     if (o.singlepage) {
-      if (!store.enabled) {
+      if (_store.isMocked) {
         // in singlepage mode, PKCE requires working non-volatile storage
-        var error = new Error('local storage unavailable, but require in singlepage mode');
+        var error = new Error('localStorage unavailable, but required in singlepage mode');
         error.status = 'pkce-localstorage-unavailable';
         callback(error);
         return;
@@ -470,25 +499,6 @@ export function osmAuth(o) {
 
 
   // Everything below here is initialization/setup code
-
-  // get/set tokens. These are prefixed with the base URL so that `osm-auth`
-  // can be used with multiple APIs and the keys in `localStorage`
-  // will not clash
-  var token;
-
-  if (store.enabled) {
-    token = function (x, y) {
-      if (arguments.length === 1) return store.get(o.url + x);
-      else if (arguments.length === 2) return store.set(o.url + x, y);
-    };
-  } else {
-    var storage = {};
-    token = function (x, y) {
-      if (arguments.length === 1) return storage[o.url + x];
-      else if (arguments.length === 2) return (storage[o.url + x] = y);
-    };
-  }
-
   // Handle options and attempt to pre-authorize
   oauth.options(o);
 

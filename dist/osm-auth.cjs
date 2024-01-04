@@ -1,8 +1,6 @@
-var __create = Object.create;
 var __defProp = Object.defineProperty;
 var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
 var __getOwnPropNames = Object.getOwnPropertyNames;
-var __getProtoOf = Object.getPrototypeOf;
 var __hasOwnProp = Object.prototype.hasOwnProperty;
 var __export = (target, all) => {
   for (var name in all)
@@ -16,23 +14,34 @@ var __copyProps = (to, from, except, desc) => {
   }
   return to;
 };
-var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
-  // If the importer is in node compatibility mode or this is not an ESM
-  // file that has been converted to a CommonJS file using a Babel-
-  // compatible transform (i.e. "__esModule" has not been set), then set
-  // "default" to the CommonJS "module.exports" for node compatibility.
-  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
-  mod
-));
 var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 var osm_auth_exports = {};
 __export(osm_auth_exports, {
   osmAuth: () => osmAuth
 });
 module.exports = __toCommonJS(osm_auth_exports);
-var import_store = __toESM(require("store"), 1);
 function osmAuth(o) {
   var oauth = {};
+  var _store = null;
+  try {
+    _store = window.localStorage;
+  } catch (e) {
+    var _mock = /* @__PURE__ */ new Map();
+    _store = {
+      isMocked: true,
+      hasItem: (k) => _mock.has(k),
+      getItem: (k) => _mock.get(k),
+      setItem: (k, v) => _mock.set(k, v),
+      removeItem: (k) => _mock.delete(k),
+      clear: () => _mock.clear()
+    };
+  }
+  function token(k, v) {
+    if (arguments.length === 1)
+      return _store.getItem(o.url + k);
+    else if (arguments.length === 2)
+      return _store.setItem(o.url + k, v);
+  }
   oauth.authenticated = function() {
     return !!token("oauth2_access_token");
   };
@@ -117,8 +126,8 @@ function osmAuth(o) {
       code_challenge_method: pkce.code_challenge_method
     });
     if (o.singlepage) {
-      if (!import_store.default.enabled) {
-        var error = new Error("local storage unavailable, but require in singlepage mode");
+      if (_store.isMocked) {
+        var error = new Error("localStorage unavailable, but required in singlepage mode");
         error.status = "pkce-localstorage-unavailable";
         callback(error);
         return;
@@ -299,23 +308,6 @@ function osmAuth(o) {
     };
     return oauth.preauth(o);
   };
-  var token;
-  if (import_store.default.enabled) {
-    token = function(x, y) {
-      if (arguments.length === 1)
-        return import_store.default.get(o.url + x);
-      else if (arguments.length === 2)
-        return import_store.default.set(o.url + x, y);
-    };
-  } else {
-    var storage = {};
-    token = function(x, y) {
-      if (arguments.length === 1)
-        return storage[o.url + x];
-      else if (arguments.length === 2)
-        return storage[o.url + x] = y;
-    };
-  }
   oauth.options(o);
   return oauth;
 }
