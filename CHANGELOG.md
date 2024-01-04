@@ -18,7 +18,7 @@ _Breaking changes, which may affect downstream projects, are marked with a_ тЪая
 ## 2.4.0
 ##### 2024-Jan-04
 * Remove `store` dependency ([#126])
-* Attempt to fix export errors from TypeScript declaration file ([#124], [#125], thansk [@pietervdvn])
+* Attempt to fix export errors from TypeScript declaration file ([#124], [#125], thanks [@pietervdvn])
 
 [#124]: https://github.com/osmlab/osm-auth/issues/124
 [#125]: https://github.com/osmlab/osm-auth/issues/125
