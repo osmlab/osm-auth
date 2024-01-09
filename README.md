@@ -82,7 +82,7 @@ Register a new OAuth2.0 application on openstreetmap.org:
 3. Click 'OAuth 2 applications'
 4. At the bottom, 'Register new application'
 5. Fill in the form (keeping the _Confidential application?_ checkbox unchecked) & submit
-6. Copy & Paste the client ID, secret, redirect URI and scope(s) into the osmAuth config object as below
+6. Copy & Paste the client ID, redirect URI, and scope(s) into the osmAuth config object as below
 
 👉 Important:
 - The "Redirect URIs" are URIs that OSM is allowed to redirect the user back to.  You can supply multiple Redirect URIs separated by spaces, and change them later.
@@ -146,7 +146,7 @@ if (window.location.search.slice(1).split('&').some(p => p.startsWith('code=')))
 ## `.osmAuth(options)`
 
 Constructs an `osmAuth` instance.<br/>
-At a minimum, `options` must contain OAuth2 client ID, secret, redirect URI, and scope(s):
+At a minimum, `options` must contain OAuth2 client ID, redirect URI, and scope(s):
 
 ```js
 var redirectPath = window.location.origin + window.location.pathname;
