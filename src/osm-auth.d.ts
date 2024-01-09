@@ -23,6 +23,7 @@ declare namespace OSMAuth {
     redirect_uri: string;
     access_token?: string;
     url?: string;
+    apiUrl?: string;
     auto?: boolean;
     singlepage?: boolean;
     loading?: () => any;
