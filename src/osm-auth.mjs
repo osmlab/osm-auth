@@ -15,6 +15,7 @@
  * @param    o.singlepage     If `true`, use page redirection instead of a popup (default: `false`)
  * @param    o.loading        Function called when auth-related xhr calls start
  * @param    o.done           Function called when auth-related xhr calls end
+ * @param    o.locale         The locale to use on the OAuth2 authentication page. Optional.
  * @return  `self`
  */
 export function osmAuth(o) {
@@ -194,6 +195,7 @@ export function osmAuth(o) {
         state: state,
         code_challenge: pkce.code_challenge,
         code_challenge_method: pkce.code_challenge_method,
+        locale: o.locale || "",
       });
 
     if (o.singlepage) {

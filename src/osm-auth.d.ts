@@ -28,6 +28,7 @@ declare namespace OSMAuth {
     singlepage?: boolean;
     loading?: () => any;
     done?: () => any;
+    locale?: string;
   }
 
   interface OSMAuthFetchOptions {
