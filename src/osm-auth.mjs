@@ -237,7 +237,7 @@ export function osmAuth(o) {
     window.authComplete = function (url) {
       var params = utilStringQs(url.split('?')[1]);
       if (params.state !== state) {
-        error = new Error('Invalid state');
+        var error = new Error('Invalid state');
         error.status = 'invalid-state';
         callback(error);
         return;
