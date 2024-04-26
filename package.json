@@ -1,6 +1,6 @@
 {
   "name": "osm-auth",
-  "version": "2.4.0",
+  "version": "2.5.0",
   "license": "ISC",
   "repository": "github:osmlab/osm-auth",
   "description": "A usable example of JavaScript OAuth 2.0 with OpenStreetMap",

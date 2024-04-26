@@ -155,9 +155,9 @@ function osmAuth(o) {
     window.authComplete = function(url2) {
       var params2 = utilStringQs(url2.split("?")[1]);
       if (params2.state !== state) {
-        error = new Error("Invalid state");
-        error.status = "invalid-state";
-        callback(error);
+        var error2 = new Error("Invalid state");
+        error2.status = "invalid-state";
+        callback(error2);
         return;
       }
       _getAccessToken(params2.code, pkce.code_verifier, accessTokenDone);
