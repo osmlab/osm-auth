@@ -15,6 +15,17 @@ _Breaking changes, which may affect downstream projects, are marked with a_ тЪая
 [#xxx]: https://github.com/osmlab/osm-auth/issues/xxx
 -->
 
+## 2.5.0
+##### 2024-Apr-26
+* Remove any extra quotes that were stored with legacy tokens ([#129])
+* Allow locale to be passed to login page ([#23], [#130], thanks [@k-yle])
+
+[#23]: https://github.com/osmlab/osm-auth/issues/23
+[#129]: https://github.com/osmlab/osm-auth/issues/129
+[#130]: https://github.com/osmlab/osm-auth/issues/130
+[@k-yle]: https://github.com/k-yle
+
+
 ## 2.4.0
 ##### 2024-Jan-04
 * Remove `store` dependency ([#126])

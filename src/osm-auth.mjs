@@ -47,8 +47,19 @@ export function osmAuth(o) {
    * @return {string?}  If getting, returns the stored value or `null`.  If setting, returns `undefined`.
    */
   function token(k, v) {
-    if (arguments.length === 1) return _store.getItem(o.url + k);
-    else if (arguments.length === 2) return _store.setItem(o.url + k, v);
+    var key = o.url + k;
+    if (arguments.length === 1) {
+      var val = _store.getItem(key) || '';
+      // Note: legacy tokens might be wrapped in double quotes - remove them, see #129
+      return val.replace(/"/g, '');
+
+    } else if (arguments.length === 2) {
+      if (v) {
+        return _store.setItem(key, v);
+      } else {
+        return _store.removeItem(key);
+      }
+    }
   }
 
 
@@ -195,7 +206,7 @@ export function osmAuth(o) {
         state: state,
         code_challenge: pkce.code_challenge,
         code_challenge_method: pkce.code_challenge_method,
-        locale: o.locale || "",
+        locale: o.locale || '',
       });
 
     if (o.singlepage) {
