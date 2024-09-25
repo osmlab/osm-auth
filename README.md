@@ -6,7 +6,7 @@
 Easy authentication with [OpenStreetMap](http://www.openstreetmap.org/) over [OAuth 2.0](https://oauth.net/2/).<br/>
 See also: https://wiki.openstreetmap.org/wiki/OAuth
 
-Note: If you want the older version of this library that supports OpenStreetMap over [the deprecated](https://github.com/openstreetmap/operations/issues/867) **OAuth 1.0a**, use [the v1 branch](https://github.com/osmlab/osm-auth/tree/v1) and pin your software to older [release versions <2](https://github.com/osmlab/osm-auth/releases).  Going forward, the v1 branch will receive limited attention.
+Note that openstreetmap.org currently only supports OAuth2.0. [OAuth1.0 is turned off](https://github.com/openstreetmap/operations/issues/867). If you want the older version of this library that supports **OAuth 1.0a** (e.g. for a sister project that uses an older OSM-stack), use [the v1 branch](https://github.com/osmlab/osm-auth/tree/v1) and pin your software to older [release versions <2](https://github.com/osmlab/osm-auth/releases).  Going forward, the v1 branch will receive limited attention.
 
 
 ## Demo
