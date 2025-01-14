@@ -228,6 +228,15 @@ export function osmAuth(o) {
         window.location = url;
       }
     } else {
+      var popupClosedWatcher = setInterval(function() {
+        if (popup.closed) {
+          var error = new Error('Popup was closed prematurely');
+          error.status = 'popup-closed';
+          callback(error);
+          window.clearInterval(popupClosedWatcher);
+          delete window.authComplete;
+        }
+      }, 1000);
       oauth.popupWindow = popup;
       popup.location = url;
     }
@@ -235,6 +244,7 @@ export function osmAuth(o) {
     // Called by a function in the redirect URL page, in the popup window. The
     // window closes itself.
     window.authComplete = function (url) {
+      clearTimeout(popupClosedWatcher);
       var params = utilStringQs(url.split('?')[1]);
       if (params.state !== state) {
         var error = new Error('Invalid state');
