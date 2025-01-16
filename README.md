@@ -118,7 +118,7 @@ var redirectPath = window.location.origin + window.location.pathname;
 var auth = osmAuth.osmAuth({
   client_id: "JWXSAzNp64sIRMStTnkhMRaMxSR964V4sFgn3KUZNTA",
   redirect_uri: redirectPath,
-  scope: "read_prefs", // scopes should be separated by a space, e.g. "read_prefs write_prefs". See https://wiki.openstreetmap.org/wiki/OAuth#OAuth_2.0 for all scopes  
+  scope: "read_prefs", // scopes should be separated by a space, e.g. "read_prefs write_prefs". See https://wiki.openstreetmap.org/wiki/OAuth#OAuth_2.0 for all scopes
   auto: true  // show a login form if the user is not authenticated and you try to do a call
   singlepage: true,
 });
@@ -182,20 +182,22 @@ Test whether the user is currently authenticated<br/>
 Returns: `true` if authenticated, `false` if not<br/>
 
 
-## `.authenticate(callback)`
+## `.authenticate(callback, options?)`
 
 First logs out, then runs the authentiation flow, finally calls the callback.<br/>
 <br/>
 Param:   `callback`  An "errback"-style callback (`err`, `result`), called when complete<br/>
+Param:   `options`  Optional, an object which can contain `switchUser`. If `switchUser` is `true`, then the user will first be prompted to logout, then login, then go to the oauth flow.<br/>
 Returns:  none<br/>
 
 
-## `.authenticateAsync()`
+## `.authenticateAsync(options?)`
 
 Promisified version of `.authenticate()`<br/>
 First logs out, then runs the authentication flow and resolves if successful, or rejects if not.<br/>
 <br/>
 Param:   `callback`  An "errback"-style callback (`err`, `result`), called when complete<br/>
+Param:   `options`  Optional, an object which can contain `switchUser`. If `switchUser` is `true`, then the user will first be prompted to logout, then login, then go to the oauth flow.<br/>
 Returns:  `Promise` settled with whatever authenticate did.<br/>
 
 
