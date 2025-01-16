@@ -7,7 +7,7 @@ declare namespace OSMAuth {
     logout(): osmAuth;
     fetch(path: string, options: OSMAuthFetchOptions): Promise<Response>;
     authenticated(): boolean;
-    authenticate(callback: (err: null | any, result?: any) => any): any;
+    authenticate(callback: (err: null | any, result?: any) => any, options?: LoginOptions): any;
     bringPopupWindowToFront(): boolean;
     bootstrapToken(oauth_token: string, callback: (err: null | any, result?: any) => any): any;
     xhr(options: OSMAuthXHROptions, callback: (err: null | any, result?: any) => any): XMLHttpRequest | null;
@@ -15,6 +15,10 @@ declare namespace OSMAuth {
     preauth(options: OSMAuthOptions): osmAuth;
     options(): OSMAuthOptions;
     options(options: OSMAuthOptions): osmAuth;
+  }
+
+  interface LoginOptions {
+    switchUser?: boolean;
   }
 
   interface OSMAuthOptions {

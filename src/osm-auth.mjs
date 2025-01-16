@@ -95,9 +95,10 @@ export function osmAuth(o) {
    * TODO: detect lack of click event  (probably can settimeout it)
    *
    * @param   {function}  callback  Errback-style callback `(err, result)`, called when complete
+   * @param   {LoginOptions}  [options]  Other options
    * @return  none
    */
-  oauth.authenticate = function(callback) {
+  oauth.authenticate = function(callback, options) {
     if (oauth.authenticated()) {
       callback(null, oauth);
       return;
@@ -110,7 +111,7 @@ export function osmAuth(o) {
         callback(error);
       } else {
         _generatePkceChallenge(function(pkce) {
-          _authenticate(pkce, popup, callback);
+          _authenticate(pkce, options, popup, callback);
         });
       }
     });
@@ -120,9 +121,10 @@ export function osmAuth(o) {
   /**
    * authenticateAsync
    * Promisified version of `authenticate`
+   * @param {LoginOptions} [options]
    * @return  {Promise}  Promise settled with whatever `_authenticate` did
    */
-  oauth.authenticateAsync = function() {
+  oauth.authenticateAsync = function(options) {
     if (oauth.authenticated()) {
       return Promise.resolve(oauth);
     }
@@ -142,7 +144,7 @@ export function osmAuth(o) {
         if (error) {
           errback(error);
         } else {
-          _generatePkceChallenge(pkce => _authenticate(pkce, popup, errback));
+          _generatePkceChallenge(pkce => _authenticate(pkce, options, popup, errback));
         }
       });
     });
@@ -186,17 +188,19 @@ export function osmAuth(o) {
    * _authenticate
    * internal authenticate
    *
+   * @typedef {{ switchUser?: boolean }} LoginOptions
+   *
    * @param  {Object}    pkce      Object containing PKCE code challenge properties
+   * @param  {LoginOptions=}   options   Other options
    * @param  {Window}    popup     Popup Window to use for the authentication page, should be undefined when using singlepage mode
    * @param  {function}  callback  Errback-style callback that accepts `(err, result)`
    */
-  function _authenticate(pkce, popup, callback) {
+  function _authenticate(pkce, options, popup, callback) {
     var state = generateState();
 
     // ## Request authorization to access resources from the user
     // and receive authorization code
-    var url =
-      o.url +
+    var path =
       '/oauth2/authorize?' +
       utilQsString({
         client_id: o.client_id,
@@ -208,6 +212,10 @@ export function osmAuth(o) {
         code_challenge_method: pkce.code_challenge_method,
         locale: o.locale || '',
       });
+
+    var url = options?.switchUser
+      ? `${o.url}/logout?referer=${encodeURIComponent(`/login?referer=${encodeURIComponent(path)}`)}`
+      : o.url + path;
 
     if (o.singlepage) {
       if (_store.isMocked) {
