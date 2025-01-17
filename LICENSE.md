@@ -1,6 +1,6 @@
-ISC License
+## ISC License
 
-Copyright (c) 2016, osm-auth Contributors
+Copyright (c) 2025, osm-auth Contributors
 
 Permission to use, copy, modify, and/or distribute this software for any purpose
 with or without fee is hereby granted, provided that the above copyright notice
