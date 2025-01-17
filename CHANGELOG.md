@@ -15,6 +15,15 @@ _Breaking changes, which may affect downstream projects, are marked with a_ тЪая
 [#xxx]: https://github.com/osmlab/osm-auth/issues/xxx
 -->
 
+## 2.6.0
+##### 2025-Jan-17
+* Trigger error if popup is closed prematurely ([#135], thanks [@tyrasd])
+* First-class support for switching users ([#136], thanks [@k-yle])
+
+[#135]: https://github.com/osmlab/osm-auth/issues/135
+[#136]: https://github.com/osmlab/osm-auth/issues/136
+
+
 ## 2.5.0
 ##### 2024-Apr-26
 * Remove any extra quotes that were stored with legacy tokens ([#129])
