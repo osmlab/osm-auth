@@ -33,7 +33,7 @@
     "lint": "eslint src/osm-auth.mjs test/*.js",
     "start": "npx http-server ./ -c-1",
     "test": "run-s build test:node",
-    "test:node": "c8 node --test test/"
+    "test:node": "c8 node --test test/*.js"
   },
   "devDependencies": {
     "c8": "^10.1.3",
