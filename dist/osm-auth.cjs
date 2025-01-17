@@ -59,7 +59,7 @@ function osmAuth(o) {
     token("oauth_request_token_secret", "");
     return oauth;
   };
-  oauth.authenticate = function(callback) {
+  oauth.authenticate = function(callback, options) {
     if (oauth.authenticated()) {
       callback(null, oauth);
       return;
@@ -70,12 +70,12 @@ function osmAuth(o) {
         callback(error);
       } else {
         _generatePkceChallenge(function(pkce) {
-          _authenticate(pkce, popup, callback);
+          _authenticate(pkce, options, popup, callback);
         });
       }
     });
   };
-  oauth.authenticateAsync = function() {
+  oauth.authenticateAsync = function(options) {
     if (oauth.authenticated()) {
       return Promise.resolve(oauth);
     }
@@ -92,7 +92,7 @@ function osmAuth(o) {
         if (error) {
           errback(error);
         } else {
-          _generatePkceChallenge((pkce) => _authenticate(pkce, popup, errback));
+          _generatePkceChallenge((pkce) => _authenticate(pkce, options, popup, errback));
         }
       });
     });
@@ -121,9 +121,9 @@ function osmAuth(o) {
       callback(error);
     }
   }
-  function _authenticate(pkce, popup, callback) {
+  function _authenticate(pkce, options, popup, callback) {
     var state = generateState();
-    var url = o.url + "/oauth2/authorize?" + utilQsString({
+    var path = "/oauth2/authorize?" + utilQsString({
       client_id: o.client_id,
       redirect_uri: o.redirect_uri,
       response_type: "code",
@@ -133,6 +133,7 @@ function osmAuth(o) {
       code_challenge_method: pkce.code_challenge_method,
       locale: o.locale || ""
     });
+    var url = options?.switchUser ? `${o.url}/logout?referer=${encodeURIComponent(`/login?referer=${encodeURIComponent(path)}`)}` : o.url + path;
     if (o.singlepage) {
       if (_store.isMocked) {
         var error = new Error("localStorage unavailable, but required in singlepage mode");
@@ -149,10 +150,20 @@ function osmAuth(o) {
         window.location = url;
       }
     } else {
+      var popupClosedWatcher = setInterval(function() {
+        if (popup.closed) {
+          var error2 = new Error("Popup was closed prematurely");
+          error2.status = "popup-closed";
+          callback(error2);
+          window.clearInterval(popupClosedWatcher);
+          delete window.authComplete;
+        }
+      }, 1e3);
       oauth.popupWindow = popup;
       popup.location = url;
     }
     window.authComplete = function(url2) {
+      clearTimeout(popupClosedWatcher);
       var params2 = utilStringQs(url2.split("?")[1]);
       if (params2.state !== state) {
         var error2 = new Error("Invalid state");
@@ -291,8 +302,7 @@ function osmAuth(o) {
       callback(e, null);
     };
     xhr.open(method, url, true);
-    for (var h in headers)
-      xhr.setRequestHeader(h, headers[h]);
+    for (var h in headers) xhr.setRequestHeader(h, headers[h]);
     xhr.send(data);
     return xhr;
   };
@@ -303,8 +313,7 @@ function osmAuth(o) {
     return oauth;
   };
   oauth.options = function(val) {
-    if (!arguments.length)
-      return o;
+    if (!arguments.length) return o;
     o = val;
     o.apiUrl = o.apiUrl || "https://api.openstreetmap.org";
     o.url = o.url || "https://www.openstreetmap.org";
@@ -328,8 +337,7 @@ function utilQsString(obj) {
 }
 function utilStringQs(str) {
   var i = 0;
-  while (i < str.length && (str[i] === "?" || str[i] === "#"))
-    i++;
+  while (i < str.length && (str[i] === "?" || str[i] === "#")) i++;
   str = str.slice(i);
   return str.split("&").reduce(function(obj, pair) {
     var parts = pair.split("=");
