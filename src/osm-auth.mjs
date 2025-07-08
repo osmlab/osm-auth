@@ -21,6 +21,8 @@
 export function osmAuth(o) {
   var oauth = {};
 
+  var CHANNEL_ID = 'osm-api-auth-complete';
+
   // Mock localStorage if needed.
   // Note that accessing localStorage may throw a `SecurityError`, so wrap in a try/catch.
   var _store = null;
@@ -236,23 +238,15 @@ export function osmAuth(o) {
         window.location = url;
       }
     } else {
-      var popupClosedWatcher = setInterval(function() {
-        if (popup.closed) {
-          var error = new Error('Popup was closed prematurely');
-          error.status = 'popup-closed';
-          callback(error);
-          window.clearInterval(popupClosedWatcher);
-          delete window.authComplete;
-        }
-      }, 1000);
       oauth.popupWindow = popup;
       popup.location = url;
     }
 
     // Called by a function in the redirect URL page, in the popup window. The
     // window closes itself.
-    window.authComplete = function (url) {
-      clearTimeout(popupClosedWatcher);
+    var bc = new BroadcastChannel(CHANNEL_ID);
+    bc.addEventListener('message', (event) => {
+      var url = event.data;
       var params = utilStringQs(url.split('?')[1]);
       if (params.state !== state) {
         var error = new Error('Invalid state');
@@ -261,8 +255,8 @@ export function osmAuth(o) {
         return;
       }
       _getAccessToken(params.code, pkce.code_verifier, accessTokenDone);
-      delete window.authComplete;
-    };
+      bc.close();
+    });
 
     function accessTokenDone(err, xhr) {
       o.done();

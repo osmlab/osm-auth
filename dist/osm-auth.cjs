@@ -22,6 +22,7 @@ __export(osm_auth_exports, {
 module.exports = __toCommonJS(osm_auth_exports);
 function osmAuth(o) {
   var oauth = {};
+  var CHANNEL_ID = "osm-api-auth-complete";
   var _store = null;
   try {
     _store = window.localStorage;
@@ -150,20 +151,12 @@ function osmAuth(o) {
         window.location = url;
       }
     } else {
-      var popupClosedWatcher = setInterval(function() {
-        if (popup.closed) {
-          var error2 = new Error("Popup was closed prematurely");
-          error2.status = "popup-closed";
-          callback(error2);
-          window.clearInterval(popupClosedWatcher);
-          delete window.authComplete;
-        }
-      }, 1e3);
       oauth.popupWindow = popup;
       popup.location = url;
     }
-    window.authComplete = function(url2) {
-      clearTimeout(popupClosedWatcher);
+    var bc = new BroadcastChannel(CHANNEL_ID);
+    bc.addEventListener("message", (event) => {
+      var url2 = event.data;
       var params2 = utilStringQs(url2.split("?")[1]);
       if (params2.state !== state) {
         var error2 = new Error("Invalid state");
@@ -172,8 +165,8 @@ function osmAuth(o) {
         return;
       }
       _getAccessToken(params2.code, pkce.code_verifier, accessTokenDone);
-      delete window.authComplete;
-    };
+      bc.close();
+    });
     function accessTokenDone(err, xhr) {
       o.done();
       if (err) {

@@ -6,6 +6,13 @@
 Easy authentication with [OpenStreetMap](http://www.openstreetmap.org/) over [OAuth 2.0](https://oauth.net/2/).<br/>
 See also: https://wiki.openstreetmap.org/wiki/OAuth
 
+> [!IMPORTANT]
+> Due to [security changes on 8 July 2025](https://github.com/openstreetmap/openstreetmap-website/commit/2ff4d6), authentication using the `popup` mode will not work until you:
+>
+> 1. update this library to v3.0.0
+> 2. AND update the code snippet in your `land.html` file to the latest version (see [this example](https://github.com/osmlab/osm-auth/tree/master/land.html))
+
+
 Note that openstreetmap.org currently only supports OAuth2.0. [OAuth1.0 is turned off](https://github.com/openstreetmap/operations/issues/867). If you want the older version of this library that supports **OAuth 1.0a** (e.g. for a sister project that uses an older OSM-stack), use [the v1 branch](https://github.com/osmlab/osm-auth/tree/v1) and pin your software to older [release versions <2](https://github.com/osmlab/osm-auth/releases).  Going forward, the v1 branch will receive limited attention.
 
 

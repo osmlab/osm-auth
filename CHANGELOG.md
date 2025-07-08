@@ -14,6 +14,11 @@ _Breaking changes, which may affect downstream projects, are marked with a_ тЪая
 
 [#xxx]: https://github.com/osmlab/osm-auth/issues/xxx
 -->
+## 3.0.0
+##### 2025-Jul-08
+* Fix authentication broken when using the `popup` method due to [security changes on 8 July 2025](https://github.com/openstreetmap/openstreetmap-website/commit/2ff4d6) ([#138], thanks [@k-yle])
+
+[#138]: https://github.com/osmlab/osm-auth/issues/138
 
 ## 2.6.0
 ##### 2025-Jan-17
