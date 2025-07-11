@@ -20,6 +20,7 @@ _Breaking changes, which may affect downstream projects, are marked with a_ тЪая
 
 [#138]: https://github.com/osmlab/osm-auth/issues/138
 
+
 ## 2.6.0
 ##### 2025-Jan-17
 * Trigger error if popup is closed prematurely ([#135], thanks [@tyrasd])

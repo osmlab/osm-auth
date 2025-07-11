@@ -57,7 +57,7 @@ You can also use **osm-auth** directly in a web browser.  A good way to do this 
 When you load this file in a `<script>` tag, you'll get a `osmAuth` global to use elsewhere in your scripts:
 ```html
 <head>
-<script src="https://cdn.jsdelivr.net/npm/osm-auth@2/dist/osm-auth.iife.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/osm-auth@3/dist/osm-auth.iife.min.js"></script>
 </head>
 …
 <script>
