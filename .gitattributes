@@ -1,3 +1,5 @@
 * text=lf
 *.bat eol=crlf
 *.js eol=lf
+
+dist/* linguist-generated=true
