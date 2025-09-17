@@ -342,12 +342,12 @@ function utilStringQs(str) {
 }
 function _generatePkceChallenge(callback) {
   var code_verifier;
-  var random = window.crypto.getRandomValues(new Uint8Array(32));
+  var random = globalThis.crypto.getRandomValues(new Uint8Array(32));
   code_verifier = base64(random.buffer);
   var verifier = Uint8Array.from(Array.from(code_verifier).map(function(char) {
     return char.charCodeAt(0);
   }));
-  window.crypto.subtle.digest("SHA-256", verifier).then(function(hash) {
+  globalThis.crypto.subtle.digest("SHA-256", verifier).then(function(hash) {
     var code_challenge = base64(hash);
     callback({
       code_challenge,

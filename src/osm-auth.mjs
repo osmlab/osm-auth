@@ -580,14 +580,14 @@ function _generatePkceChallenge(callback) {
   var code_verifier;
   // generate a random code_verifier
   // https://datatracker.ietf.org/doc/html/rfc7636#section-7.1
-  var random = window.crypto.getRandomValues(new Uint8Array(32));
+  var random = globalThis.crypto.getRandomValues(new Uint8Array(32));
   code_verifier = base64(random.buffer);
   var verifier = Uint8Array.from(Array.from(code_verifier).map(function(char) {
     return char.charCodeAt(0);
   }));
 
   // generate challenge for code verifier
-  window.crypto.subtle.digest('SHA-256', verifier).then(function(hash) {
+  globalThis.crypto.subtle.digest('SHA-256', verifier).then(function(hash) {
     var code_challenge = base64(hash);
 
     callback({
