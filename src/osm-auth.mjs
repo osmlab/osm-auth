@@ -571,19 +571,6 @@ function utilStringQs(str) {
 
 
 /**
- * supportsWebCryptoAPI
- * https://developer.mozilla.org/en-US/docs/Web/API/Web_Crypto_API
- * @returns {boolean}  `true` if WebCryptoAPI is available
- */
-function supportsWebCryptoAPI() {
-  return window && window.crypto
-    && window.crypto.getRandomValues
-    && window.crypto.subtle
-    && window.crypto.subtle.digest;
-}
-
-
-/**
  * Generates a challenge/verifier pair for PKCE.
  * If the browser does not support the WebCryptoAPI, the "plain" method is
  * used as a fallback instead of a SHA-256 hash.
@@ -591,38 +578,24 @@ function supportsWebCryptoAPI() {
  */
 function _generatePkceChallenge(callback) {
   var code_verifier;
-  if (supportsWebCryptoAPI()) {
-    // generate a random code_verifier
-    // https://datatracker.ietf.org/doc/html/rfc7636#section-7.1
-    var random = window.crypto.getRandomValues(new Uint8Array(32));
-    code_verifier = base64(random.buffer);
-    var verifier = Uint8Array.from(Array.from(code_verifier).map(function(char) {
-      return char.charCodeAt(0);
-    }));
+  // generate a random code_verifier
+  // https://datatracker.ietf.org/doc/html/rfc7636#section-7.1
+  var random = window.crypto.getRandomValues(new Uint8Array(32));
+  code_verifier = base64(random.buffer);
+  var verifier = Uint8Array.from(Array.from(code_verifier).map(function(char) {
+    return char.charCodeAt(0);
+  }));
 
-    // generate challenge for code verifier
-    window.crypto.subtle.digest('SHA-256', verifier).then(function(hash) {
-      var code_challenge = base64(hash);
+  // generate challenge for code verifier
+  window.crypto.subtle.digest('SHA-256', verifier).then(function(hash) {
+    var code_challenge = base64(hash);
 
-      callback({
-        code_challenge: code_challenge,
-        code_verifier: code_verifier,
-        code_challenge_method: 'S256'
-      });
-    });
-  } else {
-    // browser does not support Web Crypto API (e.g. IE11) -> fall back to "plain" method
-    var chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
-    code_verifier = '';
-    for (var i=0; i<64; i++) {
-      code_verifier += chars[Math.floor(Math.random() * chars.length)];
-    }
     callback({
+      code_challenge: code_challenge,
       code_verifier: code_verifier,
-      code_challenge: code_verifier,
-      code_challenge_method: 'plain',
+      code_challenge_method: 'S256'
     });
-  }
+  });
 }
 
 
@@ -632,17 +605,9 @@ function _generatePkceChallenge(callback) {
  */
 function generateState() {
   var state;
-  if (supportsWebCryptoAPI()) {
-    var random = window.crypto.getRandomValues(new Uint8Array(32));
-    state = base64(random.buffer);
-  } else {
-    // browser does not support Web Crypto API (e.g. IE11) -> fall back to "plain" method
-    var chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
-    state = '';
-    for (var i=0; i<64; i++) {
-      state += chars[Math.floor(Math.random() * chars.length)];
-    }
-  }
+  var random = globalThis.crypto.getRandomValues(new Uint8Array(32));
+  state = base64(random.buffer);
+
   return state;
 }
 

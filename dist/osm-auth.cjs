@@ -340,50 +340,26 @@ function utilStringQs(str) {
     return obj;
   }, {});
 }
-function supportsWebCryptoAPI() {
-  return window && window.crypto && window.crypto.getRandomValues && window.crypto.subtle && window.crypto.subtle.digest;
-}
 function _generatePkceChallenge(callback) {
   var code_verifier;
-  if (supportsWebCryptoAPI()) {
-    var random = window.crypto.getRandomValues(new Uint8Array(32));
-    code_verifier = base64(random.buffer);
-    var verifier = Uint8Array.from(Array.from(code_verifier).map(function(char) {
-      return char.charCodeAt(0);
-    }));
-    window.crypto.subtle.digest("SHA-256", verifier).then(function(hash) {
-      var code_challenge = base64(hash);
-      callback({
-        code_challenge,
-        code_verifier,
-        code_challenge_method: "S256"
-      });
-    });
-  } else {
-    var chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
-    code_verifier = "";
-    for (var i = 0; i < 64; i++) {
-      code_verifier += chars[Math.floor(Math.random() * chars.length)];
-    }
+  var random = window.crypto.getRandomValues(new Uint8Array(32));
+  code_verifier = base64(random.buffer);
+  var verifier = Uint8Array.from(Array.from(code_verifier).map(function(char) {
+    return char.charCodeAt(0);
+  }));
+  window.crypto.subtle.digest("SHA-256", verifier).then(function(hash) {
+    var code_challenge = base64(hash);
     callback({
+      code_challenge,
       code_verifier,
-      code_challenge: code_verifier,
-      code_challenge_method: "plain"
+      code_challenge_method: "S256"
     });
-  }
+  });
 }
 function generateState() {
   var state;
-  if (supportsWebCryptoAPI()) {
-    var random = window.crypto.getRandomValues(new Uint8Array(32));
-    state = base64(random.buffer);
-  } else {
-    var chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
-    state = "";
-    for (var i = 0; i < 64; i++) {
-      state += chars[Math.floor(Math.random() * chars.length)];
-    }
-  }
+  var random = globalThis.crypto.getRandomValues(new Uint8Array(32));
+  state = base64(random.buffer);
   return state;
 }
 function base64(buffer) {
