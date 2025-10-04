@@ -253,6 +253,11 @@ export function osmAuth(o) {
         error.status = 'invalid-state';
         callback(error);
         return;
+      } else if (params.error !== undefined) {
+        var err = new Error(params.error_description.replace(/\+/g, ' '));
+        err.status = params.error;
+        callback(err);
+        return;
       }
       _getAccessToken(params.code, pkce.code_verifier, accessTokenDone);
       bc.close();

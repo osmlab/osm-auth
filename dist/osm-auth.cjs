@@ -163,6 +163,11 @@ function osmAuth(o) {
         error2.status = "invalid-state";
         callback(error2);
         return;
+      } else if (params2.error !== void 0) {
+        var err = new Error(params2.error_description.replace(/\+/g, " "));
+        err.status = params2.error;
+        callback(err);
+        return;
       }
       _getAccessToken(params2.code, pkce.code_verifier, accessTokenDone);
       bc.close();

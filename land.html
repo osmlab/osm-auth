@@ -2,7 +2,7 @@
 <html><head></head>
   <body>
     <script>
-      if (new URLSearchParams(location.search).has("code")) {
+      if (new URLSearchParams(location.search).has("code") || new URLSearchParams(location.search).has("error")) {
         new BroadcastChannel("osm-api-auth-complete").postMessage(location.href);
         window.close();
       }
