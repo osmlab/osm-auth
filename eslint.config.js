@@ -99,21 +99,12 @@ const common = {
 export default [
   js.configs.recommended,
   common,
-
   {
     files: ['src/**'],
     languageOptions: {
       globals: {
         ...globals.browser,
         Intl: false
-      }
-    }
-  },
-  {
-    files: ['test/**'],
-    languageOptions: {
-      globals: {
-        ...globals.node
       }
     }
   }

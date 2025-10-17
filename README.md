@@ -23,9 +23,9 @@ Try it out now at: https://osmlab.github.io/osm-auth/
 Or you can run the demo locally by cloning this project, then run:
 
 ```sh
-$ npm install
-$ npm run build
-$ npm start
+$ bun install
+$ bun run all
+$ bun start
 ```
 
 This will start a local server on port 8080. Then open `http://127.0.0.1:8080/` in a browser.
@@ -35,7 +35,7 @@ This will start a local server on port 8080. Then open `http://127.0.0.1:8080/` 
 
 ### Use in Node
 
-To install osm-auth as a dependency in your project:
+To install osm-auth as a dependency in your Node project:
 ```bash
 $  npm install --save osm-auth
 ```
@@ -147,6 +147,14 @@ if (window.location.search.slice(1).split('&').some(p => p.startsWith('code=')))
   });
 }
 ```
+
+&nbsp;
+
+## Contributing
+
+See the [CONTRIBUTING.md](CONTRIBUTING.md) file for more info.
+
+&nbsp;
 
 # API
 

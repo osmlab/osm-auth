@@ -1,22 +1,22 @@
-import { after, before, test } from 'node:test';
-import { strict as assert } from 'node:assert';
+import { afterAll, beforeAll, describe, it } from 'bun:test';
+import { strict as assert } from 'bun:assert';
 import { osmAuth } from '../src/osm-auth.mjs';
-
 import { LocalStorage } from 'node-localstorage';
 
 let localStorage;
 
-test('osmauth', async t => {
-  before(() => {
+
+describe('osmauth', () => {
+  beforeAll(() => {
     localStorage = new LocalStorage('./scratch');
   });
 
-  after(() => {
+  afterAll(() => {
     localStorage._deleteLocation();
   });
 
-  await t.test('.options', async t => {
-    await t.test('gets and sets new options', t => {
+  describe('.options', () => {
+    it('gets and sets new options', () => {
       localStorage.clear();
       const keys = {
         url: 'https://www.openstreetmap.org',
@@ -34,8 +34,8 @@ test('osmauth', async t => {
     });
   });
 
-  await t.test('pre authorization', async t => {
-    await t.test('is not initially authorized', t => {
+  describe('pre authorization', () => {
+    it('is not initially authorized', () => {
       localStorage.clear();
       const auth = osmAuth({
         url: 'https://www.openstreetmap.org',
@@ -47,7 +47,7 @@ test('osmauth', async t => {
       assert.equal(auth.authenticated(), false);
     });
 
-    await t.test('can be preauthorized', t => {
+    it('can be preauthorized', () => {
       localStorage.clear();
       const auth = osmAuth({
         url: 'https://www.openstreetmap.org',

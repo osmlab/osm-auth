@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset='utf-8'/>
+<title>osm-auth</title>
+<script src="https://cdn.jsdelivr.net/npm/osm-auth@3/dist/osm-auth.iife.min.js"></script>
+<!-- <script src='../dist/osm-auth.iife.js'></script> -->
+<link href='style.css' rel='stylesheet' type='text/css'/>
+</head>
+
+<body>
+<script>var $buoop={required:{i:15,e:-4,f:-3,o:-3,s:-1,c:-3},reminder:0,noclose:true,no_permanent_hide:true,insecure:true,api:2023.07};</script>
+<script src='https://browser-update.org/update.js'></script>
+
+<div id="buttons">
+  <button id="authenticate">login</button>
+  <button id="logout">logout</button>
+</div>
+<label class="single">Single page: <input type="checkbox" class="single"></input></label>
+<div id="error"></div>
+<div id="user">
+  <div id="useravatar">
+    <img id="avatar" alt="user" src="icon-avatar.svg"/>
+  </div>
+  <div id="userdetail">
+    <h1 id="display_name">username</h1>
+    <h2>User ID: <span id="userid"></span></h2>
+    <p>Changesets: <span id="count"></span></p>
+  </div>
+</div>
+<footer>
+  <a href="https://github.com/osmlab/osm-auth">
+    <img width="20" height="20" src="GitHub-Mark-32px.png"/>osm-auth</a> is a minimal example of authenticating and interacting with the
+  <a href="http://www.openstreetmap.org/">OpenStreetMap API</a> over OAuth 2.0.
+</footer>
+
+<!-- type="module" helps this run after Bun hot module reloading is ready -->
+<script type="module">
+  // console.log(HELLO);
+  var abc = 'HELLO';
+  // var cde = AWS.ACCESS_KEY;
+
+  var redirectPath = window.location.origin + window.location.pathname;
+  var auth = osmAuth({
+    client_id: "JWXSAzNp64sIRMStTnkhMRaMxSR964V4sFgn3KUZNTA",
+    scope: "read_prefs",
+    redirect_uri: redirectPath,
+    singlepage: true
+  });
+
+  if (window.location.search.slice(1).split('&').some(function(p) { return p.indexOf('code=') === 0; })) {
+    auth.authenticate(function() {
+      history.pushState({}, null, window.location.pathname);
+      update();
+    });
+  }
+
+  function done(err, result) {
+    if (err) {
+      document.getElementById("error").textContent = "Error! Try clearing your browser cache.";
+      document.getElementById("user").style.display = "none";
+      document.getElementById("error").style.display = "block";
+      return;
+    }
+
+    var user = result.getElementsByTagName("user")[0];
+    var changesets = result.getElementsByTagName("changesets")[0];
+    var avatar = result.getElementsByTagName("img")[0];
+
+    document.getElementById("display_name").textContent = user.getAttribute("display_name");
+    document.getElementById("avatar").alt = user.getAttribute("display_name");
+    document.getElementById("userid").textContent = user.getAttribute("id");
+    document.getElementById("count").textContent = changesets.getAttribute("count");
+    if (avatar) {
+      document.getElementById("avatar").src = avatar.getAttribute("href");
+    }
+
+    document.getElementById("error").style.display = "none";
+    document.getElementById("user").style.display = "flex";
+  }
+
+
+  document.getElementById("authenticate").onclick = function() {
+    var o = auth.options();
+    if (document.querySelector('input.single').checked) {
+      o.redirect_uri = redirectPath;
+      o.singlepage = true;
+    } else {
+      o.redirect_uri = redirectPath + "land.html"
+      o.singlepage = false;
+    }
+    auth.options(o);
+    if (!auth.bringPopupWindowToFront()) {
+      auth.authenticate(function() {
+        update();
+      });
+    }
+  };
+
+  function showDetails() {
+    auth.xhr({ method: "GET", path: "/api/0.6/user/details" }, done);
+  }
+
+  function hideDetails() {
+    document.getElementById("error").style.display = "none";
+    document.getElementById("user").style.display = "none";
+  }
+
+  document.getElementById("logout").onclick = function() {
+    auth.logout();
+    update();
+  };
+
+  function update() {
+    if (auth.authenticated()) {
+      document.getElementById("authenticate").className = "done";
+      document.getElementById("logout").className = "";
+      showDetails();
+    } else {
+      document.getElementById("authenticate").className = "";
+      document.getElementById("logout").className = "done";
+      hideDetails();
+    }
+  }
+
+  update();
+
+</script>
+</body>
+</html>
