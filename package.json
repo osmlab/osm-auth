@@ -31,8 +31,8 @@
     "build": "bun ./scripts/build.ts",
     "clean": "rm -rf ./dist ./scratch",
     "lint": "eslint ./src/osm-auth.mjs ./test/*.js",
-    "test": "bun test --dots --coverage ./test/*.js",
-    "start": "bun ./scripts/server.ts"
+    "start": "bun ./scripts/server.ts",
+    "test": "bun test --dots --coverage ./test/*.js"
   },
   "devDependencies": {
     "@types/bun": "^1.3.0",
