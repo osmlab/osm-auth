@@ -4,7 +4,6 @@
 <meta charset='utf-8'/>
 <title>osm-auth</title>
 <script src="https://cdn.jsdelivr.net/npm/osm-auth@3/dist/osm-auth.iife.min.js"></script>
-<!-- <script src='../dist/osm-auth.iife.js'></script> -->
 <link href='style.css' rel='stylesheet' type='text/css'/>
 </head>
 
@@ -34,12 +33,8 @@
   <a href="http://www.openstreetmap.org/">OpenStreetMap API</a> over OAuth 2.0.
 </footer>
 
-<!-- type="module" helps this run after Bun hot module reloading is ready -->
+<!-- type="module" helps defer this script -->
 <script type="module">
-  // console.log(HELLO);
-  var abc = 'HELLO';
-  // var cde = AWS.ACCESS_KEY;
-
   var redirectPath = window.location.origin + window.location.pathname;
   var auth = osmAuth({
     client_id: "JWXSAzNp64sIRMStTnkhMRaMxSR964V4sFgn3KUZNTA",
