@@ -14,6 +14,20 @@ _Breaking changes, which may affect downstream projects, are marked with a_ тЪая
 
 [#xxx]: https://github.com/osmlab/osm-auth/issues/xxx
 -->
+# 3.1.0
+##### 2025-??
+* Remove Web Crypto API checking code and references to `window` ([#139],[#140], thanks [@tom-konda])
+* Detect if user tried to deny access in popup, notify BroadcastChannel ([#141], thanks [@ENT8R])
+* This project uses [`bun`](https://bun.com/) now for simpler developer tooling ([#142])
+
+[#139]: https://github.com/rapideditor/osm_auth/issues/139
+[#140]: https://github.com/rapideditor/osm_auth/issues/140
+[#141]: https://github.com/rapideditor/osm_auth/issues/141
+[#142]: https://github.com/rapideditor/osm_auth/issues/142
+[@tom-konda]: https://github.com/tom-konda
+[@ENT8R]: https://github.com/ENT8R
+
+
 ## 3.0.0
 ##### 2025-Jul-08
 * Fix authentication broken when using the `popup` method due to [security changes on 8 July 2025](https://github.com/openstreetmap/openstreetmap-website/commit/2ff4d6) ([#138], thanks [@k-yle])
