@@ -29,7 +29,7 @@
   "scripts": {
     "all": "run-s clean lint build test",
     "build": "bun ./scripts/build.ts",
-    "clean": "rm -rf ./dist ./scratch",
+    "clean": "bun ./scripts/clean.ts",
     "lint": "eslint ./src/osm-auth.mjs ./test/*.js",
     "start": "bun ./scripts/server.ts",
     "test": "bun test --dots --coverage ./test/*.js"
