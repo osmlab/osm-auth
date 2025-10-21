@@ -14,8 +14,9 @@ _Breaking changes, which may affect downstream projects, are marked with a_ тЪая
 
 [#xxx]: https://github.com/osmlab/osm-auth/issues/xxx
 -->
-# 3.1.0
-##### 2025-??
+
+## 3.1.0
+##### 2025-Oct-21
 * Remove Web Crypto API checking code and references to `window` ([#139],[#140], thanks [@tom-konda])
 * Detect if user tried to deny access in popup, notify BroadcastChannel ([#141], thanks [@ENT8R])
 * This project uses [`bun`](https://bun.com/) now for simpler developer tooling ([#142])
