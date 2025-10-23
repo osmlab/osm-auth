@@ -1,7 +1,7 @@
-/coverage
-/dist
-/node_modules
-/scratch
+coverage/
+dist/
+node_modules/
+scratch/
 
 .DS_Store
 .vscode
