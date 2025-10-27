@@ -21,10 +21,10 @@ _Breaking changes, which may affect downstream projects, are marked with a_ тЪая
 * Detect if user tried to deny access in popup, notify BroadcastChannel ([#141], thanks [@ENT8R])
 * This project uses [`bun`](https://bun.com/) now for simpler developer tooling ([#142])
 
-[#139]: https://github.com/rapideditor/osm_auth/issues/139
-[#140]: https://github.com/rapideditor/osm_auth/issues/140
-[#141]: https://github.com/rapideditor/osm_auth/issues/141
-[#142]: https://github.com/rapideditor/osm_auth/issues/142
+[#139]: https://github.com/osmlab/osm_auth/issues/139
+[#140]: https://github.com/osmlab/osm_auth/issues/140
+[#141]: https://github.com/osmlab/osm_auth/issues/141
+[#142]: https://github.com/osmlab/osm_auth/issues/142
 [@tom-konda]: https://github.com/tom-konda
 [@ENT8R]: https://github.com/ENT8R
 
