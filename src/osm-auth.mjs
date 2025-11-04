@@ -27,7 +27,11 @@ export function osmAuth(o) {
   // Note that accessing localStorage may throw a `SecurityError`, so wrap in a try/catch.
   var _store = null;
   try {
-    _store = window.localStorage;
+    if (!('localStorage' in globalThis)) {
+      throw new Error('No localStorage');
+    }
+    _store = globalThis.localStorage;
+
   } catch (e) {
     var _mock = new Map();
     _store = {
