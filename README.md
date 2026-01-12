@@ -9,7 +9,7 @@ See also: https://wiki.openstreetmap.org/wiki/OAuth
 > [!IMPORTANT]
 > Due to [security changes on 8 July 2025](https://github.com/openstreetmap/openstreetmap-website/commit/2ff4d6), authentication using the `popup` mode will not work until you:
 >
-> 1. update this library to v3.0.0
+> 1. update this library to >= v3.0.0
 > 2. AND update the code snippet in your `land.html` file to the latest version (see [this example](https://github.com/osmlab/osm-auth/tree/master/land.html))
 
 
@@ -57,11 +57,18 @@ You can also use **osm-auth** directly in a web browser.  A good way to do this 
 When you load this file in a `<script>` tag, you'll get a `osmAuth` global to use elsewhere in your scripts:
 ```html
 <head>
-<script src="https://cdn.jsdelivr.net/npm/osm-auth@3/dist/osm-auth.iife.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/osm-auth@latest/dist/osm-auth.iife.min.js"></script>
 </head>
 …
 <script>
-// example here
+  var redirectPath = window.location.origin + window.location.pathname;
+  var auth = osmAuth({
+    client_id: "…",
+    scope: "read_prefs",
+    redirect_uri: redirectPath + "land.html",
+    singlepage: true
+  });
+  …
 </script>
 ```
 

@@ -14,16 +14,24 @@ _Breaking changes, which may affect downstream projects, are marked with a_ тЪая
 
 [#xxx]: https://github.com/osmlab/osm-auth/issues/xxx
 -->
-# 3.1.0
-##### 2025-??
+
+## 3.1.1
+##### 2025-Nov-04
+* Add better test for `localStorage` ([#144])
+
+[#144]: https://github.com/osmlab/osm-auth/issues/144
+
+
+## 3.1.0
+##### 2025-Oct-21
 * Remove Web Crypto API checking code and references to `window` ([#139],[#140], thanks [@tom-konda])
 * Detect if user tried to deny access in popup, notify BroadcastChannel ([#141], thanks [@ENT8R])
 * This project uses [`bun`](https://bun.com/) now for simpler developer tooling ([#142])
 
-[#139]: https://github.com/rapideditor/osm_auth/issues/139
-[#140]: https://github.com/rapideditor/osm_auth/issues/140
-[#141]: https://github.com/rapideditor/osm_auth/issues/141
-[#142]: https://github.com/rapideditor/osm_auth/issues/142
+[#139]: https://github.com/osmlab/osm-auth/issues/139
+[#140]: https://github.com/osmlab/osm-auth/issues/140
+[#141]: https://github.com/osmlab/osm-auth/issues/141
+[#142]: https://github.com/osmlab/osm-auth/issues/142
 [@tom-konda]: https://github.com/tom-konda
 [@ENT8R]: https://github.com/ENT8R
 
