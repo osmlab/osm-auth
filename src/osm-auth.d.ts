@@ -1,8 +1,10 @@
 // Type definitions for osm-auth
 
 declare namespace OSMAuth {
-  class osmAuth {
-    constructor(options: OSMAuthOptions)
+  interface osmAuth {
+    new (options: OSMAuthOptions): osmAuth;
+    (options: OSMAuthOptions): osmAuth;
+
     popupWindow?: Window
     logout(): osmAuth;
     fetch(path: string, options: OSMAuthFetchOptions): Promise<Response>;
@@ -16,6 +18,7 @@ declare namespace OSMAuth {
     options(): OSMAuthOptions;
     options(options: OSMAuthOptions): osmAuth;
   }
+  const osmAuth: osmAuth;
 
   interface LoginOptions {
     switchUser?: boolean;
