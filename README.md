@@ -62,7 +62,7 @@ When you load this file in a `<script>` tag, you'll get a `osmAuth` global to us
 …
 <script>
   var redirectPath = window.location.origin + window.location.pathname;
-  var auth = osmAuth({
+  var auth = new osmAuth({
     client_id: "…",
     scope: "read_prefs",
     redirect_uri: redirectPath + "land.html",
@@ -107,7 +107,7 @@ Register a new OAuth2.0 application on openstreetmap.org:
 
 ```js
 var redirectPath = window.location.origin + window.location.pathname;
-var auth = osmAuth.osmAuth({
+var auth = new osmAuth.osmAuth({
   client_id: "JWXSAzNp64sIRMStTnkhMRaMxSR964V4sFgn3KUZNTA",
   redirect_uri: redirectPath + "land.html",
   scope: "read_prefs",
@@ -129,7 +129,7 @@ document.getElementById("authenticate").onclick = function () {
 ### Example with single-page
 ```js
 var redirectPath = window.location.origin + window.location.pathname;
-var auth = osmAuth.osmAuth({
+var auth = new osmAuth.osmAuth({
   client_id: "JWXSAzNp64sIRMStTnkhMRaMxSR964V4sFgn3KUZNTA",
   redirect_uri: redirectPath,
   scope: "read_prefs", // scopes should be separated by a space, e.g. "read_prefs write_prefs". See https://wiki.openstreetmap.org/wiki/OAuth#OAuth_2.0 for all scopes

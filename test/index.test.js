@@ -26,7 +26,7 @@ describe('osmauth', () => {
         redirect_uri: 'http://127.0.0.1:8080/land.html',
         scope: 'read_prefs'
       };
-      const auth = osmAuth(keys);
+      const auth = new osmAuth(keys);
       assert.deepEqual(auth.options(), keys);
 
       auth.options({ url: 'foo' });
@@ -37,7 +37,7 @@ describe('osmauth', () => {
   describe('pre authorization', () => {
     it('is not initially authorized', () => {
       localStorage.clear();
-      const auth = osmAuth({
+      const auth = new osmAuth({
         url: 'https://www.openstreetmap.org',
         apiUrl: 'https://api.openstreetmap.org',
         client_id: 'JWXSAzNp64sIRMStTnkhMRaMxSR964V4sFgn3KUZNTA',
@@ -50,7 +50,7 @@ describe('osmauth', () => {
 
     it('can be preauthorized', () => {
       localStorage.clear();
-      const auth = osmAuth({
+      const auth = new osmAuth({
         url: 'https://www.openstreetmap.org',
         apiUrl: 'https://api.openstreetmap.org',
         client_id: 'JWXSAzNp64sIRMStTnkhMRaMxSR964V4sFgn3KUZNTA',
