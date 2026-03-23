@@ -295,3 +295,8 @@ Options  (getter / setter)<br/>
 Param:  `val?`   Object containing options<br/>
 Return:  current `options` (if getting), or `self` (if setting)<br/>
 <br/>
+
+## License
+
+This project is available under the [ISC License](LICENSE.md).
+ISC is a permissive free software license — functionally equivalent to the MIT License.
