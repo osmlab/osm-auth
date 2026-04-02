@@ -81,6 +81,17 @@ export function osmAuth(o) {
 
 
   /**
+   * getAccessToken
+   * Return the current stored access token, if any
+   *
+   * @return {string} The access token, or '' if user is not authenticated.
+   */
+  oauth.getAccessToken = function() {
+    return token('oauth2_access_token');
+  };
+
+
+  /**
    * logout
    * Removes any stored authentication tokens (legacy OAuth1 tokens too)
    *
@@ -263,7 +274,7 @@ export function osmAuth(o) {
         callback(err);
         return;
       }
-      _getAccessToken(params.code, pkce.code_verifier, accessTokenDone);
+      _requestAccessToken(params.code, pkce.code_verifier, accessTokenDone);
       bc.close();
     });
 
@@ -281,7 +292,7 @@ export function osmAuth(o) {
 
 
   /**
-   * _getAccessToken
+   * _requestAccessToken
    * The client requests an access token by authenticating with the
    * authorization server and presenting the `auth_code`, brought
    * in from a function call on a landing page popup.
@@ -289,7 +300,7 @@ export function osmAuth(o) {
    * @param  {string}    code_verifier
    * @param  {function}  accessTokenDone  Errback-style callback `(err, result)`, called when complete
    */
-  function _getAccessToken(auth_code, code_verifier, accessTokenDone) {
+  function _requestAccessToken(auth_code, code_verifier, accessTokenDone) {
     var url =
       o.url +
       '/oauth2/token?' +
@@ -352,7 +363,7 @@ export function osmAuth(o) {
     }
     var code_verifier = token('oauth2_pkce_code_verifier');
     token('oauth2_pkce_code_verifier', '');
-    _getAccessToken(auth_code, code_verifier, accessTokenDone);
+    _requestAccessToken(auth_code, code_verifier, accessTokenDone);
 
     function accessTokenDone(err, xhr) {
       o.done();

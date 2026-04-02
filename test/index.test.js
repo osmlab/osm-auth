@@ -45,6 +45,7 @@ describe('osmauth', () => {
         scope: 'read_prefs'
       });
       assert.equal(auth.authenticated(), false);
+      assert.equal(auth.getAccessToken(), '');
     });
 
     it('can be preauthorized', () => {
@@ -58,6 +59,7 @@ describe('osmauth', () => {
         access_token: 'foo'
       });
       assert.equal(auth.authenticated(), true);
+      assert.equal(auth.getAccessToken(), 'foo');
     });
   });
 });
