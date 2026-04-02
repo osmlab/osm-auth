@@ -204,6 +204,13 @@ Test whether the user is currently authenticated<br/>
 Returns: `true` if authenticated, `false` if not<br/>
 
 
+## `getAccessToken()`
+
+Return the current stored access token, if any<br/>
+<br/>
+Returns: The access token, or '' if user is not authenticated.<br/>
+
+
 ## `.authenticate(callback, options?)`
 
 First logs out, then runs the authentiation flow, finally calls the callback.<br/>
