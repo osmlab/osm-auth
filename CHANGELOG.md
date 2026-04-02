@@ -15,6 +15,19 @@ _Breaking changes, which may affect downstream projects, are marked with a_ тЪая
 [#xxx]: https://github.com/osmlab/osm-auth/issues/xxx
 -->
 
+## 3.2.0
+##### 2026-Apr-02
+* Allow caller to get the access token via `getAccessToken()` ([#149])
+* Always use `new` to instantiate the main class ([#148], thanks [@k-yle])
+* Fix links to GitHub issues ([#145], thanks [@tyrasd])
+
+[#145]: https://github.com/osmlab/osm-auth/issues/145
+[#148]: https://github.com/osmlab/osm-auth/issues/148
+[#149]: https://github.com/osmlab/osm-auth/issues/149
+[@k-yle]: https://github.com/k-yle
+[@tyrasd]: https://github.com/tyrasd
+
+
 ## 3.1.1
 ##### 2025-Nov-04
 * Add better test for `localStorage` ([#144])
