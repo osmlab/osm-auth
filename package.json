@@ -31,10 +31,11 @@
     "browser": "./dist/osm-auth.iife.js"
   },
   "scripts": {
-    "all": "bun run --sequential clean lint build:js test",
+    "all": "bun run --sequential clean check build:js test",
+    "check": "bun run --parallel 'check:*'",
+    "check:lint": "eslint ./src/osm-auth.mjs ./test/*.js",
     "build:js": "bun ./scripts/build_js.ts",
     "clean": "bun ./scripts/clean.ts",
-    "lint": "eslint ./src/osm-auth.mjs ./test/*.js",
     "start": "bun ./scripts/server.ts",
     "test": "bun test --dots --coverage ./test/*.js"
   },
