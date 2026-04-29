@@ -38,8 +38,3 @@ Set as latest release on GitHub:
 - Open https://github.com/osmlab/osm-auth/tags and pick the new tag you just pushed
 - There should be a link like "create a release from the tag", click that, and paste in the link to the changelog.
 
-<!-- sync:
-version=1
-source=https://github.com/rapideditor/agent-practices/blob/main/templates/RELEASE.md
-instructions="Create if missing, substituting the project name and repo details for this project; never overwrite the details of an existing release checklist."
--->

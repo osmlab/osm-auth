@@ -308,9 +308,3 @@ Return:  current `options` (if getting), or `self` (if setting)<br/>
 This project is available under the [ISC License](LICENSE.md).
 ISC is a permissive free software license — functionally equivalent to the MIT License.
 
-<!--
-sync:
-version=1
-source=https://github.com/rapideditor/agent-practices/blob/main/templates/README.md
-instructions="preserve this project's actual description, icon list, and any unique content; adopt structural sections (badge layout, contributing footer, license block) from the source if they are absent locally; do not overwrite meaningful local content with source content"
--->

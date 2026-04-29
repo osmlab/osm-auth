@@ -44,9 +44,3 @@ Group findings by category. Number each suggestion sequentially across all categ
 - 👉 Improvement (best practice, clarity) — worth doing
 - 💡 Suggestion (optional, bigger change) — idea to track for future work
 
-<!--
-sync:
-version=1
-source=https://github.com/rapideditor/agent-practices/blob/main/templates/.github/prompts/suggest.prompt.md
-instructions="steps and categories may be adapted to this project's stack — keep categories that apply, drop ones that don't, and add new ones if the project uses tooling not represented here"
--->

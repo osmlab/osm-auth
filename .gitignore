@@ -38,7 +38,3 @@ yarn.lock
 SCRATCHPAD.md
 scratch/
 
-# sync:
-# version=1
-# source=https://github.com/rapideditor/agent-practices/blob/main/templates/.gitignore
-# instructions="merge only: add entries absent locally; never remove local-only entries"
