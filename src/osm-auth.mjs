@@ -592,8 +592,6 @@ function utilStringQs(str) {
 
 /**
  * Generates a challenge/verifier pair for PKCE.
- * If the browser does not support the WebCryptoAPI, the "plain" method is
- * used as a fallback instead of a SHA-256 hash.
  * @param {callback} callback called with the result of the generated PKCE challenge
  */
 function _generatePkceChallenge(callback) {
