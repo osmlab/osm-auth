@@ -558,15 +558,15 @@ export function osmAuth(o) {
  * @returns {string}  query string
  */
 function utilQsString(obj) {
-  return Object.keys(obj)
-    .filter(function(key) {
-      return obj[key] !== undefined;
-    })
-    .sort()
-    .map(function(key) {
-      return (encodeURIComponent(key) + '=' + encodeURIComponent(obj[key]));
-    })
-    .join('&');
+  const params = new URLSearchParams();
+  for (const [key, value] of Object.entries(obj)) {
+    if (value === undefined) {
+      continue;
+    }
+    params.set(key, value);
+  }
+  params.sort();
+  return params.toString();
 }
 
 /**
@@ -580,13 +580,8 @@ function utilStringQs(str) {
   while (i < str.length && (str[i] === '?' || str[i] === '#')) i++;
   str = str.slice(i);
 
-  return str.split('&').reduce(function(obj, pair) {
-    var parts = pair.split('=');
-    if (parts.length === 2) {
-      obj[parts[0]] = decodeURIComponent(parts[1]);
-    }
-    return obj;
-  }, {});
+  const params = new URLSearchParams(str);
+  return Object.fromEntries(params.entries());
 }
 
 
