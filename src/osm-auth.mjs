@@ -27,7 +27,7 @@ export function osmAuth(o) {
   // Note that accessing localStorage may throw a `SecurityError`, so wrap in a try/catch.
   var _store = null;
   try {
-    if (!('localStorage' in globalThis)) {
+    if (!('localStorage' in globalThis) || globalThis.localStorage === undefined) {
       throw new Error('No localStorage');
     }
     _store = globalThis.localStorage;
