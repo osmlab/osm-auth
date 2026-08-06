@@ -7,11 +7,11 @@ declare namespace OSMAuth {
     logout(): osmAuth;
     fetch(path: string, options: OSMAuthFetchOptions): Promise<Response>;
     authenticated(): boolean;
-    authenticate(callback: (err: null | any, result?: any) => any, options?: LoginOptions): any;
+    authenticate(callback: (err: null | any, result?: osmAuth) => void, options?: LoginOptions): void;
     bringPopupWindowToFront(): boolean;
-    bootstrapToken(oauth_token: string, callback: (err: null | any, result?: any) => any): any;
-    xhr(options: OSMAuthXHROptions, callback: (err: null | any, result?: any) => any): XMLHttpRequest | null;
-    rawxhr(method: string, url: string, access_token: string | null, data: any | null, headers: object | null, callback: (err: null | any, result?: any) => any): XMLHttpRequest;
+    bootstrapToken(oauth_token: string, callback: (err: null | any, result?: osmAuth) => void): void;
+    xhr(options: OSMAuthXHROptions, callback: (err: null | any, result?: any) => void): XMLHttpRequest | null;
+    rawxhr(method: string, url: string, access_token: string | null, data: Document | XMLHttpRequestBodyInit | null | undefined, headers: Record<string, string> | null, callback: (err: null | any, result?: any) => void): XMLHttpRequest;
     preauth(options: OSMAuthOptions): osmAuth;
     options(): OSMAuthOptions;
     options(options: OSMAuthOptions): osmAuth;
@@ -35,19 +35,16 @@ declare namespace OSMAuth {
     locale?: string;
   }
 
-  interface OSMAuthFetchOptions {
-    method: 'POST' | 'PUT' | 'GET' | 'DELETE';
-    body?: string;
-    prefix?: boolean;
-    headers?: object;
+  interface OSMAuthFetchOptions extends Omit<RequestInit, 'headers'> {
+    headers?: Record<string, string>;
   }
 
   interface OSMAuthXHROptions {
     method: 'POST' | 'PUT' | 'GET' | 'DELETE';
     path: string;
-    content?: string;
+    content?: Document | XMLHttpRequestBodyInit | null;
     prefix?: boolean;
-    headers?: object;
+    headers?: Record<string, string>;
   }
 }
 
