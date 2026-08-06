@@ -2,6 +2,7 @@
   "compilerOptions": {
     // Environment setup & latest features
     "lib": [
+      "DOM",
       "ESNext"
     ],
     "target": "ESNext",
