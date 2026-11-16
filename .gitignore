@@ -20,6 +20,11 @@ coverage/
 !.vscode/extensions.json
 .idea/
 
+# Private notes, in any folder (see AGENTS.md)
+PRIVATE.*
+# Older name for private notes, kept for projects that haven't moved yet
+SCRATCHPAD.md
+
 # Logs
 npm-debug.log
 npm-debug.log*
@@ -35,6 +40,5 @@ yarn.lock
 *.temp
 
 # Local working notes
-SCRATCHPAD.md
 scratch/
 

@@ -6,13 +6,38 @@ At session start, skim [`README.md`](README.md) and [`CONTRIBUTING.md`](CONTRIBU
 
 ---
 
-## Scratchpad
+## Project knowledge
 
-If a `SCRATCHPAD.md` file exists at the repo root (gitignored), read it at session start for additional context on recent work, lessons learned, and known quirks. Update it as you work with any learnings that a future session would benefit from knowing. Don't create one proactively — only when there's something worth persisting.
+The [`knowledge/`](knowledge/README.md) folder holds notes for agents and people working on this project: work in progress, the backlog, completed work, decisions, lessons, and quirks. It's committed to git and public.
 
-## Prompt Files
+At session start, read `knowledge/current.md` if it exists, and pull in the other files when they're relevant. Update them as you work. [`knowledge/README.md`](knowledge/README.md) says what goes where, and how to prune.
 
-This project has reusable Copilot prompt files in `.github/prompts/`. Your editor surfaces them via the `/` menu (or equivalent). When a task matches an existing prompt, prefer invoking it over improvising — the prompts encode project-specific conventions.
+### Design docs
+
+If this project has a `design/` folder, it holds design docs for the larger systems: what each one owns, the decisions behind it, and where it's heading. `design/README.md` lists them.
+- **Before changing one of those systems, read its design doc.** If your change alters the design, update the doc in the same change.
+- When you make a substantial change to a system that has no design doc yet, suggest starting one.
+
+### Private notes
+
+Files named `PRIVATE.*` (e.g. `PRIVATE.md`, `PRIVATE.json`) are gitignored, and can be in any folder. They hold notes that shouldn't be public, such as personal context or unreleased plans.
+- At session start, read `PRIVATE.md` at the repo root if it exists.
+- Search tools usually skip gitignored files. Before working in a folder, check for a `PRIVATE.*` file there by opening the path directly, or list them all with `find . -name 'PRIVATE.*' -not -path '*/node_modules/*'`.
+- Use the exact uppercase name. On a case-sensitive file system, `.gitignore` won't match `private.md`.
+- Never copy anything from these files into committed files without asking.
+- Private isn't secret: no tokens, keys or passwords here either (see "Secrets hygiene" below).
+
+## Skills
+
+This project has reusable agent skills in `.claude/skills/`: one folder per skill, each with a `SKILL.md` in the open Agent Skills format. Claude Code and VS Code Copilot both find them there and list them in the `/` menu (or equivalent). When a task matches an existing skill, prefer invoking it over improvising — the skills encode project-specific conventions.
+
+## Shared playbooks and lessons
+
+[agent-practices](https://github.com/rapideditor/agent-practices) also keeps knowledge that applies across projects. It's written for agents, and isn't synced here, so fetch it:
+- **Lessons**, gotchas with the tools we use (Bun, TypeScript, packaging, git): `https://raw.githubusercontent.com/rapideditor/agent-practices/main/lessons/README.md`. **At session start**, read the index, then the lesson files for the tools this project uses. They're short, and they apply to everyday work, not just upgrades.
+- **Playbooks** for one-time upgrades (e.g. ESLint → oxlint, TypeScript 7): `https://raw.githubusercontent.com/rapideditor/agent-practices/main/playbooks/README.md`. Read the index before an upgrade, a tooling change or packaging work, then only the playbooks that apply.
+
+Fetch the raw files with `curl -fsSL` (or `gh api`), so you get the exact text. A web-fetch tool that summarizes pages can drop the details that matter. This project's own conventions win where they differ. If you learn something that would help other projects, say so; `/reflect` can draft it for agent-practices.
 
 ## General Guidelines
 
