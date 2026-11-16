@@ -168,7 +168,9 @@ sketch: settle the details when the fix lands.
 ### Keep the exported type names
 
 `osmAuth`, `LoginOptions`, `OSMAuthOptions`, `OSMAuthFetchOptions` and `OSMAuthXHROptions` keep
-their names. The global `OSMAuth` namespace from the hand-written `.d.ts` goes away; the IIFE's
+their names. Two are new: `OSMAuthResolvedOptions`, which the `options()` getter returns (the
+options with defaults filled in, so `apiUrl` and `url` aren't optional), and `OSMAuthCallback<T>`,
+the errback type. The global `OSMAuth` namespace from the hand-written `.d.ts` goes away; the IIFE's
 global is declared in `src/index.ts` instead, the same way the sibling projects do it.
 
 ### `client_secret`
@@ -259,9 +261,9 @@ Found while reading `src/osm-auth.mjs`.
 1. **`xhr()` with `auto: true` ignores a failed login.** It calls `authenticate(_doXHR)`, but
    `_doXHR` takes no arguments, so after a blocked popup or a denied login it sends the request
    anyway without a token, and the caller never sees the login error.
-2. **`xhr()` returns `undefined`, not `null`**, when it doesn't send a request (the types say
-   `XMLHttpRequest | null`), and its "not authenticated" error is a string, where `fetch()`
-   rejects with an `Error`.
+2. **`xhr()`'s "not authenticated" error is a string**, where `fetch()` rejects with an `Error`.
+   (It also returned `undefined` rather than the documented `null` when it didn't send a request;
+   the class returns `null`.)
 3. **Errors come in four shapes.** Replace them with `OSMAuthError` (see
    [above](#errors-one-osmautherror-class)).
 4. **`fetch()` and `rawxhr()` add the `Authorization` header to the caller's own objects.**
@@ -269,9 +271,8 @@ Found while reading `src/osm-auth.mjs`.
 5. **Single-page mode opens a BroadcastChannel it never uses**, and never closes it.
    `_authenticate` creates the channel after redirecting or calling `bootstrapToken`, for both of
    which nothing will ever post to it.
-6. **The token exchange is written twice** (`accessTokenDone` in `_authenticate` and
-   `bootstrapToken`), and so are `authenticate` and `authenticateAsync`. One should call the
-   other.
+6. **`authenticate` and `authenticateAsync` duplicate each other.** One should call the other.
+   (The token exchange was written twice too; the class shares one `_accessTokenDone`.)
 7. **`utilStringQs` doesn't decode `+` as a space**, and throws on a malformed `%` escape.
    `URLSearchParams` does both properly and would replace both helpers. The `+` workaround for
    `error_description` could go too.

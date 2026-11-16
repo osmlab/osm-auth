@@ -27,7 +27,19 @@ describe('osmauth', () => {
         scope: 'read_prefs'
       };
       const auth = new osmAuth(keys);
-      assert.deepEqual(auth.options(), keys);
+      const options = auth.options();
+      assert.deepEqual(options, {
+        ...keys,
+        auto: false,
+        singlepage: false,
+        loading: options.loading,
+        done: options.done
+      });
+
+      // options are copied, not shared
+      assert.notEqual(options, keys);
+      options.url = 'bar';
+      assert.equal(auth.options().url, 'https://www.openstreetmap.org');
 
       auth.options({ url: 'foo' });
       assert.deepEqual(auth.options().url, 'foo');

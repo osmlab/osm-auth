@@ -3,68 +3,161 @@
  * osmAuth
  * Easy authentication with OpenStreetMap over OAuth 2.0.
  * @module
- *
- * @param    o   `Object` containing options:
- * @param    o.scope          OAuth2 scopes requested (e.g. "read_prefs write_api")
- * @param    o.client_id      OAuth2 client ID
- * @param    o.redirect_uri   OAuth2 redirect URI (e.g. "http://127.0.0.1:8080/land.html")
- * @param    o.access_token   Can pre-authorize with an OAuth2 bearer token if you have one
- * @param    o.apiUrl         A base url for the OSM API (default: "https://api.openstreetmap.org")
- * @param    o.url            A base url for the OAuth2 handshake (default: "https://www.openstreetmap.org")
- * @param    o.auto           If `true`, attempt to authenticate automatically when calling `.xhr()` or `.fetch()` (default: `false`)
- * @param    o.singlepage     If `true`, use page redirection instead of a popup (default: `false`)
- * @param    o.loading        Function called when auth-related xhr calls start
- * @param    o.done           Function called when auth-related xhr calls end
- * @param    o.locale         The locale to use on the OAuth2 authentication page. Optional.
- * @return  `self`
  */
-export function osmAuth(o) {
-  var oauth = {};
 
-  var CHANNEL_ID = 'osm-api-auth-complete';
 
-  // Mock localStorage if needed.
-  // Note that accessing localStorage may throw a `SecurityError`, so wrap in a try/catch.
-  var _store = null;
-  try {
-    if (!globalThis.localStorage) {
-      throw new Error('No localStorage');
-    }
-    _store = globalThis.localStorage;
+/** Options for the `osmAuth` constructor and `options()` setter */
+export interface OSMAuthOptions {
+  /** OAuth2 scopes requested (e.g. "read_prefs write_api") */
+  scope: string;
+  /** OAuth2 client ID */
+  client_id: string;
+  /** OAuth2 redirect URI (e.g. "http://127.0.0.1:8080/land.html") */
+  redirect_uri: string;
+  /** Can pre-authorize with an OAuth2 bearer token if you have one */
+  access_token?: string;
+  /** A base url for the OSM API (default: "https://api.openstreetmap.org") */
+  apiUrl?: string;
+  /** A base url for the OAuth2 handshake (default: "https://www.openstreetmap.org") */
+  url?: string;
+  /** If `true`, attempt to authenticate automatically when calling `.xhr()` or `.fetch()` (default: `false`) */
+  auto?: boolean;
+  /** If `true`, use page redirection instead of a popup (default: `false`) */
+  singlepage?: boolean;
+  /** Function called when auth-related xhr calls start */
+  loading?: () => void;
+  /** Function called when auth-related xhr calls end */
+  done?: () => void;
+  /** The locale to use on the OAuth2 authentication page. Optional. */
+  locale?: string;
+}
 
-  } catch (e) {
-    var _mock = new Map();
-    _store = {
-      isMocked: true,
-      hasItem: (k) => _mock.has(k),
-      getItem: (k) => _mock.get(k),
-      setItem: (k, v) => _mock.set(k, v),
-      removeItem: (k) => _mock.delete(k),
-      clear: () => _mock.clear()
-    };
-  }
+/** The options as returned by the `options()` getter, with defaults filled in */
+export interface OSMAuthResolvedOptions extends OSMAuthOptions {
+  apiUrl: string;
+  url: string;
+  auto: boolean;
+  singlepage: boolean;
+  loading: () => void;
+  done: () => void;
+}
+
+/** Other options for `authenticate()` and `authenticateAsync()` */
+export interface LoginOptions {
+  /** If `true`, the user is first prompted to logout, then login, then go to the OAuth2 flow */
+  switchUser?: boolean;
+}
+
+/** Options for `fetch()`, passed to `fetch` */
+export interface OSMAuthFetchOptions extends Omit<RequestInit, 'headers'> {
+  headers?: Record<string, string>;
+}
+
+/** Options for `xhr()` */
+export interface OSMAuthXHROptions {
+  /** Passed to `xhr.open`  (e.g. 'GET', 'POST') */
+  method: 'POST' | 'PUT' | 'GET' | 'DELETE';
+  /** The URL path (e.g. "/api/0.6/user/details") (or full url, if `prefix`=`false`) */
+  path: string;
+  /** Passed to `xhr.send` */
+  content?: Document | XMLHttpRequestBodyInit | null;
+  /** If `true` path contains a path, if `false` path contains the full url */
+  prefix?: boolean;
+  /** `Object` containing request headers */
+  headers?: Record<string, string>;
+}
+
+/** An "errback"-style callback `(err, result)`, called when complete */
+export type OSMAuthCallback<T> = (err: unknown, result?: T) => void;
+
+/** Errors raised by osm-auth itself carry a `status` string, e.g. 'popup-blocked' */
+type StatusError = Error & { status: string };
+
+/** The parts of `Storage` that osm-auth uses */
+type TokenStore = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>;
+
+/** A PKCE code challenge and verifier, see rfc7636 */
+interface PkceChallenge {
+  code_challenge: string;
+  code_verifier: string;
+  code_challenge_method: 'S256';
+}
+
+/** Callback for `rawxhr()` */
+type RawXHRCallback = (err: XMLHttpRequest | ProgressEvent | null, xhr: XMLHttpRequest | null) => void;
+
+
+const CHANNEL_ID = 'osm-api-auth-complete';
+
+
+/**
+ * osmAuth
+ * Easy authentication with OpenStreetMap over OAuth 2.0.
+ */
+export class osmAuth {
+  /** The popup window used for authentication, once one has been opened */
+  popupWindow?: Window;
+
+  private _options: OSMAuthResolvedOptions;
+  private _store: TokenStore;
+  private _storeIsMocked: boolean;
+
 
   /**
-   * token
-   * Get/Set tokens. These are prefixed with the base URL so that `osm-auth`
-   * can be used with multiple APIs and the keys in `localStorage` will not clash
-   * @param  {string}   k  key
-   * @param  {string?}  v  value
-   * @return {string?}  If getting, returns the stored value or `null`.  If setting, returns `undefined`.
+   * @param  options  Object containing options, see `OSMAuthOptions`
    */
-  function token(k, v) {
-    var key = o.url + k;
-    if (arguments.length === 1) {
-      var val = _store.getItem(key) || '';
-      // Note: legacy tokens might be wrapped in double quotes - remove them, see #129
-      return val.replace(/"/g, '');
-
-    } else if (arguments.length === 2) {
-      if (v) {
-        return _store.setItem(key, v);
-      } else {
-        return _store.removeItem(key);
+  constructor(options: OSMAuthOptions) {
+    // Mock localStorage if needed.
+    // Note that accessing localStorage may throw a `SecurityError`, so wrap in a try/catch.
+    try {
+      if (!globalThis.localStorage) {
+        throw new Error('No localStorage');
       }
+      this._store = globalThis.localStorage;
+      this._storeIsMocked = false;
+
+    } catch (e) {
+      const _mock = new Map<string, string>();
+      this._store = {
+        getItem: (k) => _mock.get(k) ?? null,
+        setItem: (k, v) => { _mock.set(k, v); },
+        removeItem: (k) => { _mock.delete(k); }
+      };
+      this._storeIsMocked = true;
+    }
+
+    // Handle options and attempt to pre-authorize
+    this._options = resolveOptions(options);
+    this.preauth(this._options);
+  }
+
+
+  /**
+   * _getToken
+   * Get a stored token. These are prefixed with the base URL so that `osm-auth`
+   * can be used with multiple APIs and the keys in `localStorage` will not clash
+   * @param   k  key
+   * @return  The stored value, or '' if there isn't one
+   */
+  private _getToken(k: string): string {
+    const val = this._store.getItem(this._options.url + k) || '';
+    // Note: legacy tokens might be wrapped in double quotes - remove them, see #129
+    return val.replace(/"/g, '');
+  }
+
+
+  /**
+   * _setToken
+   * Set a stored token, or remove it if `v` is empty. See `_getToken`.
+   * @param  k  key
+   * @param  v  value
+   */
+  private _setToken(k: string, v: string | undefined): void {
+    const key = this._options.url + k;
+    if (v) {
+      this._store.setItem(key, v);
+    } else {
+      this._store.removeItem(key);
     }
   }
 
@@ -73,22 +166,22 @@ export function osmAuth(o) {
    * authenticated
    * Test whether the user is currently authenticated
    *
-   * @return {boolean} `true` if authenticated, `false` if not
+   * @return `true` if authenticated, `false` if not
    */
-  oauth.authenticated = function() {
-    return !!token('oauth2_access_token');
-  };
+  authenticated(): boolean {
+    return !!this._getToken('oauth2_access_token');
+  }
 
 
   /**
    * getAccessToken
    * Return the current stored access token, if any
    *
-   * @return {string} The access token, or '' if user is not authenticated.
+   * @return The access token, or '' if user is not authenticated.
    */
-  oauth.getAccessToken = function() {
-    return token('oauth2_access_token');
-  };
+  getAccessToken(): string {
+    return this._getToken('oauth2_access_token');
+  }
 
 
   /**
@@ -97,13 +190,13 @@ export function osmAuth(o) {
    *
    * @return  `self`
    */
-  oauth.logout = function () {
-    token('oauth2_access_token', '');         // OAuth2
-    token('oauth_token', '');                 // OAuth1
-    token('oauth_token_secret', '');          // OAuth1
-    token('oauth_request_token_secret', '');  // OAuth1
-    return oauth;
-  };
+  logout(): this {
+    this._setToken('oauth2_access_token', '');         // OAuth2
+    this._setToken('oauth_token', '');                 // OAuth1
+    this._setToken('oauth_token_secret', '');          // OAuth1
+    this._setToken('oauth_request_token_secret', '');  // OAuth1
+    return this;
+  }
 
 
   /**
@@ -111,78 +204,76 @@ export function osmAuth(o) {
    * First logs out, then runs the authentiation flow, finally calls the callback.
    * TODO: detect lack of click event  (probably can settimeout it)
    *
-   * @param   {function}  callback  Errback-style callback `(err, result)`, called when complete
-   * @param   {LoginOptions}  [options]  Other options
-   * @return  none
+   * @param   callback  Errback-style callback `(err, result)`, called when complete
+   * @param   options   Other options
    */
-  oauth.authenticate = function(callback, options) {
-    if (oauth.authenticated()) {
-      callback(null, oauth);
+  authenticate(callback: OSMAuthCallback<osmAuth>, options?: LoginOptions): void {
+    if (this.authenticated()) {
+      callback(null, this);
       return;
     }
 
-    oauth.logout();
+    this.logout();
 
-    _preopenPopup(function(error, popup) {
+    this._preopenPopup((error, popup) => {
       if (error) {
         callback(error);
       } else {
-        _generatePkceChallenge(function(pkce) {
-          _authenticate(pkce, options, popup, callback);
+        _generatePkceChallenge((pkce) => {
+          this._authenticate(pkce, options, popup, callback);
         });
       }
     });
-  };
+  }
 
 
   /**
    * authenticateAsync
    * Promisified version of `authenticate`
-   * @param {LoginOptions} [options]
-   * @return  {Promise}  Promise settled with whatever `_authenticate` did
+   * @param   options  Other options
+   * @return  Promise settled with whatever `_authenticate` did
    */
-  oauth.authenticateAsync = function(options) {
-    if (oauth.authenticated()) {
-      return Promise.resolve(oauth);
+  authenticateAsync(options?: LoginOptions): Promise<osmAuth> {
+    if (this.authenticated()) {
+      return Promise.resolve(this);
     }
 
-    oauth.logout();
+    this.logout();
 
     return new Promise((resolve, reject) => {
-      var errback = (err, result) => {
+      const errback: OSMAuthCallback<osmAuth> = (err, result) => {
         if (err) {
           reject(err);
         } else {
-          resolve(result);
+          resolve(result as osmAuth);
         }
       };
 
-      _preopenPopup((error, popup) => {
+      this._preopenPopup((error, popup) => {
         if (error) {
           errback(error);
         } else {
-          _generatePkceChallenge(pkce => _authenticate(pkce, options, popup, errback));
+          _generatePkceChallenge(pkce => this._authenticate(pkce, options, popup, errback));
         }
       });
     });
-  };
+  }
 
 
   /**
    * opens an empty popup to be later used for the authentication page
-   * @param   {function}  callback  Errback-style callback `(err, result)`, called when complete
-   * @return  none
+   * @param   callback  Errback-style callback `(err, result)`, called when complete
    */
-  function _preopenPopup(callback) {
-    if (o.singlepage) {
+  private _preopenPopup(callback: (err: StatusError | null, popup?: Window) => void): void {
+    if (this._options.singlepage) {
       callback(null, undefined);
       return;
     }
 
     // Create a 550x610 popup window in the center of the screen
-    var w = 550;
-    var h = 610;
-    var settings = [
+    const w = 550;
+    const h = 610;
+    const settings = [
         ['width', w],
         ['height', h],
         ['left', window.screen.width / 2 - w / 2],
@@ -190,13 +281,11 @@ export function osmAuth(o) {
       ]
       .map(function (x) { return x.join('='); })
       .join(',');
-    var popup = window.open('about:blank', 'oauth_window', settings);
+    const popup = window.open('about:blank', 'oauth_window', settings);
     if (popup) {
       callback(null, popup);
     } else {
-      var error = new Error('Popup was blocked');
-      error.status = 'popup-blocked';
-      callback(error);
+      callback(makeError('Popup was blocked', 'popup-blocked'));
     }
   }
 
@@ -205,19 +294,18 @@ export function osmAuth(o) {
    * _authenticate
    * internal authenticate
    *
-   * @typedef {{ switchUser?: boolean }} LoginOptions
-   *
-   * @param  {Object}    pkce      Object containing PKCE code challenge properties
-   * @param  {LoginOptions=}   options   Other options
-   * @param  {Window}    popup     Popup Window to use for the authentication page, should be undefined when using singlepage mode
-   * @param  {function}  callback  Errback-style callback that accepts `(err, result)`
+   * @param  pkce      Object containing PKCE code challenge properties
+   * @param  options   Other options
+   * @param  popup     Popup Window to use for the authentication page, should be undefined when using singlepage mode
+   * @param  callback  Errback-style callback that accepts `(err, result)`
    */
-  function _authenticate(pkce, options, popup, callback) {
-    var state = generateState();
+  private _authenticate(pkce: PkceChallenge, options: LoginOptions | undefined, popup: Window | undefined, callback: OSMAuthCallback<osmAuth>): void {
+    const o = this._options;
+    const state = generateState();
 
     // ## Request authorization to access resources from the user
     // and receive authorization code
-    var path =
+    const path =
       '/oauth2/authorize?' +
       utilQsString({
         client_id: o.client_id,
@@ -230,65 +318,70 @@ export function osmAuth(o) {
         locale: o.locale || '',
       });
 
-    var url = options?.switchUser
+    const url = options?.switchUser
       ? `${o.url}/logout?referer=${encodeURIComponent(`/login?referer=${encodeURIComponent(path)}`)}`
       : o.url + path;
 
     if (o.singlepage) {
-      if (_store.isMocked) {
+      if (this._storeIsMocked) {
         // in singlepage mode, PKCE requires working non-volatile storage
-        var error = new Error('localStorage unavailable, but required in singlepage mode');
-        error.status = 'pkce-localstorage-unavailable';
-        callback(error);
+        callback(makeError('localStorage unavailable, but required in singlepage mode', 'pkce-localstorage-unavailable'));
         return;
       }
-      var params = utilStringQs(window.location.search.slice(1));
-      if (params.code) {
-        oauth.bootstrapToken(params.code, callback);
+      const params = utilStringQs(window.location.search.slice(1));
+      const code = params['code'];
+      if (code) {
+        this.bootstrapToken(code, callback);
       } else {
         // save OAuth2 state and PKCE challenge in local storage, for later use
         // in the `/oauth/token` request
-        token('oauth2_state', state);
-        token('oauth2_pkce_code_verifier', pkce.code_verifier);
-        window.location = url;
+        this._setToken('oauth2_state', state);
+        this._setToken('oauth2_pkce_code_verifier', pkce.code_verifier);
+        window.location.href = url;
       }
-    } else {
-      oauth.popupWindow = popup;
-      popup.location = url;
+    } else if (popup) {
+      this.popupWindow = popup;
+      popup.location.href = url;
     }
 
     // Called by a function in the redirect URL page, in the popup window. The
     // window closes itself.
-    var bc = new BroadcastChannel(CHANNEL_ID);
-    bc.addEventListener('message', (event) => {
+    const bc = new BroadcastChannel(CHANNEL_ID);
+    bc.addEventListener('message', (event: MessageEvent<unknown>) => {
       bc.close();
-      var url = event.data;
-      var params = utilStringQs(url.split('?')[1]);
-      if (params.state !== state) {
-        var error = new Error('Invalid state');
-        error.status = 'invalid-state';
-        callback(error);
+      const url = typeof event.data === 'string' ? event.data : '';
+      const params = utilStringQs(url.split('?')[1] ?? '');
+      const error = params['error'];
+      if (params['state'] !== state) {
+        callback(makeError('Invalid state', 'invalid-state'));
         return;
-      } else if (params.error !== undefined) {
-        var description = params.error_description;
-        var err = new Error(description ? description.replace(/\+/g, ' ') : params.error);
-        err.status = params.error;
-        callback(err);
+      } else if (error !== undefined) {
+        const description = params['error_description'];
+        callback(makeError(description ? description.replace(/\+/g, ' ') : error, error));
         return;
       }
-      _requestAccessToken(params.code, pkce.code_verifier, accessTokenDone);
+      this._requestAccessToken(params['code'], pkce.code_verifier, this._accessTokenDone(callback));
     });
+  }
 
-    function accessTokenDone(err, xhr) {
-      o.done();
-      if (err) {
+
+  /**
+   * _accessTokenDone
+   * Returns the callback for `_requestAccessToken`, which stores the access token
+   * and then calls `callback`.
+   * @param   callback  Errback-style callback `(err, result)`, called when complete
+   * @return  Callback for `rawxhr`
+   */
+  private _accessTokenDone(callback: OSMAuthCallback<osmAuth>): RawXHRCallback {
+    return (err, xhr) => {
+      this._options.done();
+      if (err || !xhr) {
         callback(err);
         return;
       }
-      var access_token = JSON.parse(xhr.response);
-      token('oauth2_access_token', access_token.access_token);
-      callback(null, oauth);
-    }
+      this._setToken('oauth2_access_token', parseAccessToken(xhr));
+      callback(null, this);
+    };
   }
 
 
@@ -297,12 +390,13 @@ export function osmAuth(o) {
    * The client requests an access token by authenticating with the
    * authorization server and presenting the `auth_code`, brought
    * in from a function call on a landing page popup.
-   * @param  {string}    auth_code
-   * @param  {string}    code_verifier
-   * @param  {function}  accessTokenDone  Errback-style callback `(err, result)`, called when complete
+   * @param  auth_code
+   * @param  code_verifier
+   * @param  accessTokenDone  Errback-style callback `(err, result)`, called when complete
    */
-  function _requestAccessToken(auth_code, code_verifier, accessTokenDone) {
-    var url =
+  private _requestAccessToken(auth_code: string | undefined, code_verifier: string, accessTokenDone: RawXHRCallback): void {
+    const o = this._options;
+    const url =
       o.url +
       '/oauth2/token?' +
       utilQsString({
@@ -315,7 +409,7 @@ export function osmAuth(o) {
 
     // The authorization server authenticates the client and validates
     // the authorization grant, and if valid, issues an access token.
-    oauth.rawxhr('POST', url, null, null, null, accessTokenDone);
+    this.rawxhr('POST', url, null, null, null, accessTokenDone);
     o.loading();
   }
 
@@ -324,22 +418,22 @@ export function osmAuth(o) {
    * bringPopupWindowToFront
    * Tries to bring an existing authentication popup to the front.
    *
-   * @return {boolean} `true` if it succeeded, `false` if not
+   * @return `true` if it succeeded, `false` if not
    */
-  oauth.bringPopupWindowToFront = function() {
-    var broughtPopupToFront = false;
+  bringPopupWindowToFront(): boolean {
+    let broughtPopupToFront = false;
     try {
       // This may cause a cross-origin error:
       // `DOMException: Blocked a frame with origin "..." from accessing a cross-origin frame.`
-      if (oauth.popupWindow && !oauth.popupWindow.closed) {
-        oauth.popupWindow.focus();
+      if (this.popupWindow && !this.popupWindow.closed) {
+        this.popupWindow.focus();
         broughtPopupToFront = true;
       }
     } catch (err) {
       // Bringing popup window to front failed (probably because of the cross-origin error mentioned above)
     }
     return broughtPopupToFront;
-  };
+  }
 
 
   /**
@@ -348,35 +442,21 @@ export function osmAuth(o) {
    * If using this library in single-page mode, you'll need to call this once your application
    * has an `auth_code` and wants to get an access_token.
    *
-   * @param   {string}   auth_code  The OAuth2 `auth_code`
-   * @param   {function} callback   Errback-style callback `(err, result)`, called when complete
-   * @return  none
+   * @param   auth_code  The OAuth2 `auth_code`
+   * @param   callback   Errback-style callback `(err, result)`, called when complete
    */
-  oauth.bootstrapToken = function(auth_code, callback) {
-    var state = token('oauth2_state');
-    token('oauth2_state', '');
-    var params = utilStringQs(window.location.search.slice(1));
-    if (params.state !== state) {
-      var error = new Error('Invalid state');
-      error.status = 'invalid-state';
-      callback(error);
+  bootstrapToken(auth_code: string, callback: OSMAuthCallback<osmAuth>): void {
+    const state = this._getToken('oauth2_state');
+    this._setToken('oauth2_state', '');
+    const params = utilStringQs(window.location.search.slice(1));
+    if (params['state'] !== state) {
+      callback(makeError('Invalid state', 'invalid-state'));
       return;
     }
-    var code_verifier = token('oauth2_pkce_code_verifier');
-    token('oauth2_pkce_code_verifier', '');
-    _requestAccessToken(auth_code, code_verifier, accessTokenDone);
-
-    function accessTokenDone(err, xhr) {
-      o.done();
-      if (err) {
-        callback(err);
-        return;
-      }
-      var access_token = JSON.parse(xhr.response);
-      token('oauth2_access_token', access_token.access_token);
-      callback(null, oauth);
-    }
-  };
+    const code_verifier = this._getToken('oauth2_pkce_code_verifier');
+    this._setToken('oauth2_pkce_code_verifier', '');
+    this._requestAccessToken(auth_code, code_verifier, this._accessTokenDone(callback));
+  }
 
 
   /**
@@ -384,30 +464,30 @@ export function osmAuth(o) {
    * A `fetch` wrapper that includes the Authorization header if the user is authenticated.
    * https://developer.mozilla.org/en-US/docs/Web/API/fetch
    *
-   * @param  {string}   resource    Resource passed to `fetch`
-   * @param  {Object}   options     Options passed to `fetch`
-   * @return {Promise}  Promise that wraps `authenticateAsync` then `fetch`
+   * @param  resource    Resource passed to `fetch`
+   * @param  options     Options passed to `fetch`
+   * @return Promise that wraps `authenticateAsync` then `fetch`
    */
-  oauth.fetch = function(resource, options) {
-    if (oauth.authenticated()) {
-      return _doFetch();
-    } else {
-      if (o.auto) {
-        return oauth.authenticateAsync().then(_doFetch);
-      } else {
-        return Promise.reject(new Error('not authenticated'));
-      }
-    }
-
-    function _doFetch() {
+  fetch(resource: string, options?: OSMAuthFetchOptions): Promise<Response> {
+    const _doFetch = (): Promise<Response> => {
       options = options || {};
       if (!options.headers) {
         options.headers = { 'Content-Type': 'application/x-www-form-urlencoded' };
       }
-      options.headers.Authorization = 'Bearer ' + token('oauth2_access_token');
+      options.headers['Authorization'] = 'Bearer ' + this._getToken('oauth2_access_token');
       return fetch(resource, options);
+    };
+
+    if (this.authenticated()) {
+      return _doFetch();
+    } else {
+      if (this._options.auto) {
+        return this.authenticateAsync().then(_doFetch);
+      } else {
+        return Promise.reject(new Error('not authenticated'));
+      }
     }
-  };
+  }
 
 
   /**
@@ -415,50 +495,45 @@ export function osmAuth(o) {
    * A `XMLHttpRequest` wrapper that does authenticated calls if the user has logged in.
    * https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest
    *
-   * @param   {Object} options
-   * @param    options.method   Passed to `xhr.open`  (e.g. 'GET', 'POST')
-   * @param    options.prefix   If `true` path contains a path, if `false` path contains the full url
-   * @param    options.path     The URL path (e.g. "/api/0.6/user/details") (or full url, if `prefix`=`false`)
-   * @param    options.content  Passed to `xhr.send`
-   * @param    options.headers  `Object` containing request headers
-   * @param   {function}         callback  Errback-style callback `(err, result)`, called when complete
-   * @return  {XMLHttpRequest}  `XMLHttpRequest` if authenticated, otherwise `null`
+   * @param   options   Options, see `OSMAuthXHROptions`
+   * @param   callback  Errback-style callback `(err, result)`, called when complete
+   * @return  `XMLHttpRequest` if authenticated, otherwise `null`
    */
-  oauth.xhr = function (options, callback) {
-    if (oauth.authenticated()) {
-      return _doXHR();
-    } else {
-      if (o.auto) {
-        oauth.authenticate(_doXHR);
-        return;
-      } else {
-        callback('not authenticated', null);
-        return;
-      }
-    }
-
-    function _doXHR() {
-      var url = options.prefix !== false ? (o.apiUrl + options.path) : options.path;
-      return oauth.rawxhr(
-        options.method,
-        url,
-        token('oauth2_access_token'),
-        options.content,
-        options.headers,
-        done
-      );
-    }
-
-    function done(err, xhr) {
-      if (err) {
+  xhr(options: OSMAuthXHROptions, callback: OSMAuthCallback<Document | string>): XMLHttpRequest | null {
+    const done: RawXHRCallback = (err, xhr) => {
+      if (err || !xhr) {
         callback(err);
       } else if (xhr.responseXML) {
         callback(err, xhr.responseXML);
       } else {
         callback(err, xhr.response);
       }
+    };
+
+    const _doXHR = (): XMLHttpRequest => {
+      const url = options.prefix !== false ? (this._options.apiUrl + options.path) : options.path;
+      return this.rawxhr(
+        options.method,
+        url,
+        this._getToken('oauth2_access_token'),
+        options.content,
+        options.headers,
+        done
+      );
+    };
+
+    if (this.authenticated()) {
+      return _doXHR();
+    } else {
+      if (this._options.auto) {
+        this.authenticate(_doXHR);
+        return null;
+      } else {
+        callback('not authenticated');
+        return null;
+      }
     }
-  };
+  }
 
 
   /**
@@ -474,18 +549,25 @@ export function osmAuth(o) {
    * @param    callback       An "errback"-style callback (`err`, `result`), called when complete
    * @return  `XMLHttpRequest`
    */
-  oauth.rawxhr = function(method, url, access_token, data, headers, callback) {
+  rawxhr(
+    method: string,
+    url: string,
+    access_token: string | null,
+    data: Document | XMLHttpRequestBodyInit | null | undefined,
+    headers: Record<string, string> | null | undefined,
+    callback: RawXHRCallback
+  ): XMLHttpRequest {
     headers = headers || { 'Content-Type': 'application/x-www-form-urlencoded' };
 
     if (access_token) {
-      headers.Authorization = 'Bearer ' + access_token;
+      headers['Authorization'] = 'Bearer ' + access_token;
     }
 
-    var xhr = new XMLHttpRequest();
+    const xhr = new XMLHttpRequest();
 
     xhr.onreadystatechange = function () {
       if (4 === xhr.readyState && 0 !== xhr.status) {
-        if (/^20\d$/.test(xhr.status)) {   // a 20x status code - OK
+        if (/^20\d$/.test(String(xhr.status))) {   // a 20x status code - OK
           callback(null, xhr);
         } else {
           callback(xhr, null);
@@ -497,75 +579,112 @@ export function osmAuth(o) {
     };
 
     xhr.open(method, url, true);
-    for (var h in headers) xhr.setRequestHeader(h, headers[h]);
+    for (const [h, v] of Object.entries(headers)) xhr.setRequestHeader(h, v);
 
     xhr.send(data);
     return xhr;
-  };
+  }
 
 
   /**
    * preauth
    * Pre-authorize this object, if we already have access token from the start
    *
-   * @param   {Object}  val  Object containing `access_token` property
+   * @param   val  Object containing `access_token` property
    * @return  `self`
    */
-  oauth.preauth = function(val) {
+  preauth(val: { access_token?: string }): this {
     if (val && val.access_token) {
-      token('oauth2_access_token', val.access_token);
+      this._setToken('oauth2_access_token', val.access_token);
     }
-    return oauth;
-  };
+    return this;
+  }
 
 
   /**
    * options  (getter / setter)
    * If passed with no arguments, just return the options
    * If passed an Object, set the options then attempt to pre-authorize
+   * Options are copied in both directions, so changing the returned object doesn't
+   * change this instance's options.
    *
    * @param   val?   Object containing options
    * @return  current `options` (if getting), or `self` (if setting)
    */
-  oauth.options = function(val) {
-    if (!arguments.length) return o;
+  options(): OSMAuthResolvedOptions;
+  options(val: OSMAuthOptions): this;
+  options(val?: OSMAuthOptions): OSMAuthResolvedOptions | this {
+    if (val === undefined) return { ...this._options };
 
-    o = val;
-    o.apiUrl = o.apiUrl || 'https://api.openstreetmap.org';
-    o.url = o.url || 'https://www.openstreetmap.org';
-    o.auto = o.auto || false;
-    o.singlepage = o.singlepage || false;
+    this._options = resolveOptions(val);
+    return this.preauth(this._options);
+  }
+}
+
+
+/**
+ * resolveOptions
+ * Copies the given options and fills in defaults
+ * @param   val  Object containing options
+ * @return  A new object containing options and defaults
+ */
+function resolveOptions(val: OSMAuthOptions): OSMAuthResolvedOptions {
+  return {
+    ...val,
+    apiUrl: val.apiUrl || 'https://api.openstreetmap.org',
+    url: val.url || 'https://www.openstreetmap.org',
+    auto: val.auto || false,
+    singlepage: val.singlepage || false,
 
     // Optional loading and loading-done functions for nice UI feedback.
     // by default, no-ops
-    o.loading = o.loading || function () {};
-    o.done = o.done || function () {};
-    return oauth.preauth(o);
+    loading: val.loading || function () {},
+    done: val.done || function () {}
   };
+}
 
 
-  // Everything below here is initialization/setup code
-  // Handle options and attempt to pre-authorize
-  oauth.options(o);
+/**
+ * makeError
+ * Creates an `Error` with a `status` string
+ * @param   message  The error message
+ * @param   status   The status, e.g. 'popup-blocked'
+ * @returns The error
+ */
+function makeError(message: string, status: string): StatusError {
+  return Object.assign(new Error(message), { status: status });
+}
 
-  return oauth;
+
+/**
+ * parseAccessToken
+ * Gets the access token from the `/oauth2/token` response
+ * @param   xhr  The completed request
+ * @returns The access token, or '' if the response doesn't have one
+ */
+function parseAccessToken(xhr: XMLHttpRequest): string {
+  const body: unknown = JSON.parse(xhr.response);
+  if (typeof body === 'object' && body !== null && 'access_token' in body && typeof body.access_token === 'string') {
+    return body.access_token;
+  }
+  return '';
 }
 
 
 /**
  * utilQsString
  * Transforms object of `key=value` pairs into query string
- * @param   {Object}  Object of `key=value` pairs
- * @returns {string}  query string
+ * @param   obj  Object of `key=value` pairs
+ * @returns query string
  */
-function utilQsString(obj) {
+function utilQsString(obj: Record<string, string | undefined>): string {
   return Object.keys(obj)
     .filter(function(key) {
       return obj[key] !== undefined;
     })
     .sort()
     .map(function(key) {
-      return (encodeURIComponent(key) + '=' + encodeURIComponent(obj[key]));
+      return (encodeURIComponent(key) + '=' + encodeURIComponent(obj[key] as string));
     })
     .join('&');
 }
@@ -573,18 +692,19 @@ function utilQsString(obj) {
 /**
  * utilStringQs
  * Transforms query string into object of `key=value` pairs
- * @param   {string}  query string
- * @returns {Object}  Object of `key=value` pairs
+ * @param   str  query string
+ * @returns Object of `key=value` pairs
  */
-function utilStringQs(str) {
-  var i = 0; // advance past any leading '?' or '#' characters
+function utilStringQs(str: string): Record<string, string> {
+  let i = 0; // advance past any leading '?' or '#' characters
   while (i < str.length && (str[i] === '?' || str[i] === '#')) i++;
   str = str.slice(i);
 
-  return str.split('&').reduce(function(obj, pair) {
-    var parts = pair.split('=');
+  return str.split('&').reduce(function(obj: Record<string, string>, pair) {
+    const parts = pair.split('=');
     if (parts.length === 2) {
-      obj[parts[0]] = decodeURIComponent(parts[1]);
+      const [key, value] = parts as [string, string];
+      obj[key] = decodeURIComponent(value);
     }
     return obj;
   }, {});
@@ -593,21 +713,20 @@ function utilStringQs(str) {
 
 /**
  * Generates a challenge/verifier pair for PKCE.
- * @param {callback} callback called with the result of the generated PKCE challenge
+ * @param callback called with the result of the generated PKCE challenge
  */
-function _generatePkceChallenge(callback) {
-  var code_verifier;
+function _generatePkceChallenge(callback: (pkce: PkceChallenge) => void): void {
   // generate a random code_verifier
   // https://datatracker.ietf.org/doc/html/rfc7636#section-7.1
-  var random = globalThis.crypto.getRandomValues(new Uint8Array(32));
-  code_verifier = base64(random.buffer);
-  var verifier = Uint8Array.from(Array.from(code_verifier).map(function(char) {
+  const random = globalThis.crypto.getRandomValues(new Uint8Array(32));
+  const code_verifier = base64(random);
+  const verifier = Uint8Array.from(Array.from(code_verifier).map(function(char) {
     return char.charCodeAt(0);
   }));
 
   // generate challenge for code verifier
   globalThis.crypto.subtle.digest('SHA-256', verifier).then(function(hash) {
-    var code_challenge = base64(hash);
+    const code_challenge = base64(new Uint8Array(hash));
 
     callback({
       code_challenge: code_challenge,
@@ -622,23 +741,20 @@ function _generatePkceChallenge(callback) {
  * Returns a random state to be used as the "state" of the OAuth2 authentication
  * See https://datatracker.ietf.org/doc/html/rfc6749#section-10.12
  */
-function generateState() {
-  var state;
-  var random = globalThis.crypto.getRandomValues(new Uint8Array(32));
-  state = base64(random.buffer);
-
-  return state;
+function generateState(): string {
+  const random = globalThis.crypto.getRandomValues(new Uint8Array(32));
+  return base64(random);
 }
 
 
 /**
  * base64
- * Converts binary buffer to base64 encoded string, as used in rfc7636
- * @param    {ArrayBuffer}  buffer
- * @returns  {string}       base64 encoded
+ * Converts binary data to base64 encoded string, as used in rfc7636
+ * @param    bytes  binary data
+ * @returns  base64 encoded
  */
-function base64(buffer) {
-  return btoa(String.fromCharCode.apply(null, new Uint8Array(buffer)))
+function base64(bytes: Uint8Array): string {
+  return btoa(String.fromCharCode(...bytes))
     .replace(/\//g, '_')
     .replace(/\+/g, '-')
     .replace(/[=]/g, '');
