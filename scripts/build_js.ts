@@ -10,7 +10,7 @@ await Promise.all([
   }),
 
   Bun.build({
-    entrypoints: ['./src/osm-auth.mjs'],
+    entrypoints: ['./src/osm-auth.ts'],
     outdir: './dist',
     target: 'node',
     format: 'esm',

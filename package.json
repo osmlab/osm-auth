@@ -25,7 +25,7 @@
   "type": "module",
   "exports": {
     "types": "./src/osm-auth.d.ts",
-    "bun": "./src/osm-auth.mjs",
+    "bun": "./src/osm-auth.ts",
     "import": "./dist/osm-auth.mjs",
     "require": "./dist/osm-auth.mjs",
     "browser": "./dist/osm-auth.iife.js",
@@ -42,7 +42,7 @@
     "build:js": "bun ./scripts/build_js.ts",
     "clean": "bun ./scripts/clean.ts",
     "start": "bun ./scripts/server.ts",
-    "test": "bun test --dots --coverage ./test/*.js"
+    "test": "bun test --dots --coverage ./test"
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.18.5",
