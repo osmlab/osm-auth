@@ -261,6 +261,7 @@ export function osmAuth(o) {
     // window closes itself.
     var bc = new BroadcastChannel(CHANNEL_ID);
     bc.addEventListener('message', (event) => {
+      bc.close();
       var url = event.data;
       var params = utilStringQs(url.split('?')[1]);
       if (params.state !== state) {
@@ -269,13 +270,13 @@ export function osmAuth(o) {
         callback(error);
         return;
       } else if (params.error !== undefined) {
-        var err = new Error(params.error_description.replace(/\+/g, ' '));
+        var description = params.error_description;
+        var err = new Error(description ? description.replace(/\+/g, ' ') : params.error);
         err.status = params.error;
         callback(err);
         return;
       }
       _requestAccessToken(params.code, pkce.code_verifier, accessTokenDone);
-      bc.close();
     });
 
     function accessTokenDone(err, xhr) {
