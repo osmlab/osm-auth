@@ -1,0 +1,15 @@
+{
+  "extends": "./tsconfig.json",
+  "include": ["./src/osm-auth.ts"],
+  "compilerOptions": {
+    // Library code runs outside Bun too, so don't allow Bun's globals here
+    "types": [],
+
+    "rootDir": "./src",
+    "noEmit": false,
+    "emitDeclarationOnly": true,
+    "declaration": true,
+    "declarationMap": true,
+    "declarationDir": "./dist/ts"
+  }
+}

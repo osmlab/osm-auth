@@ -84,7 +84,7 @@ interface PkceChallenge {
 }
 
 /** Callback for `rawxhr()` */
-type RawXHRCallback = (err: XMLHttpRequest | ProgressEvent | null, xhr: XMLHttpRequest | null) => void;
+export type OSMAuthRawXHRCallback = (err: XMLHttpRequest | ProgressEvent | null, xhr: XMLHttpRequest | null) => void;
 
 
 const CHANNEL_ID = 'osm-api-auth-complete';
@@ -372,7 +372,7 @@ export class osmAuth {
    * @param   callback  Errback-style callback `(err, result)`, called when complete
    * @return  Callback for `rawxhr`
    */
-  private _accessTokenDone(callback: OSMAuthCallback<osmAuth>): RawXHRCallback {
+  private _accessTokenDone(callback: OSMAuthCallback<osmAuth>): OSMAuthRawXHRCallback {
     return (err, xhr) => {
       this._options.done();
       if (err || !xhr) {
@@ -394,7 +394,7 @@ export class osmAuth {
    * @param  code_verifier
    * @param  accessTokenDone  Errback-style callback `(err, result)`, called when complete
    */
-  private _requestAccessToken(auth_code: string | undefined, code_verifier: string, accessTokenDone: RawXHRCallback): void {
+  private _requestAccessToken(auth_code: string | undefined, code_verifier: string, accessTokenDone: OSMAuthRawXHRCallback): void {
     const o = this._options;
     const url =
       o.url +
@@ -500,7 +500,7 @@ export class osmAuth {
    * @return  `XMLHttpRequest` if authenticated, otherwise `null`
    */
   xhr(options: OSMAuthXHROptions, callback: OSMAuthCallback<Document | string>): XMLHttpRequest | null {
-    const done: RawXHRCallback = (err, xhr) => {
+    const done: OSMAuthRawXHRCallback = (err, xhr) => {
       if (err || !xhr) {
         callback(err);
       } else if (xhr.responseXML) {
@@ -555,7 +555,7 @@ export class osmAuth {
     access_token: string | null,
     data: Document | XMLHttpRequestBodyInit | null | undefined,
     headers: Record<string, string> | null | undefined,
-    callback: RawXHRCallback
+    callback: OSMAuthRawXHRCallback
   ): XMLHttpRequest {
     headers = headers || { 'Content-Type': 'application/x-www-form-urlencoded' };
 

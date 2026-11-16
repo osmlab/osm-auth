@@ -24,22 +24,25 @@
   ],
   "type": "module",
   "exports": {
-    "types": "./src/osm-auth.d.ts",
+    "types": "./dist/ts/osm-auth.d.ts",
     "bun": "./src/osm-auth.ts",
-    "import": "./dist/osm-auth.mjs",
-    "require": "./dist/osm-auth.mjs",
-    "browser": "./dist/osm-auth.iife.js",
-    "default": "./dist/osm-auth.mjs"
+    "import": "./dist/js/osm-auth.mjs",
+    "require": "./dist/js/osm-auth.mjs",
+    "browser": "./dist/js/osm-auth.iife.js",
+    "default": "./dist/js/osm-auth.mjs"
   },
   "scripts": {
-    "all": "bun run --sequential clean check build:js test package",
+    "all": "bun run --sequential clean check build test package",
     "package": "bun run --sequential package:pack package:publint package:attw",
     "package:pack": "bun pm pack --quiet --ignore-scripts --destination ./build",
     "package:publint": "publint --level warning ./build/*.tgz",
     "package:attw": "attw --profile esm-only --no-summary ./build/*.tgz",
     "check": "bun run --parallel 'check:*'",
     "check:lint": "oxlint ./scripts ./src ./test",
+    "check:types": "tsc --noEmit",
+    "build": "bun run --parallel 'build:*'",
     "build:js": "bun ./scripts/build_js.ts",
+    "build:ts": "tsc -p tsconfig.build.json",
     "clean": "bun ./scripts/clean.ts",
     "start": "bun ./scripts/server.ts",
     "test": "bun test --dots --coverage ./test"

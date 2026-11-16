@@ -2,7 +2,7 @@
 await Promise.all([
    Bun.build({
     entrypoints: ['./src/index.ts'],
-    outdir: './dist',
+    outdir: './dist/js',
     target: 'browser',
     format: 'iife',
     sourcemap: 'linked',
@@ -11,7 +11,7 @@ await Promise.all([
 
   Bun.build({
     entrypoints: ['./src/osm-auth.ts'],
-    outdir: './dist',
+    outdir: './dist/js',
     target: 'node',
     format: 'esm',
     packages: 'external',

@@ -17,6 +17,11 @@
     "resolveJsonModule": true,
     "noEmit": true,
 
+    // Exported functions and values need explicit types, so the public API
+    // can't change by accident (`isolatedDeclarations` requires `declaration`)
+    "declaration": true,
+    "isolatedDeclarations": true,
+
     // Best practices
     "strict": true,
     "noImplicitReturns": true,

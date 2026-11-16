@@ -238,9 +238,10 @@ fixes in step 8 are separate commits, so each behavior change can be reviewed on
 4. **Build config.** Add `tsconfig.build.json` (declarations only, into `dist/ts/`). Set
    `declaration` and `isolatedDeclarations` in `tsconfig.json`. In `package.json`: point
    `exports` at `dist/ts/`, `dist/js/` and `src/osm-auth.ts`; add `build`, `build:ts` and
-   `check:types`; make `all` run `build`; test `./test`; drop `node-localstorage`. Delete
-   `src/osm-auth.d.ts`.
-5. **Tests.** Convert to TypeScript with `node:assert`, add the stubs, and add tests for the
+   `check:types`; make `all` run `build`; test `./test`. Delete `src/osm-auth.d.ts`.
+   (`check:types` fails on the untyped test file until step 5.)
+5. **Tests.** Convert to TypeScript with `node:assert`, drop `node-localstorage`, add the stubs,
+   and add tests for the
    parts listed above. The current test passes `client_secret` and calls
    `options({ url: 'foo' })` without the required fields, and its `deepEqual` only passes because
    the setter mutates the caller's object; fix the test, not the types.
