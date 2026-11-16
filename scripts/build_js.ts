@@ -13,16 +13,8 @@ await Promise.all([
     entrypoints: ['./src/osm-auth.mjs'],
     outdir: './dist',
     target: 'node',
-    format: 'cjs',
-    sourcemap: 'linked',
-    naming: 'osm-auth.c[ext]'  // .cjs
-  }),
-
-  Bun.build({
-    entrypoints: ['./src/osm-auth.mjs'],
-    outdir: './dist',
-    target: 'node',
     format: 'esm',
+    packages: 'external',
     sourcemap: 'linked',
     naming: 'osm-auth.m[ext]'  // .mjs
   })

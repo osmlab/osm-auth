@@ -24,14 +24,19 @@
   ],
   "type": "module",
   "exports": {
-    "bun": "./src/osm-auth.mjs",
     "types": "./src/osm-auth.d.ts",
+    "bun": "./src/osm-auth.mjs",
     "import": "./dist/osm-auth.mjs",
-    "require": "./dist/osm-auth.cjs",
-    "browser": "./dist/osm-auth.iife.js"
+    "require": "./dist/osm-auth.mjs",
+    "browser": "./dist/osm-auth.iife.js",
+    "default": "./dist/osm-auth.mjs"
   },
   "scripts": {
-    "all": "bun run --sequential clean check build:js test",
+    "all": "bun run --sequential clean check build:js test package",
+    "package": "bun run --sequential package:pack package:publint package:attw",
+    "package:pack": "bun pm pack --quiet --ignore-scripts --destination ./build",
+    "package:publint": "publint --level warning ./build/*.tgz",
+    "package:attw": "attw --profile esm-only --no-summary ./build/*.tgz",
     "check": "bun run --parallel 'check:*'",
     "check:lint": "oxlint ./scripts ./src ./test",
     "build:js": "bun ./scripts/build_js.ts",
@@ -40,9 +45,11 @@
     "test": "bun test --dots --coverage ./test/*.js"
   },
   "devDependencies": {
+    "@arethetypeswrong/cli": "^0.18.5",
     "@types/bun": "^1.3.11",
     "node-localstorage": "^3.0.5",
     "oxlint": "^1.93.0",
+    "publint": "^0.3.25",
     "typescript": "^7.0.2"
   },
   "engines": {

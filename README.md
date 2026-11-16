@@ -40,13 +40,14 @@ To install osm-auth as a dependency in your Node project:
 $  npm install --save osm-auth
 ```
 
-**osm-auth** is distributed in CJS and ESM module formats for maxmimum compatibility. ([Read more about Javascript module formats](https://dev.to/iggredible/what-the-heck-are-cjs-amd-umd-and-esm-ikm))
+**osm-auth** is distributed as an ES module. ([Read more about Javascript module formats](https://dev.to/iggredible/what-the-heck-are-cjs-amd-umd-and-esm-ikm))
+CommonJS projects can still `require()` it on Node 20.19+ or 22.12+.
 
 
 ```js
-const osmAuth = require('osm-auth').osmAuth;   // CJS named import
-// or
 import { osmAuth } from 'osm-auth';   // ESM named import
+// or
+const { osmAuth } = require('osm-auth');   // CJS, requires Node 20.19+ or 22.12+
 ```
 
 
