@@ -1,0 +1,83 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["typescript", "node"],
+  "categories": {
+    "correctness": "error"
+  },
+  "env": {
+    "browser": true
+  },
+  "rules": {
+    "accessor-pairs": "error",
+    "array-callback-return": "warn",
+    "block-scoped-var": "error",
+    "complexity": ["warn", 50],
+    "curly": ["warn", "multi-line"],
+    "default-case-last": "error",
+    "default-param-last": "error",
+    "eqeqeq": ["error", "smart"],
+    "grouped-accessor-pairs": "error",
+    "no-await-in-loop": "error",
+    "no-case-declarations": "error",
+    "no-console": "warn",
+    "no-constructor-return": "error",
+    "no-div-regex": "error",
+    "no-duplicate-imports": "warn",
+    "no-empty": "error",
+    "no-eq-null": "error",
+    "no-extend-native": "error",
+    "no-extra-bind": "error",
+    "no-extra-label": "error",
+    "no-fallthrough": "error",
+    "no-implied-eval": "error",
+    "no-label-var": "error",
+    "no-labels": "error",
+    "no-lone-blocks": "error",
+    "no-loop-func": "error",
+    "no-multi-str": "error",
+    "no-new": "error",
+    "no-new-func": "error",
+    "no-new-wrappers": "error",
+    "no-promise-executor-return": "error",
+    "no-proto": "error",
+    "no-redeclare": "error",
+    "no-regex-spaces": "error",
+    "no-script-url": "error",
+    "no-self-compare": "error",
+    "no-sequences": "error",
+    "no-template-curly-in-string": "warn",
+    "no-throw-literal": "error",
+    "no-undef": "error",
+    "no-unexpected-multiline": "error",
+    "no-unmodified-loop-condition": "error",
+    "no-unneeded-ternary": "error",
+    "no-unreachable": "warn",
+    "no-unreachable-loop": "warn",
+    "no-unused-vars": ["warn", { "args": "none", "caughtErrors": "none" }],
+    "no-useless-assignment": "error",
+    "no-useless-backreference": "warn",
+    "no-useless-call": "warn",
+    "no-useless-computed-key": "warn",
+    "no-useless-concat": "warn",
+    "no-useless-escape": "off",
+    "no-useless-rename": "warn",
+    "no-void": "error",
+    "no-warning-comments": "warn",
+    "node/no-process-env": "error",
+    "preserve-caught-error": "error",
+    "radix": "error",
+    "require-await": "error"
+  },
+  "overrides": [
+    {
+      "files": ["scripts/**"],
+      "globals": {
+        "Bun": "readonly"
+      },
+      "rules": {
+        "no-await-in-loop": "off",
+        "no-console": "off"
+      }
+    }
+  ]
+}

@@ -33,18 +33,16 @@
   "scripts": {
     "all": "bun run --sequential clean check build:js test",
     "check": "bun run --parallel 'check:*'",
-    "check:lint": "eslint ./src/osm-auth.mjs ./test/*.js",
+    "check:lint": "oxlint ./scripts ./src ./test",
     "build:js": "bun ./scripts/build_js.ts",
     "clean": "bun ./scripts/clean.ts",
     "start": "bun ./scripts/server.ts",
     "test": "bun test --dots --coverage ./test/*.js"
   },
   "devDependencies": {
-    "@eslint/js": "^10.0.1",
     "@types/bun": "^1.3.11",
-    "eslint": "^10.1.0",
-    "globals": "^17.4.0",
     "node-localstorage": "^3.0.5",
+    "oxlint": "^1.93.0",
     "typescript": "^5.9.3"
   },
   "engines": {
