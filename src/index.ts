@@ -1,2 +1,2 @@
-import { osmAuth } from './osm-auth.mjs';
+import { osmAuth } from './osm-auth.ts';
 globalThis.osmAuth = osmAuth;

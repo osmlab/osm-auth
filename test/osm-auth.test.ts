@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, it } from 'bun:test';
 import { strict as assert } from 'bun:assert';
-import { osmAuth } from '../src/osm-auth.mjs';
+import { osmAuth } from '../src/osm-auth.ts';
 import { LocalStorage } from 'node-localstorage';
 
 let localStorage;
