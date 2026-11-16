@@ -279,3 +279,8 @@ Found while reading `src/osm-auth.mjs`.
    `error_description` could go too.
 8. **`docs/land_single.html` reads `oauth_token`**, which is OAuth 1. Nothing links to it, so it
    can probably be deleted.
+9. **A token response without an `access_token` counts as success.** The callback gets
+   `(null, auth)`, but nothing was stored, so `authenticated()` is still `false`. It should fail.
+
+The tests cover the current behavior of items 1–3 and 9 where they can, so each fix changes a
+test along with the code.
