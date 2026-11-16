@@ -7,6 +7,7 @@ declare namespace OSMAuth {
     logout(): osmAuth;
     fetch(path: string, options: OSMAuthFetchOptions): Promise<Response>;
     authenticated(): boolean;
+    getAccessToken(): string;
     authenticate(callback: (err: null | any, result?: osmAuth) => void, options?: LoginOptions): void;
     bringPopupWindowToFront(): boolean;
     bootstrapToken(oauth_token: string, callback: (err: null | any, result?: osmAuth) => void): void;
