@@ -34,7 +34,7 @@ Skip categories where things look fine. Don't invent problems.
 
 **Runtime / tooling** (Bun-specific entries apply if used) — `node:*` APIs where Bun-native equivalents exist, `npm`/`yarn` artifacts in scripts, dependencies Bun now handles natively
 
-**Linting** — ESLint config (`eslint.config.js`) gaps, files the `check:lint` script doesn't cover, rules that no longer fit the code
+**Linting** — oxlint config (`.oxlintrc.json`) gaps, files the `check:lint` script doesn't cover, rules that no longer fit the code
 
 **Developer Experience** — missing or misleading `package.json` scripts, incomplete `.gitignore`/`.gitattributes`, missing docs or source comments
 
