@@ -251,6 +251,34 @@ describe('osmAuth', () => {
       assert.equal(FakeXHR.requests.length, 0);
     });
 
+    it('logs in first if not authenticated and `auto` is set, then sends the request', async () => {
+      const auth = new osmAuth({ ...OPTIONS, auto: true });
+      const calls: unknown[][] = [];
+      const xhr = auth.xhr({ method: 'GET', path: '/api/0.6/user/details' }, (...args) => calls.push(args));
+      assert.equal(xhr, null);
+
+      const authorizeURL = new URL(await win.lastPopup().location.nextNavigation());
+      const tokenRequest = FakeXHR.nextRequest();
+      postFromLandPage(`${REDIRECT}?code=CODE&state=${authorizeURL.searchParams.get('state')}`);
+      (await tokenRequest).respond(200, JSON.stringify({ access_token: 'TOKEN' }));
+
+      const request = FakeXHR.last();
+      assert.equal(request.url, `${API}/api/0.6/user/details`);
+      assert.equal(request.headers['Authorization'], 'Bearer TOKEN');
+      request.respond(200, '{"user":{}}');
+      assert.deepEqual(calls, [[null, '{"user":{}}']]);
+    });
+
+    it('fails with the login error, and sends nothing, if the `auto` login fails', () => {
+      win.blockPopups = true;
+      const auth = new osmAuth({ ...OPTIONS, auto: true });
+      const calls: unknown[][] = [];
+      auth.xhr({ method: 'GET', path: '/api/0.6/user/details' }, (...args) => calls.push(args));
+      assert.equal(calls.length, 1);
+      assertOSMAuthError(calls[0]?.[0], 'popup-blocked');
+      assert.equal(FakeXHR.requests.length, 0);
+    });
+
     it('sends an authenticated request to the API, and returns responseXML', () => {
       const auth = new osmAuth({ ...OPTIONS, access_token: 'foo' });
       const calls: unknown[][] = [];
@@ -480,6 +508,23 @@ describe('osmAuth', () => {
       const error = assertOSMAuthError(err, 'http-error');
       assert.equal(error.status, 400);
       assert.equal(error.xhr, request);
+      assert.equal(auth.authenticated(), false);
+      assert.equal(done, 1);
+    });
+
+    it('fails if the token response has no access_token', async () => {
+      let done = 0;
+      const auth = new osmAuth({ ...OPTIONS, done: () => done++ });
+      const { pending, state } = await startPopupLogin(auth);
+      const tokenRequest = FakeXHR.nextRequest();
+      postFromLandPage(`${REDIRECT}?code=CODE&state=${state}`);
+      const request = await tokenRequest;
+      request.respond(200, '{"token_type":"Bearer"}');
+
+      const { err, result } = await pending;
+      const error = assertOSMAuthError(err, 'invalid-token-response');
+      assert.equal(error.xhr, request);
+      assert.equal(result, undefined);
       assert.equal(auth.authenticated(), false);
       assert.equal(done, 1);
     });

@@ -78,7 +78,7 @@ export type OSMAuthCallback<T> = (err: OSMAuthError | null, result?: T) => void;
 export interface OSMAuthErrorOptions {
   /** The HTTP status, for an `'http-error'` */
   status?: number;
-  /** The failed request, for an `'http-error'` or `'network-error'` */
+  /** The failed request, for an `'http-error'`, `'network-error'` or `'invalid-token-response'` */
   xhr?: XMLHttpRequest;
   /** What caused the error, e.g. the `ProgressEvent` of a network error */
   cause?: unknown;
@@ -94,6 +94,7 @@ export interface OSMAuthErrorOptions {
  *  - `'pkce-localstorage-unavailable'`: single-page mode needs `localStorage`, and there isn't one
  *  - `'http-error'`: a request got a response that isn't 20x (see `status` and `xhr`)
  *  - `'network-error'`: a request failed without a response (see `xhr`)
+ *  - `'invalid-token-response'`: the token request succeeded, but its response has no access token (see `xhr`)
  *  - an OAuth error code from OSM's redirect, e.g. `'access_denied'`
  */
 export class OSMAuthError extends Error {
@@ -101,7 +102,7 @@ export class OSMAuthError extends Error {
   code: string;
   /** The HTTP status, for an `'http-error'` */
   status?: number;
-  /** The failed request, for an `'http-error'` or `'network-error'` */
+  /** The failed request, for an `'http-error'`, `'network-error'` or `'invalid-token-response'` */
   xhr?: XMLHttpRequest;
 
   /**
@@ -413,7 +414,12 @@ export class osmAuth {
         callback(err);
         return;
       }
-      this._setToken('oauth2_access_token', parseAccessToken(xhr));
+      const token = parseAccessToken(xhr);
+      if (!token) {
+        callback(new OSMAuthError('The token response has no access_token', 'invalid-token-response', { xhr: xhr }));
+        return;
+      }
+      this._setToken('oauth2_access_token', token);
       callback(null, this);
     };
   }
@@ -559,7 +565,13 @@ export class osmAuth {
       return _doXHR();
     } else {
       if (this._options.auto) {
-        this.authenticate(_doXHR);
+        this.authenticate((err) => {
+          if (err) {
+            callback(err);
+          } else {
+            _doXHR();
+          }
+        });
         return null;
       } else {
         callback(new OSMAuthError('Not authenticated', 'not-authenticated'));
