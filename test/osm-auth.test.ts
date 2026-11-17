@@ -203,26 +203,67 @@ describe('osmAuth', () => {
 
 
   describe('fetch', () => {
+    /** The headers of the `n`th call to `fetch`, as an object with lowercase names */
+    function sentHeaders(n = 0): Record<string, string> {
+      return Object.fromEntries(new Headers(fetchSpy.calls[n]?.init?.headers));
+    }
+
     it('adds the Authorization header and a default Content-Type', async () => {
       const auth = new osmAuth({ ...OPTIONS, access_token: 'foo' });
       const response = await auth.fetch(`${API}/api/0.6/user/details`, { method: 'GET' });
       assert.equal(await response.text(), 'ok');
-      assert.deepEqual(fetchSpy.calls, [{
-        resource: `${API}/api/0.6/user/details`,
-        init: {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-            'Authorization': 'Bearer foo'
-          }
-        }
-      }]);
+      assert.equal(fetchSpy.calls.length, 1);
+      assert.equal(fetchSpy.calls[0]?.resource, `${API}/api/0.6/user/details`);
+      assert.equal(fetchSpy.calls[0]?.init?.method, 'GET');
+      assert.deepEqual(sentHeaders(), {
+        'content-type': 'application/x-www-form-urlencoded',
+        'authorization': 'Bearer foo'
+      });
     });
 
     it('adds the Authorization header to headers that are given', async () => {
       const auth = new osmAuth({ ...OPTIONS, access_token: 'foo' });
       await auth.fetch(`${API}/x`, { headers: { 'Accept': 'application/json' } });
-      assert.deepEqual(fetchSpy.calls[0]?.init?.headers, { 'Accept': 'application/json', 'Authorization': 'Bearer foo' });
+      assert.deepEqual(sentHeaders(), { 'accept': 'application/json', 'authorization': 'Bearer foo' });
+    });
+
+    it('doesn\'t change the caller\'s options or headers', async () => {
+      const auth = new osmAuth({ ...OPTIONS, access_token: 'foo' });
+      const headers = { 'Accept': 'application/json' };
+      const options = { method: 'GET', headers: headers };
+      await auth.fetch(`${API}/x`, options);
+      assert.deepEqual(options, { method: 'GET', headers: { 'Accept': 'application/json' } });
+      assert.equal(options.headers, headers);
+    });
+
+    it('accepts headers as a `Headers` or an array of pairs', async () => {
+      const auth = new osmAuth({ ...OPTIONS, access_token: 'foo' });
+      await auth.fetch(`${API}/x`, { headers: new Headers({ 'Accept': 'application/json' }) });
+      await auth.fetch(`${API}/x`, { headers: [['Accept', 'application/json']] });
+      assert.deepEqual(sentHeaders(0), { 'accept': 'application/json', 'authorization': 'Bearer foo' });
+      assert.deepEqual(sentHeaders(1), { 'accept': 'application/json', 'authorization': 'Bearer foo' });
+    });
+
+    it('replaces an Authorization header that is given, whatever its case', async () => {
+      const auth = new osmAuth({ ...OPTIONS, access_token: 'foo' });
+      await auth.fetch(`${API}/x`, { headers: { 'authorization': 'Bearer old' } });
+      assert.deepEqual(sentHeaders(), { 'authorization': 'Bearer foo' });
+    });
+
+    it('keeps the headers of a `Request`', async () => {
+      const auth = new osmAuth({ ...OPTIONS, access_token: 'foo' });
+      const request = new Request(`${API}/x`, { method: 'POST', body: '{}', headers: { 'Content-Type': 'application/json', 'X-Foo': '1' } });
+      await auth.fetch(request);
+      assert.equal(fetchSpy.calls[0]?.resource, request);
+      assert.deepEqual(sentHeaders(), { 'content-type': 'application/json', 'x-foo': '1', 'authorization': 'Bearer foo' });
+    });
+
+    it('leaves the Content-Type of a `FormData` body to the browser', async () => {
+      const auth = new osmAuth({ ...OPTIONS, access_token: 'foo' });
+      const body = new FormData();
+      body.append('file', 'x');
+      await auth.fetch(`${API}/api/0.6/gpx/create`, { method: 'POST', body: body });
+      assert.deepEqual(sentHeaders(), { 'authorization': 'Bearer foo' });
     });
 
     it('rejects if not authenticated', async () => {
@@ -357,6 +398,28 @@ describe('osmAuth', () => {
       const auth = new osmAuth(OPTIONS);
       auth.rawxhr('GET', 'https://example.com', null, null, null, () => {});
       assert.deepEqual(FakeXHR.last().headers, { 'Content-Type': 'application/x-www-form-urlencoded' });
+    });
+
+    it('doesn\'t change the caller\'s headers', () => {
+      const auth = new osmAuth(OPTIONS);
+      const headers = { 'Content-Type': 'text/xml' };
+      auth.rawxhr('PUT', 'https://example.com', 'foo', '<osm/>', headers, () => {});
+      assert.deepEqual(headers, { 'Content-Type': 'text/xml' });
+      assert.deepEqual(FakeXHR.last().headers, { 'Content-Type': 'text/xml', 'Authorization': 'Bearer foo' });
+    });
+
+    it('replaces an Authorization header that is given, whatever its case', () => {
+      const auth = new osmAuth(OPTIONS);
+      auth.rawxhr('GET', 'https://example.com', 'foo', null, { 'authorization': 'Bearer old' }, () => {});
+      assert.deepEqual(FakeXHR.last().headers, { 'Authorization': 'Bearer foo' });
+    });
+
+    it('leaves the Content-Type of a `FormData` body to the browser', () => {
+      const auth = new osmAuth(OPTIONS);
+      const body = new FormData();
+      body.append('file', 'x');
+      auth.rawxhr('POST', 'https://example.com', 'foo', body, null, () => {});
+      assert.deepEqual(FakeXHR.last().headers, { 'Authorization': 'Bearer foo' });
     });
   });
 
