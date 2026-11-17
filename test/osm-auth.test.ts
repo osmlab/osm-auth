@@ -961,19 +961,77 @@ describe('osmAuth', () => {
       assert.equal(result, auth);
       assert.equal(auth.getAccessToken(), 'TOKEN');
     });
+
+    it('reports the OAuth error when the user comes back with one, and forgets the saved state', async () => {
+      storage.setItem(`${WWW}oauth2_state`, 'STATE');
+      storage.setItem(`${WWW}oauth2_pkce_code_verifier`, 'VERIFIER');
+      win.location.search = '?error=access_denied&error_description=The+resource+owner+denied+the+request.&state=STATE';
+      let navigated = false;
+      win.location.nextNavigation().then(() => { navigated = true; });
+
+      const { err } = await authenticateP(new osmAuth(SINGLEPAGE));
+      assertOSMAuthError(err, 'access_denied', 'The resource owner denied the request.');
+      assert.equal(storage.getItem(`${WWW}oauth2_state`), null);
+      assert.equal(storage.getItem(`${WWW}oauth2_pkce_code_verifier`), null);
+      await delivered();
+      assert.equal(navigated, false);
+    });
+
+    it('fails if the user comes back with an error and another state', async () => {
+      storage.setItem(`${WWW}oauth2_state`, 'STATE');
+      win.location.search = '?error=access_denied&state=WRONG';
+      const { err } = await authenticateP(new osmAuth(SINGLEPAGE));
+      assertOSMAuthError(err, 'invalid-state');
+      assert.equal(storage.getItem(`${WWW}oauth2_state`), null);
+    });
+
+    it('starts a new login, rather than reusing a `code` left in the URL, if none is pending', async () => {
+      // e.g. login, logout, then login again, with the first login's `?code=` still in the URL
+      win.location.search = '?code=OLD&state=OLD';
+      const auth = new osmAuth(SINGLEPAGE);
+      authenticateP(auth);
+      const authorizeURL = new URL(await win.location.nextNavigation());
+      assert.equal(authorizeURL.origin + authorizeURL.pathname, `${WWW}/oauth2/authorize`);
+      assert.equal(authorizeURL.searchParams.get('state'), storage.getItem(`${WWW}oauth2_state`));
+      assert.equal(FakeXHR.requests.length, 0);
+    });
   });
 
 
   describe('bootstrapToken', () => {
-    it('fails if the state doesn\'t match, and forgets the saved state', () => {
+    it('fails if the state doesn\'t match, and forgets the saved state and verifier', () => {
       storage.setItem(`${WWW}oauth2_state`, 'STATE');
+      storage.setItem(`${WWW}oauth2_pkce_code_verifier`, 'VERIFIER');
       win.location.search = '?code=CODE&state=WRONG';
       const calls: unknown[][] = [];
       new osmAuth(OPTIONS).bootstrapToken('CODE', (...args) => calls.push(args));
       assert.equal(calls.length, 1);
       assertOSMAuthError(calls[0]?.[0], 'invalid-state');
       assert.equal(storage.getItem(`${WWW}oauth2_state`), null);
+      assert.equal(storage.getItem(`${WWW}oauth2_pkce_code_verifier`), null);
       assert.equal(FakeXHR.requests.length, 0);
+    });
+
+    it('fails if no state was saved, even if the URL\'s state is empty', () => {
+      win.location.search = '?code=CODE&state=';
+      const calls: unknown[][] = [];
+      new osmAuth(OPTIONS).bootstrapToken('CODE', (...args) => calls.push(args));
+      assert.equal(calls.length, 1);
+      assertOSMAuthError(calls[0]?.[0], 'invalid-state');
+      assert.equal(FakeXHR.requests.length, 0);
+    });
+
+    it('takes the state from the caller, if given (e.g. the app already cleaned up the URL)', () => {
+      storage.setItem(`${WWW}oauth2_state`, 'STATE');
+      storage.setItem(`${WWW}oauth2_pkce_code_verifier`, 'VERIFIER');
+      win.location.search = '';
+      const auth = new osmAuth(OPTIONS);
+      const calls: unknown[][] = [];
+      auth.bootstrapToken('CODE', (...args) => calls.push(args), 'STATE');
+      const request = FakeXHR.last();
+      assert.equal(new URL(request.url).searchParams.get('code_verifier'), 'VERIFIER');
+      request.respond(200, JSON.stringify({ access_token: 'TOKEN' }));
+      assert.deepEqual(calls, [[null, auth]]);
     });
 
     it('exchanges the code for an access token', () => {

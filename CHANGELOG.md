@@ -55,6 +55,12 @@ Most projects only need to make sure they call `new osmAuth(…)`, and update an
 * Fix two failed logins that were reported as success ([#165])
   * `xhr()` with `auto: true` sent the request without a token after a failed login (e.g. a blocked popup, or the user denied access), instead of failing with the login error
   * A token response without an `access_token` succeeded without logging in. It fails with an `'invalid-token-response'` error now
+* Fix the return from OSM in single-page mode ([#168])
+  * A `code` left in the URL from an earlier login (e.g. after `logout()`) made every new login fail with "Invalid state". It's only used now if a login is pending
+  * A redirect with `?error=` (e.g. the user denied access) is reported, instead of sending the user straight back to the authorize page
+  * The saved state and PKCE verifier are always removed after use, and a redirect is rejected if no state was saved
+  * `bootstrapToken(code, callback, state)` takes the `state` from the redirect, for apps that remove it from the URL before calling it
+  * Single-page mode no longer opens a BroadcastChannel it never used ([#163])
 * Fix failures that never called back ([#166])
   * A token response that isn't JSON (e.g. a captive portal's page) threw inside the request handler. It fails with an `'invalid-token-response'` error now
   * If writing to `localStorage` throws (e.g. it's full), tokens are kept in memory instead, as when there's no `localStorage`. The login and the constructor used to throw. In single-page mode, the login fails with `'pkce-localstorage-unavailable'` rather than redirecting
@@ -77,6 +83,7 @@ Most projects only need to make sure they call `new osmAuth(…)`, and update an
 [#165]: https://github.com/osmlab/osm-auth/issues/165
 [#166]: https://github.com/osmlab/osm-auth/issues/166
 [#167]: https://github.com/osmlab/osm-auth/issues/167
+[#168]: https://github.com/osmlab/osm-auth/issues/168
 [#169]: https://github.com/osmlab/osm-auth/issues/169
 [#170]: https://github.com/osmlab/osm-auth/issues/170
 [@k-yle]: https://github.com/k-yle
