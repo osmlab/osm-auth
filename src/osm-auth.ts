@@ -36,8 +36,11 @@ export interface OSMAuthOptions {
   locale?: string;
 }
 
-/** The options as returned by the `options()` getter, with defaults filled in */
-export interface OSMAuthResolvedOptions extends OSMAuthOptions {
+/**
+ * The options as returned by the `options()` getter, with defaults filled in.
+ * `access_token` isn't kept: it's stored with the other tokens, see `getAccessToken()`.
+ */
+export interface OSMAuthResolvedOptions extends Omit<OSMAuthOptions, 'access_token'> {
   apiUrl: string;
   url: string;
   auto: boolean;
@@ -179,7 +182,7 @@ export class osmAuth {
 
     // Handle options and attempt to pre-authorize
     this._options = resolveOptions(options);
-    this.preauth(this._options);
+    this.preauth(options);
   }
 
 
@@ -200,11 +203,12 @@ export class osmAuth {
   /**
    * _setToken
    * Set a stored token, or remove it if `v` is empty. See `_getToken`.
-   * @param  k  key
-   * @param  v  value
+   * @param  k    key
+   * @param  v    value
+   * @param  url  The base URL the token is for (default: the `url` option)
    */
-  private _setToken(k: string, v: string | undefined): void {
-    const key = this._options.url + k;
+  private _setToken(k: string, v: string | undefined, url: string = this._options.url): void {
+    const key = url + k;
     if (v) {
       this._store.setItem(key, v);
     } else {
@@ -396,7 +400,7 @@ export class osmAuth {
         callback(new OSMAuthError(params.get('error_description') || error, error));
         return;
       }
-      this._requestAccessToken(params.get('code'), pkce.code_verifier, this._accessTokenDone(callback));
+      this._requestAccessToken(params.get('code'), pkce.code_verifier, o, this._accessTokenDone(o, callback));
     });
   }
 
@@ -405,12 +409,13 @@ export class osmAuth {
    * _accessTokenDone
    * Returns the callback for `_requestAccessToken`, which stores the access token
    * and then calls `callback`.
+   * @param   o         The options from when the login started
    * @param   callback  Errback-style callback `(err, result)`, called when complete
    * @return  Callback for `rawxhr`
    */
-  private _accessTokenDone(callback: OSMAuthCallback<osmAuth>): OSMAuthRawXHRCallback {
+  private _accessTokenDone(o: OSMAuthResolvedOptions, callback: OSMAuthCallback<osmAuth>): OSMAuthRawXHRCallback {
     return (err, xhr) => {
-      this._options.done();
+      o.done();
       if (err || !xhr) {
         callback(err);
         return;
@@ -420,7 +425,7 @@ export class osmAuth {
         callback(new OSMAuthError('The token response has no access_token', 'invalid-token-response', { xhr: xhr }));
         return;
       }
-      this._setToken('oauth2_access_token', token);
+      this._setToken('oauth2_access_token', token, o.url);
       callback(null, this);
     };
   }
@@ -433,10 +438,10 @@ export class osmAuth {
    * in from a function call on a landing page popup.
    * @param  auth_code
    * @param  code_verifier
+   * @param  o                The options from when the login started
    * @param  accessTokenDone  Errback-style callback `(err, result)`, called when complete
    */
-  private _requestAccessToken(auth_code: string | null, code_verifier: string, accessTokenDone: OSMAuthRawXHRCallback): void {
-    const o = this._options;
+  private _requestAccessToken(auth_code: string | null, code_verifier: string, o: OSMAuthResolvedOptions, accessTokenDone: OSMAuthRawXHRCallback): void {
     const params = new URLSearchParams({
       client_id: o.client_id,
       redirect_uri: o.redirect_uri,
@@ -495,7 +500,8 @@ export class osmAuth {
     }
     const code_verifier = this._getToken('oauth2_pkce_code_verifier');
     this._setToken('oauth2_pkce_code_verifier', '');
-    this._requestAccessToken(auth_code, code_verifier, this._accessTokenDone(callback));
+    const o = this._options;
+    this._requestAccessToken(auth_code, code_verifier, o, this._accessTokenDone(o, callback));
   }
 
 
@@ -677,7 +683,7 @@ export class osmAuth {
     if (val === undefined) return { ...this._options };
 
     this._options = resolveOptions(val);
-    return this.preauth(this._options);
+    return this.preauth(val);
   }
 }
 
@@ -689,8 +695,12 @@ export class osmAuth {
  * @return  A new object containing options and defaults
  */
 function resolveOptions(val: OSMAuthOptions): OSMAuthResolvedOptions {
+  // Leave out `access_token`: it's stored by `preauth()`, and keeping it here would let a
+  // round trip through `options()` store it again, over a newer token or after `logout()`.
+  const copy: OSMAuthOptions = { ...val };
+  delete copy.access_token;
   return {
-    ...val,
+    ...copy,
     apiUrl: val.apiUrl || 'https://api.openstreetmap.org',
     url: val.url || 'https://www.openstreetmap.org',
     auto: val.auto || false,

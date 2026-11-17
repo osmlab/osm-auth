@@ -149,6 +149,12 @@ Editing the returned object no longer changes the instance, so the demo page has
 setter (it already does, right after editing). The setter still replaces all the options rather
 than merging, since iD and Rapid already merge before calling it.
 
+`access_token` isn't kept in the options: the constructor and setter store it (`preauth()`) and
+drop it. Kept, it came back out of the getter, so the usual merge stored it again, over a newer
+token or after `logout()` ([#164](https://github.com/osmlab/osm-auth/issues/164)). For the same
+reason, a login keeps the options it started with: changing `url` mid-login doesn't send the code
+to another server.
+
 ### Errors: one `OSMAuthError` class
 
 In 3.x a caller can get any of these as `err`: an `Error` with a string `status`, the failed

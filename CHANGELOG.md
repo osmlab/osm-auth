@@ -31,6 +31,8 @@ Most projects only need to make sure they call `new osmAuth(…)`, and update an
 * ⚠️  Options are copied in and out
   * The constructor and `options(val)` no longer change the object you pass in
   * `options()` returns a copy, so changing it doesn't change the instance. Pass it back with `options(o)`
+  * `options()` no longer includes the `access_token` that was passed in ([#164]). It's stored with the other tokens, see `getAccessToken()`. Passing the options back with `options({ ...options(), locale })` used to store that token again, logging the user back in after `logout()` or replacing a newer token
+* A login finishes on the server it started on, even if `url` changes while it's in progress ([#164])
 * ⚠️  Type definitions
   * `client_secret` is no longer in `OSMAuthOptions`. Nothing has read it since PKCE replaced it in v2.2.0
   * The global `OSMAuth` namespace is gone. Import the types from `'osm-auth'` instead
@@ -63,6 +65,7 @@ Most projects only need to make sure they call `new osmAuth(…)`, and update an
 [#151]: https://github.com/osmlab/osm-auth/issues/151
 [#152]: https://github.com/osmlab/osm-auth/issues/152
 [#153]: https://github.com/osmlab/osm-auth/issues/153
+[#164]: https://github.com/osmlab/osm-auth/issues/164
 [#165]: https://github.com/osmlab/osm-auth/issues/165
 [#167]: https://github.com/osmlab/osm-auth/issues/167
 [#169]: https://github.com/osmlab/osm-auth/issues/169
