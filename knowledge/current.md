@@ -89,12 +89,6 @@ them; 1 and 9 have none yet, so add them first), and adds its line to the 4.0.0 
   redirects to the authorize page again. **Docs:** the README's single-page example never cleans
   `?code` out of the URL.
 
-### Refactor, no behavior change
-
-- **6. `authenticate` and `authenticateAsync` duplicate each other.** One should call the other.
-  (The token exchange was written twice too; the class shares one `_accessTokenDone`.) Worth doing
-  before 10: one pending login per instance is easier with a single code path.
-
 ### Types and packaging (no runtime effect)
 
 - **17. Callback `err` is typed `unknown`** (3.x: `any`). *Medium, new.* A TS caller's

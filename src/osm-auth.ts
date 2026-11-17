@@ -235,28 +235,14 @@ export class osmAuth {
    * @return  Promise settled with whatever `_authenticate` did
    */
   authenticateAsync(options?: LoginOptions): Promise<osmAuth> {
-    if (this.authenticated()) {
-      return Promise.resolve(this);
-    }
-
-    this.logout();
-
     return new Promise((resolve, reject) => {
-      const errback: OSMAuthCallback<osmAuth> = (err, result) => {
+      this.authenticate((err, result) => {
         if (err) {
           reject(err);
         } else {
           resolve(result as osmAuth);
         }
-      };
-
-      this._preopenPopup((error, popup) => {
-        if (error) {
-          errback(error);
-        } else {
-          _generatePkceChallenge(pkce => this._authenticate(pkce, options, popup, errback));
-        }
-      });
+      }, options);
     });
   }
 
