@@ -124,12 +124,10 @@
   update();
 
   // Single page mode: OSM redirects back here with `?code=…` or `?error=…`.
+  // `authenticate()` finishes the login, or reports the error.
   // Remove those from the URL (and from history) once they've been handled.
   var params = new URLSearchParams(window.location.search);
-  if (params.has("error")) {
-    history.replaceState(null, "", window.location.pathname);
-    showError("Login failed: " + (params.get("error_description") || params.get("error")));
-  } else if (params.has("code")) {
+  if (params.has("code") || params.has("error")) {
     auth.authenticate(function(err) {
       history.replaceState(null, "", window.location.pathname);
       loginDone(err);

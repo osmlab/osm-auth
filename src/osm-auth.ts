@@ -411,8 +411,20 @@ export class osmAuth {
         callback(new OSMAuthError('localStorage unavailable, but required in singlepage mode', 'pkce-localstorage-unavailable'));
         return;
       }
-      const code = new URLSearchParams(window.location.search).get('code');
-      if (code) {
+      // Is this page OSM's redirect back to us? Only if a login is pending (a state was saved):
+      // otherwise a `code` or `error` in the URL is left over from an earlier login.
+      const params = new URLSearchParams(window.location.search);
+      const code = params.get('code');
+      const error = params.get('error');
+      const isRedirect = !!this._getToken('oauth2_state') && (code !== null || error !== null);
+      if (isRedirect && error !== null) {
+        const saved = this._takeSavedLogin();
+        if (params.get('state') !== saved.state) {
+          callback(new OSMAuthError('Invalid state', 'invalid-state'));
+        } else {
+          callback(new OSMAuthError(params.get('error_description') || error, error));
+        }
+      } else if (isRedirect && code !== null) {
         this.bootstrapToken(code, callback);
       } else {
         // save OAuth2 state and PKCE challenge in local storage, for later use
@@ -582,18 +594,35 @@ export class osmAuth {
    *
    * @param   auth_code  The OAuth2 `auth_code`
    * @param   callback   Errback-style callback `(err, result)`, called when complete
+   * @param   state      The `state` from OSM's redirect. Defaults to the one in the page URL,
+   *                     so pass it if the app has already removed it from the URL.
    */
-  bootstrapToken(auth_code: string, callback: OSMAuthCallback<osmAuth>): void {
-    const state = this._getToken('oauth2_state');
-    this._setToken('oauth2_state', '');
-    if (new URLSearchParams(window.location.search).get('state') !== state) {
+  bootstrapToken(auth_code: string, callback: OSMAuthCallback<osmAuth>, state?: string): void {
+    const saved = this._takeSavedLogin();
+    const given = state ?? new URLSearchParams(window.location.search).get('state');
+    if (!saved.state || given !== saved.state) {
       callback(new OSMAuthError('Invalid state', 'invalid-state'));
       return;
     }
-    const code_verifier = this._getToken('oauth2_pkce_code_verifier');
-    this._setToken('oauth2_pkce_code_verifier', '');
     const o = this._options;
-    this._requestAccessToken(auth_code, code_verifier, o, this._accessTokenDone(o, callback));
+    this._requestAccessToken(auth_code, saved.code_verifier, o, this._accessTokenDone(o, callback));
+  }
+
+
+  /**
+   * _takeSavedLogin
+   * Single-page mode: gets the `state` and PKCE verifier saved before redirecting to OSM, and
+   * removes them, so they're used at most once, whether the login succeeds or not.
+   * @return  The saved state and verifier ('' if there aren't any)
+   */
+  private _takeSavedLogin(): { state: string, code_verifier: string } {
+    const saved = {
+      state: this._getToken('oauth2_state'),
+      code_verifier: this._getToken('oauth2_pkce_code_verifier')
+    };
+    this._setToken('oauth2_state', '');
+    this._setToken('oauth2_pkce_code_verifier', '');
+    return saved;
   }
 
 

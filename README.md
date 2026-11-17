@@ -156,9 +156,17 @@ document.getElementById("authenticate").onclick = function () {
   );
 };
 
-if (window.location.search.slice(1).split('&').some(p => p.startsWith('code='))) {
-  auth.authenticate(function() {
-    // Fully authed at this point
+// When OSM redirects back here, with `?code=…` (or `?error=…` if the user denied access),
+// finish the login, then remove those from the URL
+var params = new URLSearchParams(window.location.search);
+if (params.has("code") || params.has("error")) {
+  auth.authenticate(function(err) {
+    history.replaceState(null, "", window.location.pathname);
+    if (err) {
+      // e.g. err.code === "access_denied"
+    } else {
+      // Fully authed at this point
+    }
   });
 }
 ```
@@ -252,12 +260,13 @@ Returns: `true` on success or `false` if there is no authentication popup or if 
 Once the popup has loaded openstreetmap.org, browsers cut it off from your page (OSM sends a `Cross-Origin-Opener-Policy` header), so this returns `false`. It's fine to call `authenticate()` again then: it opens another popup, and either one finishes the login.<br/>
 
 
-## `.bootstrapToken(auth_code, callback)`
+## `.bootstrapToken(auth_code, callback, state?)`
 
-The authorization code is a temporary code that a client can exchange for an access token. If using this library in single-page mode, you'll need to call this once your application has an `auth_code` and wants to get an access_token.
+The authorization code is a temporary code that a client can exchange for an access token. If using this library in single-page mode, you'll need to call this once your application has an `auth_code` and wants to get an access_token. (`authenticate()` calls it for you when the page URL has the `code`.)
 <br/>
 Param:  `auth_code`  The OAuth2 `auth_code`<br/>
 Param:  `callback`   An "errback"-style callback (`err`, `result`), called when complete<br/>
+Param:  `state`      Optional, the `state` from OSM's redirect. Defaults to the one in the page URL, so pass it if you've already removed it from the URL.<br/>
 Returns:  none<br/>
 
 
