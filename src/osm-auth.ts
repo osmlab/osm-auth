@@ -96,7 +96,8 @@ export interface OSMAuthErrorOptions {
  *  - `'invalid-state'`: the redirect from OSM didn't carry the `state` this login sent
  *  - `'not-authenticated'`: a request needs a login, and `auto` isn't set
  *  - `'pkce-localstorage-unavailable'`: single-page mode needs `localStorage`, and there isn't one
- *  - `'http-error'`: a request got a response that isn't 20x (see `status` and `xhr`)
+ *  - `'http-error'`: a request got a response that isn't 20x (see `status` and `xhr`). The message
+ *    is the OSM API's explanation, when it sends one as plain text
  *  - `'network-error'`: a request failed without a response (see `xhr`)
  *  - `'timeout'`: a request took longer than the `timeout` set on it (see `xhr`)
  *  - `'invalid-token-response'`: the token request succeeded, but its response has no access token (see `xhr`)
@@ -757,8 +758,7 @@ export class osmAuth {
         if (/^20\d$/.test(String(xhr.status))) {   // a 20x status code - OK
           callback(null, xhr);
         } else {
-          const message = `Request failed with HTTP status ${xhr.status}`;
-          callback(new OSMAuthError(message, 'http-error', { status: xhr.status, xhr: xhr }), null);
+          callback(new OSMAuthError(httpErrorMessage(xhr), 'http-error', { status: xhr.status, xhr: xhr }), null);
         }
       }
     };
@@ -886,6 +886,24 @@ function parseAccessToken(xhr: XMLHttpRequest): string {
     return body.access_token;
   }
   return '';
+}
+
+
+/**
+ * httpErrorMessage
+ * The message for an `'http-error'`. The OSM API explains its errors in a plain text body
+ * (e.g. "The changeset 123 was closed at …"), so use that when there is one. Other bodies
+ * (HTML error pages, JSON) would make a poor message, so those get a generic one.
+ * @param   xhr  The failed request
+ * @returns The message
+ */
+function httpErrorMessage(xhr: XMLHttpRequest): string {
+  const contentType = xhr.getResponseHeader('Content-Type') ?? '';
+  const body = typeof xhr.response === 'string' ? xhr.response.trim() : '';
+  if (body && contentType.startsWith('text/plain')) {
+    return body;
+  }
+  return `Request failed with HTTP status ${xhr.status}`;
 }
 
 

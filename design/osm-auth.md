@@ -175,6 +175,11 @@ export class OSMAuthError extends Error {
 The numeric `status` keeps working for callers like iD that check the HTTP status of a failed
 request. The string codes move from `status` to `code`; nobody we know of reads them.
 
+iD's uploader shows `err.message || err.responseText`. With the error no longer the
+`XMLHttpRequest`, a generic message would hide the OSM API's explanation (e.g. "The changeset 123
+was closed at …"), so an `'http-error'` takes its message from a `text/plain` body, which is how
+the API sends them. HTML and JSON bodies get a generic message.
+
 A failed token request is an `'http-error'` too, rather than taking its code from the OAuth error
 in the response body: one code per kind of failure is simpler to check, and `xhr` has the body.
 (Done in [#167](https://github.com/osmlab/osm-auth/issues/167).)

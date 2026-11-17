@@ -423,6 +423,31 @@ describe('osmAuth', () => {
       assert.equal(err.xhr, request);
     });
 
+    it('uses the OSM API\'s plain text explanation as the message of an http-error', () => {
+      const auth = new osmAuth({ ...OPTIONS, access_token: 'foo' });
+      const calls: unknown[][] = [];
+      auth.xhr({ method: 'POST', path: '/api/0.6/changeset/123/upload' }, (...args) => calls.push(args));
+      const request = FakeXHR.last();
+      request.responseHeaders = { 'Content-Type': 'text/plain; charset=utf-8' };
+      request.respond(409, 'The changeset 123 was closed at 2026-11-17 12:00:00 UTC\n');
+      const err = assertOSMAuthError(calls[0]?.[0], 'http-error', 'The changeset 123 was closed at 2026-11-17 12:00:00 UTC');
+      assert.equal(err.status, 409);
+    });
+
+    it('doesn\'t use an HTML or JSON body as the message of an http-error', () => {
+      const auth = new osmAuth({ ...OPTIONS, access_token: 'foo' });
+      const calls: unknown[][] = [];
+      auth.xhr({ method: 'GET', path: '/a' }, (...args) => calls.push(args));
+      auth.xhr({ method: 'GET', path: '/b' }, (...args) => calls.push(args));
+      const [html, json] = FakeXHR.requests;
+      html!.responseHeaders = { 'Content-Type': 'text/html' };
+      html!.respond(502, '<html><body>Bad Gateway</body></html>');
+      json!.responseHeaders = { 'Content-Type': 'application/json' };
+      json!.respond(400, '{"error":"invalid_request"}');
+      assertOSMAuthError(calls[0]?.[0], 'http-error', 'Request failed with HTTP status 502');
+      assertOSMAuthError(calls[1]?.[0], 'http-error', 'Request failed with HTTP status 400');
+    });
+
     it('fails with a network-error, caused by the error event, on a network error', () => {
       const auth = new osmAuth({ ...OPTIONS, access_token: 'foo' });
       const calls: unknown[][] = [];
