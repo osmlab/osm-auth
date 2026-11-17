@@ -52,14 +52,20 @@ Most projects only need to make sure they call `new osmAuth(…)`, and update an
 * Fix two failed logins that were reported as success ([#165])
   * `xhr()` with `auto: true` sent the request without a token after a failed login (e.g. a blocked popup, or the user denied access), instead of failing with the login error
   * A token response without an `access_token` succeeded without logging in. It fails with an `'invalid-token-response'` error now
+* Fix how `fetch()` and `xhr()` set request headers ([#169])
+  * They no longer add the `Authorization` header to the caller's own options or headers object
+  * The default `Content-Type: application/x-www-form-urlencoded` is only added for a string body (or none), so a `FormData` body keeps its multipart boundary, e.g. to upload a GPX trace ([#35])
+  * `fetch()` accepts `headers` as a `Headers` or an array of pairs, keeps the headers of a `Request`, and replaces an `authorization` header in any case
 * Development: TypeScript 7, oxlint instead of ESLint, and many more tests
 
+[#35]: https://github.com/osmlab/osm-auth/issues/35
 [#148]: https://github.com/osmlab/osm-auth/issues/148
 [#151]: https://github.com/osmlab/osm-auth/issues/151
 [#152]: https://github.com/osmlab/osm-auth/issues/152
 [#153]: https://github.com/osmlab/osm-auth/issues/153
 [#165]: https://github.com/osmlab/osm-auth/issues/165
 [#167]: https://github.com/osmlab/osm-auth/issues/167
+[#169]: https://github.com/osmlab/osm-auth/issues/169
 [#170]: https://github.com/osmlab/osm-auth/issues/170
 [@k-yle]: https://github.com/k-yle
 [@tyrasd]: https://github.com/tyrasd

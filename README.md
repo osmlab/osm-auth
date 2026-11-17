@@ -264,9 +264,11 @@ See: https://developer.mozilla.org/en-US/docs/Web/API/fetch<br/>
 <br/>
 If the user isn't authenticated, it authenticates first when `auto` is `true`, or rejects when it isn't.<br/>
 <br/>
-Param: `resource`  The URL passed to `fetch`<br/>
-Param: `options`   Options passed to `fetch`. `headers`, if given, must be a plain object.<br/>
+Param: `resource`  The URL (or `Request`) passed to `fetch`<br/>
+Param: `options`   Options passed to `fetch`. `headers` can be an object, an array of pairs, or a `Headers`.<br/>
 Return: `Promise` that wraps `authenticateAsync` then `fetch`<br/>
+<br/>
+The options you pass aren't changed. Without `headers`, a request with a string body (or none) gets `Content-Type: application/x-www-form-urlencoded`; other bodies, like `FormData`, get theirs from the browser.<br/>
 
 
 ## `.xhr(options, callback)`
@@ -279,7 +281,7 @@ Param: `options`:<br/>
   `options.prefix`   If `true` path contains a path, if `false` path contains the full url<br/>
   `options.path`     The URL path (e.g. "/api/0.6/user/details") (or full url, if `prefix`=`false`)<br/>
   `options.content`  Passed to `xhr.send`<br/>
-  `options.headers`  optional `Object` containing request headers<br/>
+  `options.headers`  optional `Object` containing request headers. Without it, a string `content` (or none) is sent as `application/x-www-form-urlencoded`<br/>
 Param: `callback`  An "errback"-style callback (`err`, `result`), called when complete<br/>
 Return: `XMLHttpRequest` if authenticated, otherwise `null`<br/>
 

@@ -54,7 +54,8 @@ export interface LoginOptions {
 
 /** Options for `fetch()`, passed to `fetch` */
 export interface OSMAuthFetchOptions extends Omit<RequestInit, 'headers'> {
-  headers?: Record<string, string>;
+  /** Request headers, as an object, an array of pairs, or a `Headers` */
+  headers?: HeadersInit;
 }
 
 /** Options for `xhr()` */
@@ -507,14 +508,18 @@ export class osmAuth {
    * @param  options     Options passed to `fetch`
    * @return Promise that wraps `authenticateAsync` then `fetch`
    */
-  fetch(resource: string, options?: OSMAuthFetchOptions): Promise<Response> {
+  fetch(resource: RequestInfo | URL, options?: OSMAuthFetchOptions): Promise<Response> {
     const _doFetch = (): Promise<Response> => {
-      options = options || {};
-      if (!options.headers) {
-        options.headers = { 'Content-Type': 'application/x-www-form-urlencoded' };
+      // Build new headers, so the caller's `options` and `Request` aren't changed.
+      // Start from a `Request`'s own headers, because headers in `options` replace them.
+      const isRequest = typeof Request !== 'undefined' && resource instanceof Request;
+      const headers = new Headers(isRequest ? resource.headers : undefined);
+      new Headers(options?.headers).forEach((value, key) => headers.set(key, value));
+      if (!isRequest && options?.headers === undefined && isStringOrEmpty(options?.body)) {
+        headers.set('Content-Type', 'application/x-www-form-urlencoded');
       }
-      options.headers['Authorization'] = 'Bearer ' + this._getToken('oauth2_access_token');
-      return fetch(resource, options);
+      headers.set('Authorization', 'Bearer ' + this._getToken('oauth2_access_token'));
+      return fetch(resource, { ...options, headers: headers });
     };
 
     if (this.authenticated()) {
@@ -602,10 +607,19 @@ export class osmAuth {
     headers: Record<string, string> | null | undefined,
     callback: OSMAuthRawXHRCallback
   ): XMLHttpRequest {
-    headers = headers || { 'Content-Type': 'application/x-www-form-urlencoded' };
+    // Copy the headers, so the caller's object isn't changed.
+    const requestHeaders: Record<string, string> = {};
+    if (headers) {
+      for (const [h, v] of Object.entries(headers)) {
+        if (access_token && h.toLowerCase() === 'authorization') continue;  // replaced below
+        requestHeaders[h] = v;
+      }
+    } else if (isStringOrEmpty(data)) {
+      requestHeaders['Content-Type'] = 'application/x-www-form-urlencoded';
+    }
 
     if (access_token) {
-      headers['Authorization'] = 'Bearer ' + access_token;
+      requestHeaders['Authorization'] = 'Bearer ' + access_token;
     }
 
     const xhr = new XMLHttpRequest();
@@ -625,7 +639,7 @@ export class osmAuth {
     };
 
     xhr.open(method, url, true);
-    for (const [h, v] of Object.entries(headers)) xhr.setRequestHeader(h, v);
+    for (const [h, v] of Object.entries(requestHeaders)) xhr.setRequestHeader(h, v);
 
     xhr.send(data);
     return xhr;
@@ -687,6 +701,19 @@ function resolveOptions(val: OSMAuthOptions): OSMAuthResolvedOptions {
     loading: val.loading || function () {},
     done: val.done || function () {}
   };
+}
+
+
+/**
+ * isStringOrEmpty
+ * Whether a request body is a string, or there isn't one. Only these get the default
+ * `Content-Type: application/x-www-form-urlencoded`; for other bodies (`FormData`, `Blob`,
+ * `URLSearchParams`…) the browser sets the right one, e.g. with the multipart boundary.
+ * @param   body  The request body
+ * @returns `true` if the body is a string, `null` or `undefined`
+ */
+function isStringOrEmpty(body: unknown): boolean {
+  return body === null || body === undefined || typeof body === 'string';
 }
 
 
