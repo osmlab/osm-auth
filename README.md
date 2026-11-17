@@ -328,6 +328,7 @@ Its `code` says what went wrong:
  - `'pkce-localstorage-unavailable'` - single-page mode needs `localStorage`, and there isn't one
  - `'http-error'` - a request got a response that isn't 20x. `status` is the HTTP status, and `xhr` is the request
  - `'network-error'` - a request failed without a response. `xhr` is the request, and `cause` is the error event
+ - `'invalid-token-response'` - the token request succeeded, but its response has no access token. `xhr` is the request
  - an OAuth error code from OSM's redirect, e.g. `'access_denied'` if the user denied access
 
 ```js

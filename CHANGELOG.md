@@ -49,12 +49,16 @@ Most projects only need to make sure they call `new osmAuth(…)`, and update an
   * A failed attempt left a listener behind that later reported "Invalid state"
 * Parse the redirect from OSM with `URLSearchParams` ([#170])
   * A malformed `%` escape no longer stops the login, and a value containing `=` is no longer dropped
+* Fix two failed logins that were reported as success ([#165])
+  * `xhr()` with `auto: true` sent the request without a token after a failed login (e.g. a blocked popup, or the user denied access), instead of failing with the login error
+  * A token response without an `access_token` succeeded without logging in. It fails with an `'invalid-token-response'` error now
 * Development: TypeScript 7, oxlint instead of ESLint, and many more tests
 
 [#148]: https://github.com/osmlab/osm-auth/issues/148
 [#151]: https://github.com/osmlab/osm-auth/issues/151
 [#152]: https://github.com/osmlab/osm-auth/issues/152
 [#153]: https://github.com/osmlab/osm-auth/issues/153
+[#165]: https://github.com/osmlab/osm-auth/issues/165
 [#167]: https://github.com/osmlab/osm-auth/issues/167
 [#170]: https://github.com/osmlab/osm-auth/issues/170
 [@k-yle]: https://github.com/k-yle
