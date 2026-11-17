@@ -158,15 +158,19 @@ every failure is an `OSMAuthError`, and callbacks type `err` as `OSMAuthError | 
 ```ts
 export class OSMAuthError extends Error {
   code: string;               // 'popup-blocked', 'invalid-state', 'not-authenticated',
-                              // 'http-error', 'network-error', or an OAuth error code
+                              // 'pkce-localstorage-unavailable', 'http-error',
+                              // 'network-error', or an OAuth error code from the redirect
   status?: number;            // HTTP status, for 'http-error'
   xhr?: XMLHttpRequest;       // the failed request, for its response body and headers
-}
+}                             // (and `cause`: the ProgressEvent, for 'network-error')
 ```
 
 The numeric `status` keeps working for callers like iD that check the HTTP status of a failed
-request. The string codes move from `status` to `code`; nobody we know of reads them. This is a
-sketch: settle the details when the fix lands.
+request. The string codes move from `status` to `code`; nobody we know of reads them.
+
+A failed token request is an `'http-error'` too, rather than taking its code from the OAuth error
+in the response body: one code per kind of failure is simpler to check, and `xhr` has the body.
+(Done in [#167](https://github.com/osmlab/osm-auth/issues/167).)
 
 ### Keep the exported type names
 

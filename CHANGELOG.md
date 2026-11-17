@@ -35,6 +35,12 @@ Most projects only need to make sure they call `new osmAuth(…)`, and update an
   * `client_secret` is no longer in `OSMAuthOptions`. Nothing has read it since PKCE replaced it in v2.2.0
   * The global `OSMAuth` namespace is gone. Import the types from `'osm-auth'` instead
   * New types: `OSMAuthResolvedOptions` (what `options()` returns), `OSMAuthCallback<T>` and `OSMAuthRawXHRCallback`
+* ⚠️  Every error is an `OSMAuthError` ([#167])
+  * `err.code` says what went wrong, e.g. `'popup-blocked'`, `'invalid-state'` or `'access_denied'`. These codes used to be in `err.status`
+  * A request that fails with an HTTP status is an `'http-error'`. `err.status` is still the HTTP status (a number), and the request is in `err.xhr`. The error used to be the `XMLHttpRequest` itself, so read `err.xhr.responseText` instead of `err.responseText`
+  * A network error is a `'network-error'`, with the `ProgressEvent` in `err.cause`
+  * `xhr()` fails with a `'not-authenticated'` error when not logged in, where it used to pass the string `'not authenticated'`. `fetch()` rejects with the same error
+  * Callbacks type `err` as `OSMAuthError | null`
 * Refine the type definitions ([#153], thanks [@k-yle])
 * The type definitions bring in the DOM lib, so they work in projects whose `lib` doesn't include it
 * Fix `localStorage` detection when it's `undefined` ([#151], [#152], thanks [@tyrasd])
@@ -49,6 +55,7 @@ Most projects only need to make sure they call `new osmAuth(…)`, and update an
 [#151]: https://github.com/osmlab/osm-auth/issues/151
 [#152]: https://github.com/osmlab/osm-auth/issues/152
 [#153]: https://github.com/osmlab/osm-auth/issues/153
+[#167]: https://github.com/osmlab/osm-auth/issues/167
 [#170]: https://github.com/osmlab/osm-auth/issues/170
 [@k-yle]: https://github.com/k-yle
 [@tyrasd]: https://github.com/tyrasd

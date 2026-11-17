@@ -72,10 +72,55 @@ export interface OSMAuthXHROptions {
 }
 
 /** An "errback"-style callback `(err, result)`, called when complete */
-export type OSMAuthCallback<T> = (err: any, result?: T) => void;
+export type OSMAuthCallback<T> = (err: OSMAuthError | null, result?: T) => void;
 
-/** Errors raised by osm-auth itself carry a `status` string, e.g. 'popup-blocked' */
-type StatusError = Error & { status: string };
+/** Other details for an `OSMAuthError` */
+export interface OSMAuthErrorOptions {
+  /** The HTTP status, for an `'http-error'` */
+  status?: number;
+  /** The failed request, for an `'http-error'` or `'network-error'` */
+  xhr?: XMLHttpRequest;
+  /** What caused the error, e.g. the `ProgressEvent` of a network error */
+  cause?: unknown;
+}
+
+/**
+ * OSMAuthError
+ * The error that osm-auth reports for every failure.
+ * `code` says what went wrong:
+ *  - `'popup-blocked'`: the browser blocked the login popup
+ *  - `'invalid-state'`: the redirect from OSM didn't carry the `state` this login sent
+ *  - `'not-authenticated'`: a request needs a login, and `auto` isn't set
+ *  - `'pkce-localstorage-unavailable'`: single-page mode needs `localStorage`, and there isn't one
+ *  - `'http-error'`: a request got a response that isn't 20x (see `status` and `xhr`)
+ *  - `'network-error'`: a request failed without a response (see `xhr`)
+ *  - an OAuth error code from OSM's redirect, e.g. `'access_denied'`
+ */
+export class OSMAuthError extends Error {
+  /** What went wrong, see above */
+  code: string;
+  /** The HTTP status, for an `'http-error'` */
+  status?: number;
+  /** The failed request, for an `'http-error'` or `'network-error'` */
+  xhr?: XMLHttpRequest;
+
+  /**
+   * @param  message  The error message
+   * @param  code     What went wrong, see above
+   * @param  options  Other details
+   */
+  constructor(message: string, code: string, options?: OSMAuthErrorOptions) {
+    super(message, options?.cause === undefined ? undefined : { cause: options.cause });
+    this.name = 'OSMAuthError';
+    this.code = code;
+    if (options?.status !== undefined) {
+      this.status = options.status;
+    }
+    if (options?.xhr !== undefined) {
+      this.xhr = options.xhr;
+    }
+  }
+}
 
 /** The parts of `Storage` that osm-auth uses */
 type TokenStore = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>;
@@ -88,7 +133,7 @@ interface PkceChallenge {
 }
 
 /** Callback for `rawxhr()` */
-export type OSMAuthRawXHRCallback = (err: XMLHttpRequest | ProgressEvent | null, xhr: XMLHttpRequest | null) => void;
+export type OSMAuthRawXHRCallback = (err: OSMAuthError | null, xhr: XMLHttpRequest | null) => void;
 
 
 const CHANNEL_ID = 'osm-api-auth-complete';
@@ -255,7 +300,7 @@ export class osmAuth {
    * opens an empty popup to be later used for the authentication page
    * @param   callback  Errback-style callback `(err, result)`, called when complete
    */
-  private _preopenPopup(callback: (err: StatusError | null, popup?: Window) => void): void {
+  private _preopenPopup(callback: (err: OSMAuthError | null, popup?: Window) => void): void {
     if (this._options.singlepage) {
       callback(null, undefined);
       return;
@@ -276,7 +321,7 @@ export class osmAuth {
     if (popup) {
       callback(null, popup);
     } else {
-      callback(makeError('Popup was blocked', 'popup-blocked'));
+      callback(new OSMAuthError('Popup was blocked', 'popup-blocked'));
     }
   }
 
@@ -316,7 +361,7 @@ export class osmAuth {
     if (o.singlepage) {
       if (this._storeIsMocked) {
         // in singlepage mode, PKCE requires working non-volatile storage
-        callback(makeError('localStorage unavailable, but required in singlepage mode', 'pkce-localstorage-unavailable'));
+        callback(new OSMAuthError('localStorage unavailable, but required in singlepage mode', 'pkce-localstorage-unavailable'));
         return;
       }
       const code = new URLSearchParams(window.location.search).get('code');
@@ -343,10 +388,10 @@ export class osmAuth {
       const params = new URLSearchParams(url.split('?')[1] ?? '');
       const error = params.get('error');
       if (params.get('state') !== state) {
-        callback(makeError('Invalid state', 'invalid-state'));
+        callback(new OSMAuthError('Invalid state', 'invalid-state'));
         return;
       } else if (error !== null) {
-        callback(makeError(params.get('error_description') || error, error));
+        callback(new OSMAuthError(params.get('error_description') || error, error));
         return;
       }
       this._requestAccessToken(params.get('code'), pkce.code_verifier, this._accessTokenDone(callback));
@@ -438,7 +483,7 @@ export class osmAuth {
     const state = this._getToken('oauth2_state');
     this._setToken('oauth2_state', '');
     if (new URLSearchParams(window.location.search).get('state') !== state) {
-      callback(makeError('Invalid state', 'invalid-state'));
+      callback(new OSMAuthError('Invalid state', 'invalid-state'));
       return;
     }
     const code_verifier = this._getToken('oauth2_pkce_code_verifier');
@@ -472,7 +517,7 @@ export class osmAuth {
       if (this._options.auto) {
         return this.authenticateAsync().then(_doFetch);
       } else {
-        return Promise.reject(new Error('not authenticated'));
+        return Promise.reject(new OSMAuthError('Not authenticated', 'not-authenticated'));
       }
     }
   }
@@ -517,7 +562,7 @@ export class osmAuth {
         this.authenticate(_doXHR);
         return null;
       } else {
-        callback('not authenticated');
+        callback(new OSMAuthError('Not authenticated', 'not-authenticated'));
         return null;
       }
     }
@@ -558,12 +603,13 @@ export class osmAuth {
         if (/^20\d$/.test(String(xhr.status))) {   // a 20x status code - OK
           callback(null, xhr);
         } else {
-          callback(xhr, null);
+          const message = `Request failed with HTTP status ${xhr.status}`;
+          callback(new OSMAuthError(message, 'http-error', { status: xhr.status, xhr: xhr }), null);
         }
       }
     };
     xhr.onerror = function (e) {
-      callback(e, null);
+      callback(new OSMAuthError('Request failed with a network error', 'network-error', { xhr: xhr, cause: e }), null);
     };
 
     xhr.open(method, url, true);
@@ -629,18 +675,6 @@ function resolveOptions(val: OSMAuthOptions): OSMAuthResolvedOptions {
     loading: val.loading || function () {},
     done: val.done || function () {}
   };
-}
-
-
-/**
- * makeError
- * Creates an `Error` with a `status` string
- * @param   message  The error message
- * @param   status   The status, e.g. 'popup-blocked'
- * @returns The error
- */
-function makeError(message: string, status: string): StatusError {
-  return Object.assign(new Error(message), { status: status });
 }
 
 

@@ -1,7 +1,7 @@
 import { afterAll, beforeEach, describe, it } from 'bun:test';
 import { strict as assert } from 'node:assert';
 import { createHash } from 'node:crypto';
-import { osmAuth, type LoginOptions, type OSMAuthOptions } from '../src/osm-auth.ts';
+import { osmAuth, OSMAuthError, type LoginOptions, type OSMAuthOptions } from '../src/osm-auth.ts';
 import { FakePopup, FakeWindow, FakeXHR, FetchSpy, MemoryStorage, postFromLandPage, setGlobal } from './stubs.ts';
 
 
@@ -59,13 +59,16 @@ async function startPopupLogin(auth: osmAuth, options?: LoginOptions) {
   return { pending, popup, authorizeURL, state };
 }
 
-/** Asserts that `err` is an `Error` with the given `status` (and message) */
-function assertStatusError(err: unknown, status: string, message?: string): void {
+/** Asserts that `err` is an `OSMAuthError` with the given `code` (and message), and returns it */
+function assertOSMAuthError(err: unknown, code: string, message?: string): OSMAuthError {
+  assert.ok(err instanceof OSMAuthError);
   assert.ok(err instanceof Error);
-  assert.equal('status' in err && err.status, status);
+  assert.equal(err.name, 'OSMAuthError');
+  assert.equal(err.code, code);
   if (message !== undefined) {
     assert.equal(err.message, message);
   }
+  return err;
 }
 
 /** base64url-encoded SHA-256, the PKCE S256 transform */
@@ -224,14 +227,15 @@ describe('osmAuth', () => {
 
     it('rejects if not authenticated', async () => {
       const auth = new osmAuth(OPTIONS);
-      await assert.rejects(auth.fetch(`${API}/x`), { message: 'not authenticated' });
+      const err = await auth.fetch(`${API}/x`).then(() => null, (e: unknown) => e);
+      assertOSMAuthError(err, 'not-authenticated', 'Not authenticated');
       assert.equal(fetchSpy.calls.length, 0);
     });
 
     it('tries to log in first if not authenticated and `auto` is set', async () => {
       win.blockPopups = true;
       const auth = new osmAuth({ ...OPTIONS, auto: true });
-      await assert.rejects(auth.fetch(`${API}/x`), { status: 'popup-blocked' });
+      await assert.rejects(auth.fetch(`${API}/x`), { code: 'popup-blocked' });
       assert.equal(fetchSpy.calls.length, 0);
     });
   });
@@ -243,7 +247,7 @@ describe('osmAuth', () => {
       let error: unknown;
       const xhr = auth.xhr({ method: 'GET', path: '/api/0.6/user/details' }, (err) => { error = err; });
       assert.equal(xhr, null);
-      assert.equal(error, 'not authenticated');
+      assertOSMAuthError(error, 'not-authenticated', 'Not authenticated');
       assert.equal(FakeXHR.requests.length, 0);
     });
 
@@ -292,21 +296,30 @@ describe('osmAuth', () => {
       assert.deepEqual(request.headers, { 'Content-Type': 'text/xml', 'Authorization': 'Bearer foo' });
     });
 
-    it('fails with the request if the response is not 20x', () => {
+    it('fails with an http-error, with the status and the request, if the response is not 20x', () => {
       const auth = new osmAuth({ ...OPTIONS, access_token: 'foo' });
       const calls: unknown[][] = [];
       auth.xhr({ method: 'GET', path: '/api/0.6/user/details' }, (...args) => calls.push(args));
       const request = FakeXHR.last();
-      request.respond(401, 'Unauthorized');
-      assert.deepEqual(calls, [[request]]);
+      request.respond(429, 'Too Many Requests');
+      assert.equal(calls.length, 1);
+      assert.equal(calls[0]?.length, 1);
+      const err = assertOSMAuthError(calls[0]?.[0], 'http-error', 'Request failed with HTTP status 429');
+      assert.equal(err.status, 429);
+      assert.equal(err.xhr, request);
     });
 
-    it('fails with the error event on a network error', () => {
+    it('fails with a network-error, caused by the error event, on a network error', () => {
       const auth = new osmAuth({ ...OPTIONS, access_token: 'foo' });
       const calls: unknown[][] = [];
       auth.xhr({ method: 'GET', path: '/api/0.6/user/details' }, (...args) => calls.push(args));
-      const e = FakeXHR.last().fail();
-      assert.deepEqual(calls, [[e]]);
+      const request = FakeXHR.last();
+      const e = request.fail();
+      assert.equal(calls.length, 1);
+      const err = assertOSMAuthError(calls[0]?.[0], 'network-error');
+      assert.equal(err.cause, e);
+      assert.equal(err.xhr, request);
+      assert.equal(err.status, undefined);
     });
   });
 
@@ -332,7 +345,7 @@ describe('osmAuth', () => {
     it('fails if the popup is blocked', async () => {
       win.blockPopups = true;
       const { err } = await authenticateP(new osmAuth(OPTIONS));
-      assertStatusError(err, 'popup-blocked', 'Popup was blocked');
+      assertOSMAuthError(err, 'popup-blocked', 'Popup was blocked');
     });
 
     it('opens a centered popup, and sends it to the authorize page', async () => {
@@ -378,7 +391,7 @@ describe('osmAuth', () => {
       // the redirect carries that state back, so the error is reported (not 'invalid-state')
       postFromLandPage(`${REDIRECT}?error=access_denied&state=${state}`);
       const { err } = await pending;
-      assertStatusError(err, 'access_denied');
+      assertOSMAuthError(err, 'access_denied');
     });
 
     it('exchanges the code for an access token after the redirect', async () => {
@@ -428,7 +441,7 @@ describe('osmAuth', () => {
       const { pending } = await startPopupLogin(new osmAuth(OPTIONS));
       postFromLandPage(`${REDIRECT}?code=CODE&state=WRONG`);
       const { err } = await pending;
-      assertStatusError(err, 'invalid-state', 'Invalid state');
+      assertOSMAuthError(err, 'invalid-state', 'Invalid state');
       assert.equal(FakeXHR.requests.length, 0);
     });
 
@@ -436,14 +449,14 @@ describe('osmAuth', () => {
       const { pending, state } = await startPopupLogin(new osmAuth(OPTIONS));
       postFromLandPage(`${REDIRECT}?error=access_denied&error_description=The+resource+owner+denied+the+request.&state=${state}`);
       const { err } = await pending;
-      assertStatusError(err, 'access_denied', 'The resource owner denied the request.');
+      assertOSMAuthError(err, 'access_denied', 'The resource owner denied the request.');
     });
 
     it('reports an OAuth error whose description has a malformed `%` escape', async () => {
       const { pending, state } = await startPopupLogin(new osmAuth(OPTIONS));
       postFromLandPage(`${REDIRECT}?error=access_denied&error_description=100%25+sure%E0%A4%A&state=${state}`);
       const { err } = await pending;
-      assertStatusError(err, 'access_denied');
+      assertOSMAuthError(err, 'access_denied');
       assert.ok(err instanceof Error && err.message.startsWith('100% sure'));
     });
 
@@ -451,10 +464,10 @@ describe('osmAuth', () => {
       const { pending, state } = await startPopupLogin(new osmAuth(OPTIONS));
       postFromLandPage(`${REDIRECT}?error=access_denied&state=${state}`);
       const { err } = await pending;
-      assertStatusError(err, 'access_denied', 'access_denied');
+      assertOSMAuthError(err, 'access_denied', 'access_denied');
     });
 
-    it('fails with the request if the token request fails', async () => {
+    it('fails with an http-error if the token request fails', async () => {
       let done = 0;
       const auth = new osmAuth({ ...OPTIONS, done: () => done++ });
       const { pending, state } = await startPopupLogin(auth);
@@ -464,7 +477,9 @@ describe('osmAuth', () => {
       request.respond(400, '{"error":"invalid_grant"}');
 
       const { err } = await pending;
-      assert.equal(err, request);
+      const error = assertOSMAuthError(err, 'http-error');
+      assert.equal(error.status, 400);
+      assert.equal(error.xhr, request);
       assert.equal(auth.authenticated(), false);
       assert.equal(done, 1);
     });
@@ -487,7 +502,7 @@ describe('osmAuth', () => {
 
     it('rejects if the popup is blocked', async () => {
       win.blockPopups = true;
-      await assert.rejects(new osmAuth(OPTIONS).authenticateAsync(), { status: 'popup-blocked' });
+      await assert.rejects(new osmAuth(OPTIONS).authenticateAsync(), { code: 'popup-blocked' });
     });
 
     it('resolves after the popup login', async () => {
@@ -505,7 +520,7 @@ describe('osmAuth', () => {
       const pending = new osmAuth(OPTIONS).authenticateAsync();
       const authorizeURL = new URL(await win.lastPopup().location.nextNavigation());
       postFromLandPage(`${REDIRECT}?error=access_denied&state=${authorizeURL.searchParams.get('state')}`);
-      await assert.rejects(pending, { status: 'access_denied' });
+      await assert.rejects(pending, { code: 'access_denied' });
     });
 
     it('passes the login options on', async () => {
@@ -515,7 +530,7 @@ describe('osmAuth', () => {
       const loginURL = new URL(logoutURL.searchParams.get('referer') ?? '', WWW);
       const authorizeURL = new URL(loginURL.searchParams.get('referer') ?? '', WWW);
       postFromLandPage(`${REDIRECT}?error=access_denied&state=${authorizeURL.searchParams.get('state')}`);
-      await assert.rejects(pending, { status: 'access_denied' });
+      await assert.rejects(pending, { code: 'access_denied' });
     });
   });
 
@@ -553,7 +568,7 @@ describe('osmAuth', () => {
     it('fails without localStorage, which PKCE needs across the redirect', async () => {
       Reflect.deleteProperty(globalThis, 'localStorage');
       const { err } = await authenticateP(new osmAuth(SINGLEPAGE));
-      assertStatusError(err, 'pkce-localstorage-unavailable');
+      assertOSMAuthError(err, 'pkce-localstorage-unavailable');
       assert.equal(win.opened.length, 0);
     });
 
@@ -600,7 +615,7 @@ describe('osmAuth', () => {
       const calls: unknown[][] = [];
       new osmAuth(OPTIONS).bootstrapToken('CODE', (...args) => calls.push(args));
       assert.equal(calls.length, 1);
-      assertStatusError(calls[0]?.[0], 'invalid-state');
+      assertOSMAuthError(calls[0]?.[0], 'invalid-state');
       assert.equal(storage.getItem(`${WWW}oauth2_state`), null);
       assert.equal(FakeXHR.requests.length, 0);
     });
