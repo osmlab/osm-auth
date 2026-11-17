@@ -5,7 +5,7 @@ converting it from JavaScript with hand-written types to a TypeScript class with
 (following node-diff3, location-conflation and country-coder), and fixing the bugs found along
 the way.
 
-> **Status:** Planned (Nov 2026). Work happens on the `typescript_conversion` branch, and ships in
+> **Status:** In progress (Nov 2026): steps 1–7 of the [Plan](#plan) are done. Work happens on the `typescript_conversion` branch, and ships in
 > 4.0.0 along with the ESM-only change that's already on `main`. The sections up to
 > [Goals](#goals) describe 3.x, before the conversion.
 
@@ -168,9 +168,9 @@ sketch: settle the details when the fix lands.
 ### Keep the exported type names
 
 `osmAuth`, `LoginOptions`, `OSMAuthOptions`, `OSMAuthFetchOptions` and `OSMAuthXHROptions` keep
-their names. Two are new: `OSMAuthResolvedOptions`, which the `options()` getter returns (the
-options with defaults filled in, so `apiUrl` and `url` aren't optional), and `OSMAuthCallback<T>`,
-the errback type. The global `OSMAuth` namespace from the hand-written `.d.ts` goes away; the IIFE's
+their names. Three are new: `OSMAuthResolvedOptions`, which the `options()` getter returns (the
+options with defaults filled in, so `apiUrl` and `url` aren't optional), `OSMAuthCallback<T>`,
+the errback type, and `OSMAuthRawXHRCallback`, the callback for `rawxhr()`. The global `OSMAuth` namespace from the hand-written `.d.ts` goes away; the IIFE's
 global is declared in `src/index.ts` instead, the same way the sibling projects do it.
 
 ### `client_secret`
