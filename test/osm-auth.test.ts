@@ -365,16 +365,20 @@ describe('osmAuth', () => {
 
     it('sends the user through logout and login first if `switchUser` is set', async () => {
       const auth = new osmAuth(OPTIONS);
-      const { authorizeURL, state } = await startPopupLogin(auth, { switchUser: true });
+      const { pending, authorizeURL: logoutURL } = await startPopupLogin(auth, { switchUser: true });
 
-      assert.equal(authorizeURL.origin + authorizeURL.pathname, `${WWW}/logout`);
-      const loginURL = new URL(authorizeURL.searchParams.get('referer') ?? '', WWW);
+      assert.equal(logoutURL.origin + logoutURL.pathname, `${WWW}/logout`);
+      const loginURL = new URL(logoutURL.searchParams.get('referer') ?? '', WWW);
       assert.equal(loginURL.pathname, '/login');
-      const authorizePath = loginURL.searchParams.get('referer') ?? '';
-      assert.ok(authorizePath.startsWith('/oauth2/authorize?'));
-      assert.ok(authorizePath.includes(`state=${state}`));
+      const authorizeURL = new URL(loginURL.searchParams.get('referer') ?? '', WWW);
+      assert.equal(authorizeURL.origin + authorizeURL.pathname, `${WWW}/oauth2/authorize`);
+      const state = authorizeURL.searchParams.get('state') ?? '';
+      assert.ok(state);
 
-      postFromLandPage(`${REDIRECT}?error=access_denied&state=${state}`);  // so the channel closes
+      // the redirect carries that state back, so the error is reported (not 'invalid-state')
+      postFromLandPage(`${REDIRECT}?error=access_denied&state=${state}`);
+      const { err } = await pending;
+      assertStatusError(err, 'access_denied');
     });
 
     it('exchanges the code for an access token after the redirect', async () => {
@@ -477,6 +481,23 @@ describe('osmAuth', () => {
       (await tokenRequest).respond(200, JSON.stringify({ access_token: 'TOKEN' }));
       assert.equal(await pending, auth);
       assert.equal(auth.getAccessToken(), 'TOKEN');
+    });
+
+    it('rejects with the OAuth error from the redirect', async () => {
+      const pending = new osmAuth(OPTIONS).authenticateAsync();
+      const authorizeURL = new URL(await win.lastPopup().location.nextNavigation());
+      postFromLandPage(`${REDIRECT}?error=access_denied&state=${authorizeURL.searchParams.get('state')}`);
+      await assert.rejects(pending, { status: 'access_denied' });
+    });
+
+    it('passes the login options on', async () => {
+      const pending = new osmAuth(OPTIONS).authenticateAsync({ switchUser: true });
+      const logoutURL = new URL(await win.lastPopup().location.nextNavigation());
+      assert.equal(logoutURL.pathname, '/logout');
+      const loginURL = new URL(logoutURL.searchParams.get('referer') ?? '', WWW);
+      const authorizeURL = new URL(loginURL.searchParams.get('referer') ?? '', WWW);
+      postFromLandPage(`${REDIRECT}?error=access_denied&state=${authorizeURL.searchParams.get('state')}`);
+      await assert.rejects(pending, { status: 'access_denied' });
     });
   });
 
