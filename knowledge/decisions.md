@@ -31,3 +31,9 @@ changed each other's options. Now the constructor and setter copy, and the gette
 Bun has no `localStorage`, `XMLHttpRequest` or `window`. Small stubs in `test/stubs.ts` cover what
 osm-auth uses, and let tests wait on a request or navigation instead of polling. Rejected:
 `node-localstorage` (it was never installed as the global) and happy-dom (more than this needs).
+
+## The `browser` export condition stays
+
+`package.json` lists `browser` → the IIFE after `import` and `require`, so no bundler ever selects
+it. It's kept on purpose, as a pointer to the `<script>` build for people reading `package.json`.
+Don't remove it as dead weight.
