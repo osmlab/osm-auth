@@ -109,6 +109,24 @@ Register a new OAuth2.0 application on openstreetmap.org:
 👉 Important:
 - The "Redirect URIs" are URIs that OSM is allowed to redirect the user back to.  You can supply multiple Redirect URIs separated by spaces, and change them later.
 - Redirect URIs must use `https`, except for `127.0.0.1`, which may use `http`
+- Register the redirect URI for each login mode you use. The popup lands on your `land.html` (e.g. `http://127.0.0.1:8080/land.html`), and single-page mode comes back to the page itself (e.g. `http://127.0.0.1:8080/`). To test both locally, register both.
+
+
+### Testing with the dev server
+
+To test without touching real OpenStreetMap data, use the [dev server](https://master.apis.dev.openstreetmap.org/).
+It's a separate server with its own accounts, so register your application there too, and use the client ID it gives you.
+It serves the website and the API from the same address, so set both `url` and `apiUrl` to it:
+
+```js
+var auth = new osmAuth({
+  url: "https://master.apis.dev.openstreetmap.org",
+  apiUrl: "https://master.apis.dev.openstreetmap.org",
+  client_id: "…",   // from your application on the dev server
+  redirect_uri: window.location.origin + window.location.pathname + "land.html",
+  scope: "read_prefs"
+});
+```
 
 
 ### Example
@@ -265,7 +283,7 @@ Once the popup has loaded openstreetmap.org, browsers cut it off from your page 
 The authorization code is a temporary code that a client can exchange for an access token. If using this library in single-page mode, you'll need to call this once your application has an `auth_code` and wants to get an access_token. (`authenticate()` calls it for you when the page URL has the `code`.)
 <br/>
 Param:  `auth_code`  The OAuth2 `auth_code`<br/>
-Param:  `callback`   An "errback"-style callback (`err`, `result`), called when complete<br/>
+Param:  `callback`   An "errback"-style callback (`err`, `result`), called when complete. `result` is the `osmAuth` instance.<br/>
 Param:  `state`      Optional, the `state` from OSM's redirect. Defaults to the one in the page URL, so pass it if you've already removed it from the URL.<br/>
 Returns:  none<br/>
 
