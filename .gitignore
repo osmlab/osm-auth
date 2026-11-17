@@ -42,3 +42,6 @@ yarn.lock
 # Local working notes
 scratch/
 
+# Debugging browser profile (`bun run start:chrome`)
+.chrome-debug/
+

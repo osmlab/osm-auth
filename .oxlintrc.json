@@ -72,7 +72,8 @@
     {
       "files": ["scripts/**"],
       "globals": {
-        "Bun": "readonly"
+        "Bun": "readonly",
+        "process": "readonly"
       },
       "rules": {
         "no-await-in-loop": "off",

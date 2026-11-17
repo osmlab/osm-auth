@@ -43,14 +43,18 @@
     "build": "bun run --parallel 'build:*'",
     "build:js": "bun ./scripts/build_js.ts",
     "build:ts": "tsc -p tsconfig.build.json",
+    "cdp": "bun ./scripts/cdp.ts",
     "clean": "bun ./scripts/clean.ts",
     "start": "bun ./scripts/server.ts",
+    "start:chrome": "bun ./scripts/chrome.ts",
     "test": "bun test --dots --coverage ./test"
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.18.5",
     "@types/bun": "^1.4.4",
+    "chrome-launcher": "^1.2.3",
     "oxlint": "^1.93.0",
+    "playwright-core": "^1.65.1",
     "publint": "^0.3.25",
     "typescript": "^7.0.2"
   },

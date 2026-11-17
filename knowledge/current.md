@@ -69,9 +69,12 @@ them; 1 and 9 have none yet, so add them first), and adds its line to the 4.0.0 
   uploads (the boundary is lost, in `rawxhr` too) and mislabels JSON. Fix: build a `Headers`,
   `set('Authorization')`, and only default `Content-Type` for string or `URLSearchParams` bodies.
 - **21. `utilStringQs` drops a pair whose value has a raw `=`.** *Low.* Fold into item 7.
-- **22. `bringPopupWindowToFront()` is probably always `false`** once the popup reaches OSM, if
-  OSM's COOP header severs the opener's handle (`closed` reads `true`). *Low.* Needs a browser
-  check before it counts.
+- **22. `bringPopupWindowToFront()` is always `false`** once the popup reaches OSM: OSM's COOP
+  header severs the opener's handle, so `popupWindow.closed` reads `true` while the popup is
+  still open (confirmed in Chrome). *Medium.* So the demo's "bring the popup to the front instead
+  of starting another login" never works, and since `window.open(…, 'oauth_window')` can't find
+  the severed window by name either, a second click opens a second popup (and starts a second
+  pending login, see 10).
 
 ### Library runtime, with docs to fix too
 
@@ -80,7 +83,9 @@ them; 1 and 9 have none yet, so add them first), and adds its line to the 4.0.0 
   (a second instance for another server, another tab, a double click, an `auto` `fetch()` called
   twice), the first to land fails the other, and the other's real landing is then ignored. The
   close-on-any-message fix in this batch turned 3.x's spurious error (then success) into a lost
-  login. An abandoned popup also leaves its listener, which fires `invalid-state` at its old
+  login. Confirmed in Chrome: two clicks open two popups (see 22); authorizing in both gives one
+  `invalid-state` and one success, and the second authorization is silently dropped (the popup
+  closes, no token request). An abandoned popup also leaves its listener, which fires `invalid-state` at its old
   callback when the next login lands. Fix: ignore messages whose `state` isn't ours, and keep one
   pending login per instance that concurrent calls share. **Docs:** the changelog line "A failed
   attempt left a listener behind" overclaims.

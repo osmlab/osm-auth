@@ -39,6 +39,38 @@ This project has reusable agent skills in `.claude/skills/`: one folder per skil
 
 Fetch the raw files with `curl -fsSL` (or `gh api`), so you get the exact text. A web-fetch tool that summarizes pages can drop the details that matter. This project's own conventions win where they differ. If you learn something that would help other projects, say so; `/reflect` can draft it for agent-practices.
 
+## Testing in a Real Browser
+
+The unit tests use stubs for `window`, `XMLHttpRequest` and `localStorage`, so they can't show what
+a real browser does with the login popup, BroadcastChannel, or OSM's pages. **You can run the demo
+in a real Chrome and drive it yourself**, including real logins to openstreetmap.org.
+
+1. Start the server: `bun run build`, then `bun run start` (serves `docs/` and `dist/` on
+   `http://127.0.0.1:8080`, with the demo's CDN URL rewritten to the local build).
+2. Start Chrome with remote debugging: `bun run start:chrome`. It opens the demo, using its own
+   profile in `.chrome-debug/` (gitignored). The developer may already have this running.
+   Both start commands replace a copy of themselves that's already running, so it's fine to start
+   them in the background.
+3. Drive it with `bun run cdp` (run it with no arguments for the commands). It attaches to the
+   running Chrome on port 9222. Commands go to the demo tab, or to the tab whose URL contains the
+   last argument, e.g. `bun run cdp click 'input[value=Authorize]' oauth2/authorize` on OSM's page.
+
+Tips:
+- **Logins use the developer's OSM test account, logged in once in the debug profile by the
+  developer.** Never ask for the password, or put it in a file (`PRIVATE.md` included). If the
+  session has expired, ask the developer to log in again in that window.
+- **Popups need a real click.** `window.open` from `cdp eval` is blocked as it isn't a user gesture.
+  To test a flow, have a snippet add a button that calls your own `osmAuth` instance, then
+  `cdp click` it.
+- **The demo's `auth` isn't a global** (the page script is a module), so make your own instance in a
+  snippet. Instances with the same `url` share the token in `localStorage`.
+- **Query state rather than screenshots**: callback results, `authenticated()`, and
+  `performance.getEntriesByType('resource')` for the `/oauth2/token` requests.
+- **OSM sends `Cross-Origin-Opener-Policy`**, so once the popup reaches OSM the opener's handle reads
+  `closed === true` and can't find the window by name.
+- **Keep snippets and screenshots out of the repo.** Use your scratch area. Log the demo out when
+  you're done.
+
 ## General Guidelines
 
 ### Communication style
