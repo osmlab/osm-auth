@@ -7,4 +7,4 @@ They record the "why" that the code alone doesn't show.
 
 | Doc | Covers | Status |
 |-----|--------|--------|
-| [`osm-auth.md`](osm-auth.md) | The login flows, state and side effects, public API and its users, and the 4.0.0 conversion to a TypeScript class | In progress (Nov 2026): TypeScript conversion and bug fixes for 4.0.0 |
+| [`osm-auth.md`](osm-auth.md) | The login flows, state and side effects, public API and its users, and the 4.0.0 conversion to a TypeScript class | Done (Nov 2026): TypeScript conversion and bug fixes, shipping in 4.0.0 |

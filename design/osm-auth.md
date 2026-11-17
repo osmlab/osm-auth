@@ -5,11 +5,9 @@ converting it from JavaScript with hand-written types to a TypeScript class with
 (following node-diff3, location-conflation and country-coder), and fixing the bugs found along
 the way.
 
-> **Status:** In progress (Nov 2026): steps 1–7 of the [Plan](#plan) are done and merged to `main`.
-> The bug fixes (step 8) are GitHub issues #163–#170, listed in
-> [`knowledge/current.md`](../knowledge/current.md). It all ships in 4.0.0 along with the ESM-only
-> change. The sections up to [Goals](#goals) describe 3.x, before the
-> conversion.
+> **Status:** Done (Nov 2026), and on `main`: every step of the [Plan](#plan), including the bug
+> fixes (#163–#170). It ships in 4.0.0, along with the ESM-only change. The sections up to
+> [Goals](#goals) describe 3.x, before the conversion; the [Decisions](#decisions) describe 4.0.
 
 ## What osm-auth does
 
@@ -75,12 +73,16 @@ a window and a BroadcastChannel.
 
 ### Who uses it
 
-- **iD** calls `osmAuth({...})` without `new`, and uses `import('osm-auth').LoginOptions`. It
-  merges options itself (`oauth.options({ ...oauth.options(), locale })`), and reads the numeric
-  HTTP `status` from errors (429 and 509 for rate limits).
+- **iD** calls `osmAuth({...})` without `new` (its `develop` branch has since switched to `new`),
+  and uses `import('osm-auth').LoginOptions`. It makes its API requests with `oauth.xhr()` (and one
+  `oauth.fetch()`), merges options itself (`oauth.options({ ...oauth.options(), locale })`), and
+  reads the numeric HTTP `status` from errors (401, 409, and 429 and 509 for rate limits). Its
+  uploader shows `err.message || err.responseText`, so the OSM API's error text matters.
 - **Rapid** casts `osmAuth` to a plain function, because the shipped `.d.ts` says it's a class,
-  and declares its own options and instance types. It also merges options itself, and still
-  passes a `client_secret` (see [below](#client_secret)).
+  and declares its own options and instance types. It only uses osm-auth to log in: its own network
+  layer adds the token to requests (`getAccessToken()`). It also merges options itself, and still
+  passes a `client_secret` (see [below](#client_secret)). The changes it needs for 4.0 are in its
+  backlog.
 - Neither passes methods around detached from the instance, and neither checks the string error
   codes (`popup-blocked` and so on).
 - **CDN users** load the IIFE with a `<script>` tag (the README points at
@@ -110,8 +112,7 @@ a window and a BroadcastChannel.
    `src/osm-auth.d.ts`.
 4. **Same layout as the sibling projects.** Bundles in `dist/js/`, declarations in `dist/ts/`,
    `build`, `build:ts` and `check:types` scripts, `tsconfig.build.json`.
-5. **Fix the known bugs** (listed in [`knowledge/current.md`](../knowledge/current.md)), even where
-   that changes behavior.
+5. **Fix the known bugs** (issues #163–#170), even where that changes behavior.
    4.0.0 is the release for it.
 6. **Tests in TypeScript** that cover more than the constructor.
 
@@ -290,5 +291,5 @@ fixes in step 8 are separate commits, so each behavior change can be reviewed on
    replace the "Support" paragraph about ES5 and Internet Explorer, which the code hasn't
    supported for a while. `docs/index.html`: the CDN path. `CHANGELOG.md`: a 4.0.0 entry with
    the breaking changes. `knowledge/`: record the decisions.
-8. **Fixes**, one commit each, on `main` after the conversion merges. The list is in
-   [`knowledge/current.md`](../knowledge/current.md).
+8. **Fixes**, one commit each, on `main` after the conversion merges. Done: the small ones went
+   straight to `main`, and the rest were issues #163–#170, fixed in PRs #171–#178, plus #180.

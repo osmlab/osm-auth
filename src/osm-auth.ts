@@ -329,7 +329,7 @@ export class osmAuth {
    * authenticateAsync
    * Promisified version of `authenticate`
    * @param   options  Other options
-   * @return  Promise settled with whatever `_authenticate` did
+   * @return  Promise settled with whatever `authenticate` did
    */
   authenticateAsync(options?: LoginOptions): Promise<osmAuth> {
     return new Promise((resolve, reject) => {

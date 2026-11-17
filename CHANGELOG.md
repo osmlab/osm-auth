@@ -32,11 +32,10 @@ Most projects only need to make sure they call `new osmAuth(…)`, and update an
   * The constructor and `options(val)` no longer change the object you pass in
   * `options()` returns a copy, so changing it doesn't change the instance. Pass it back with `options(o)`
   * `options()` no longer includes the `access_token` that was passed in ([#164]). It's stored with the other tokens, see `getAccessToken()`. Passing the options back with `options({ ...options(), locale })` used to store that token again, logging the user back in after `logout()` or replacing a newer token
-* A login finishes on the server it started on, even if `url` changes while it's in progress ([#164])
 * ⚠️  Type definitions
   * `client_secret` is no longer in `OSMAuthOptions`. Nothing has read it since PKCE replaced it in v2.2.0
   * The global `OSMAuth` namespace is gone. Import the types from `'osm-auth'` instead
-  * New types: `OSMAuthResolvedOptions` (what `options()` returns), `OSMAuthCallback<T>` and `OSMAuthRawXHRCallback`
+  * New types: `OSMAuthResolvedOptions` (what `options()` returns), `OSMAuthCallback<T>`, `OSMAuthRawXHRCallback`, and the `OSMAuthError` class with its `OSMAuthErrorOptions`
 * ⚠️  Every error is an `OSMAuthError` ([#167])
   * `err.code` says what went wrong, e.g. `'popup-blocked'`, `'invalid-state'` or `'access_denied'`. These codes used to be in `err.status`
   * A request that fails with an HTTP status is an `'http-error'`. `err.status` is still the HTTP status (a number), and the request is in `err.xhr`. The error used to be the `XMLHttpRequest` itself, so read `err.xhr.responseText` instead of `err.responseText`. When the OSM API explains the error in a plain text body (e.g. "The changeset 123 was closed at …"), that's the error's `message`, so `err.message || err.responseText` still shows it
@@ -71,7 +70,8 @@ Most projects only need to make sure they call `new osmAuth(…)`, and update an
   * They no longer add the `Authorization` header to the caller's own options or headers object
   * The default `Content-Type: application/x-www-form-urlencoded` is only added for a string body (or none), so a `FormData` body keeps its multipart boundary, e.g. to upload a GPX trace ([#35])
   * `fetch()` accepts `headers` as a `Headers` or an array of pairs, keeps the headers of a `Request`, and replaces an `authorization` header in any case
-* Development: TypeScript 7, oxlint instead of ESLint, and many more tests
+* A login finishes on the server it started on, even if `url` changes while it's in progress ([#164])
+* Development: TypeScript 7, oxlint instead of ESLint, many more tests, and a debug Chrome for testing the demo in a real browser (`bun run start:chrome`, `bun run cdp`)
 
 [#35]: https://github.com/osmlab/osm-auth/issues/35
 [#148]: https://github.com/osmlab/osm-auth/issues/148

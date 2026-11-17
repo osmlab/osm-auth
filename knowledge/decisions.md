@@ -31,6 +31,41 @@ changed each other's options. Now the constructor and setter copy, and the gette
 Bun has no `localStorage`, `XMLHttpRequest` or `window`. Small stubs in `test/stubs.ts` cover what
 osm-auth uses, and let tests wait on a request or navigation instead of polling. Rejected:
 `node-localstorage` (it was never installed as the global) and happy-dom (more than this needs).
+The stubs follow the browser where osm-auth depends on it: `FakeXHR` goes through readyState 1–4,
+only allows headers between `open` and `send`, and ends an error, timeout or abort with status 0
+before the event. A looser stub let mutations that would break every real request pass.
+
+## Every failure is an `OSMAuthError` (4.0.0)
+
+3.x passed an `Error` with a string `status`, the failed `XMLHttpRequest`, a `ProgressEvent`, or a
+string. Now `err.code` says what went wrong; `err.status` stays the numeric HTTP status (iD checks
+401, 409, 429, 509) and `err.xhr` has the request. An `'http-error'` takes its message from a
+`text/plain` body, which is how the OSM API explains errors, because iD's uploader shows
+`err.message || err.responseText`. A failed token request is a plain `'http-error'` too, rather
+than taking its code from the OAuth error in the body (#167, #180).
+
+## Popup login attempts share one pending login (4.0.0)
+
+OSM's `Cross-Origin-Opener-Policy` hides the popup from the opener (see `quirks.md`), so a second
+click opens a second popup, and every same-origin page hears every `land.html` post. So an
+instance keeps one pending login; each attempt adds its state, and the redirect for any of them
+ends the login for every caller. A redirect with another state is ignored, not reported as
+`invalid-state`. Rejected: a listener per attempt that fails on any other state (3.x; it lost
+logins) (#163).
+
+## `access_token` isn't kept in the options (4.0.0)
+
+The constructor and setter store it and drop it. Kept, it came back out of `options()`, so the
+usual `options({ ...options(), locale })` stored it again after `logout()` or over a newer token.
+A login also keeps the options it started with, so a `url` change mid-login can't send the code to
+another server (#164).
+
+## Real-browser testing with a debug Chrome
+
+As in Rapid: `bun run start:chrome` runs the installed Chrome with its own gitignored profile, and
+`bun run cdp` drives it over CDP with `playwright-core` (no browser download). The developer logs
+in to an OSM test account in that profile by hand, so no password is ever in a file. It's for
+checks the stubs can't make: real popups, COOP, BroadcastChannel, OSM's pages.
 
 ## The `browser` export condition stays
 
