@@ -311,7 +311,7 @@ Return:  `self`<br/>
 ## `.options(options)`
 
 Options  (getter / setter)<br/>
- If passed with no arguments, return a copy of the options, with defaults filled in<br/>
+ If passed with no arguments, return a copy of the options, with defaults filled in (but not `access_token`, see `getAccessToken()`)<br/>
  If passed an Object, replace the options with a copy of it, then attempt to pre-authorize<br/>
 <br/>
 Param:  `val?`   Object containing options<br/>

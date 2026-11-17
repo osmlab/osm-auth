@@ -127,6 +127,38 @@ describe('osmAuth', () => {
       auth.options({ ...OPTIONS, access_token: 'foo' });
       assert.equal(auth.getAccessToken(), 'foo');
     });
+
+    it('doesn\'t keep the access_token in the options', () => {
+      const auth = new osmAuth({ ...OPTIONS, access_token: 'foo' });
+      assert.equal('access_token' in auth.options(), false);
+      auth.options({ ...OPTIONS, access_token: 'bar' });
+      assert.equal('access_token' in auth.options(), false);
+    });
+
+    describe('changing one option with `options({ ...options(), … })`', () => {
+      it('doesn\'t log back in after logout()', () => {
+        const auth = new osmAuth({ ...OPTIONS, access_token: 'OLD' });
+        auth.logout();
+        auth.options({ ...auth.options(), locale: 'de' });
+        assert.equal(auth.authenticated(), false);
+      });
+
+      it('doesn\'t replace a newer token', () => {
+        const auth = new osmAuth({ ...OPTIONS, access_token: 'OLD' });
+        storage.setItem(`${WWW}oauth2_access_token`, 'NEW');   // e.g. after a login
+        auth.options({ ...auth.options(), locale: 'de' });
+        assert.equal(auth.getAccessToken(), 'NEW');
+      });
+
+      it('doesn\'t copy the token to another server', () => {
+        const DEV = 'https://master.apis.dev.openstreetmap.org';
+        const auth = new osmAuth({ ...OPTIONS, access_token: 'PROD' });
+        auth.options({ ...auth.options(), url: DEV, apiUrl: DEV });
+        assert.equal(auth.authenticated(), false);
+        assert.equal(storage.getItem(`${DEV}oauth2_access_token`), null);
+        assert.equal(storage.getItem(`${WWW}oauth2_access_token`), 'PROD');
+      });
+    });
   });
 
 
@@ -573,6 +605,24 @@ describe('osmAuth', () => {
       assert.equal(error.xhr, request);
       assert.equal(auth.authenticated(), false);
       assert.equal(done, 1);
+    });
+
+    it('finishes the login on the server it started on, even if `url` changes meanwhile', async () => {
+      const DEV = 'https://master.apis.dev.openstreetmap.org';
+      const auth = new osmAuth(OPTIONS);
+      const { pending, state } = await startPopupLogin(auth);
+      auth.options({ ...auth.options(), url: DEV, apiUrl: DEV });
+
+      const tokenRequest = FakeXHR.nextRequest();
+      postFromLandPage(`${REDIRECT}?code=CODE&state=${state}`);
+      const request = await tokenRequest;
+      assert.equal(new URL(request.url).origin, WWW);
+      request.respond(200, JSON.stringify({ access_token: 'TOKEN' }));
+
+      const { err } = await pending;
+      assert.equal(err, null);
+      assert.equal(storage.getItem(`${WWW}oauth2_access_token`), 'TOKEN');
+      assert.equal(storage.getItem(`${DEV}oauth2_access_token`), null);
     });
 
     it('fails if the token response has no access_token', async () => {
