@@ -58,6 +58,7 @@ export class FakePopup {
   }
 
   focus(): void { this.focusCount++; }
+  close(): void { this.closed = true; }
 }
 
 
@@ -84,7 +85,12 @@ export class FakeWindow {
 }
 
 
-/** An `XMLHttpRequest` that records what was sent, and lets a test answer it */
+/**
+ * An `XMLHttpRequest` that records what was sent, and lets a test answer it.
+ * Like a real one, it goes through readyState 1–4 (firing `onreadystatechange` each time),
+ * only allows `setRequestHeader` between `open` and `send`, and ends an error, timeout or abort
+ * with readyState 4 and status 0 before the event for it.
+ */
 export class FakeXHR {
   static requests: FakeXHR[] = [];
   private static _waiters: Array<(xhr: FakeXHR) => void> = [];
@@ -98,8 +104,12 @@ export class FakeXHR {
   status = 0;
   response: string = '';
   responseXML: unknown = null;
+  timeout = 0;
   onreadystatechange: (() => void) | null = null;
   onerror: ((e: Event) => void) | null = null;
+  ontimeout: ((e: Event) => void) | null = null;
+  onabort: ((e: Event) => void) | null = null;
+  private _sent = false;
 
   /** Forgets all requests */
   static reset(): void {
@@ -123,36 +133,61 @@ export class FakeXHR {
     this.method = method;
     this.url = url;
     this.async = async;
+    this._setReadyState(1);
   }
 
   setRequestHeader(k: string, v: string): void {
+    if (this.readyState !== 1 || this._sent) {
+      throw new DOMException('setRequestHeader() must be called after open() and before send()', 'InvalidStateError');
+    }
     this.headers[k] = v;
   }
 
   send(body: unknown): void {
     this.body = body;
+    this._sent = true;
     FakeXHR.requests.push(this);
     const waiters = FakeXHR._waiters;
     FakeXHR._waiters = [];
     for (const resolve of waiters) resolve(this);
   }
 
+  /** Aborts the request, as the caller can on a real one */
+  abort(): void {
+    this._end('abort', this.onabort);
+  }
+
   /** Completes the request with an HTTP response */
   respond(status: number, response: string, responseXML: unknown = null): void {
-    this.readyState = 4;
     this.status = status;
+    this._setReadyState(2);   // headers received
+    this._setReadyState(3);   // loading
     this.response = response;
     this.responseXML = responseXML;
-    this.onreadystatechange?.();
+    this._setReadyState(4);
   }
 
   /** Fails the request as a network error, and returns the error event */
   fail(): Event {
-    const e = new Event('error');
-    this.readyState = 4;
-    this.status = 0;
+    return this._end('error', this.onerror);
+  }
+
+  /** Fails the request as a timeout, and returns the timeout event */
+  timeOut(): Event {
+    return this._end('timeout', this.ontimeout);
+  }
+
+  private _setReadyState(state: number): void {
+    this.readyState = state;
     this.onreadystatechange?.();
-    this.onerror?.(e);
+  }
+
+  /** Ends the request without a response, like a real one: readyState 4 and status 0, then the event */
+  private _end(type: string, handler: ((e: Event) => void) | null): Event {
+    const e = new Event(type);
+    this.status = 0;
+    this._setReadyState(4);
+    handler?.(e);
     return e;
   }
 }

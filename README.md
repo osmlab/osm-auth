@@ -91,7 +91,7 @@ then close itself.**
 ### Support
 
 **osm-auth** is for modern browsers. It uses `BroadcastChannel` to hear back from the login popup, and the [Web Crypto API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Crypto_API) for PKCE, which only works in a [secure context](https://developer.mozilla.org/en-US/docs/Web/Security/Secure_Contexts) (`https`, or `http://127.0.0.1`).
-It stores the access token in `localStorage` when it can. Without `localStorage`, the token lasts only as long as the page, and single-page mode doesn't work.
+It stores the access token in `localStorage` when it can. Without `localStorage` (or if writing to it fails, e.g. when it's full), the token lasts only as long as the page, and single-page mode doesn't work.
 
 
 ## Registering an application
@@ -227,6 +227,7 @@ Returns: The access token, or '' if user is not authenticated.<br/>
 If the user is already authenticated, calls the callback right away.
 Otherwise clears any stored tokens, runs the authentication flow, and then calls the callback.<br/>
 In popup mode, calling it again while a login is in progress (e.g. a double click) opens another popup. The login ends when the user finishes in any of them, and then every callback is called.<br/>
+If the user closes the popup without finishing, the callback isn't called then, because the browser doesn't let the page know. It's called when a later attempt ends.<br/>
 <br/>
 Param:   `callback`  An "errback"-style callback (`err`, `result`), called when complete. `result` is the `osmAuth` instance.<br/>
 Param:   `options`  Optional, an object which can contain `switchUser`. If `switchUser` is `true`, then the user will first be prompted to logout, then login, then go to the oauth flow.<br/>
@@ -333,7 +334,9 @@ Its `code` says what went wrong:
  - `'pkce-localstorage-unavailable'` - single-page mode needs `localStorage`, and there isn't one
  - `'http-error'` - a request got a response that isn't 20x. `status` is the HTTP status, and `xhr` is the request
  - `'network-error'` - a request failed without a response. `xhr` is the request, and `cause` is the error event
+ - `'timeout'` - a request took longer than the `timeout` you set on it. `xhr` is the request (a request you `abort()` doesn't call back)
  - `'invalid-token-response'` - the token request succeeded, but its response has no access token. `xhr` is the request
+ - `'crypto-unavailable'` - PKCE needs the [Web Crypto API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Crypto_API), which browsers only offer in a secure context
  - an OAuth error code from OSM's redirect, e.g. `'access_denied'` if the user denied access
 
 ```js

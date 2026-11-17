@@ -82,7 +82,7 @@ export type OSMAuthCallback<T> = (err: OSMAuthError | null, result?: T) => void;
 export interface OSMAuthErrorOptions {
   /** The HTTP status, for an `'http-error'` */
   status?: number;
-  /** The failed request, for an `'http-error'`, `'network-error'` or `'invalid-token-response'` */
+  /** The failed request, for an `'http-error'`, `'network-error'`, `'timeout'` or `'invalid-token-response'` */
   xhr?: XMLHttpRequest;
   /** What caused the error, e.g. the `ProgressEvent` of a network error */
   cause?: unknown;
@@ -98,7 +98,9 @@ export interface OSMAuthErrorOptions {
  *  - `'pkce-localstorage-unavailable'`: single-page mode needs `localStorage`, and there isn't one
  *  - `'http-error'`: a request got a response that isn't 20x (see `status` and `xhr`)
  *  - `'network-error'`: a request failed without a response (see `xhr`)
+ *  - `'timeout'`: a request took longer than the `timeout` set on it (see `xhr`)
  *  - `'invalid-token-response'`: the token request succeeded, but its response has no access token (see `xhr`)
+ *  - `'crypto-unavailable'`: PKCE needs Web Crypto, which browsers only offer in a secure context
  *  - an OAuth error code from OSM's redirect, e.g. `'access_denied'`
  */
 export class OSMAuthError extends Error {
@@ -106,7 +108,7 @@ export class OSMAuthError extends Error {
   code: string;
   /** The HTTP status, for an `'http-error'` */
   status?: number;
-  /** The failed request, for an `'http-error'`, `'network-error'` or `'invalid-token-response'` */
+  /** The failed request, for an `'http-error'`, `'network-error'`, `'timeout'` or `'invalid-token-response'` */
   xhr?: XMLHttpRequest;
 
   /**
@@ -188,12 +190,7 @@ export class osmAuth {
       this._storeIsMocked = false;
 
     } catch (e) {
-      const _mock = new Map<string, string>();
-      this._store = {
-        getItem: (k) => _mock.get(k) ?? null,
-        setItem: (k, v) => { _mock.set(k, v); },
-        removeItem: (k) => { _mock.delete(k); }
-      };
+      this._store = memoryStore();
       this._storeIsMocked = true;
     }
 
@@ -226,10 +223,21 @@ export class osmAuth {
    */
   private _setToken(k: string, v: string | undefined, url: string = this._options.url): void {
     const key = url + k;
-    if (v) {
-      this._store.setItem(key, v);
-    } else {
-      this._store.removeItem(key);
+    const write = (): void => {
+      if (v) {
+        this._store.setItem(key, v);
+      } else {
+        this._store.removeItem(key);
+      }
+    };
+    try {
+      write();
+    } catch (e) {
+      // localStorage can throw, e.g. when it's full. Keep the tokens in memory from now on,
+      // so the user can still log in, for as long as the page lasts.
+      this._store = memoryStore();
+      this._storeIsMocked = true;
+      write();
     }
   }
 
@@ -277,6 +285,8 @@ export class osmAuth {
    * tokens, runs the authentication flow, and then calls the callback.
    * In popup mode, calling it again while a login is in progress opens another popup, and the
    * login ends when the user finishes in any of them: then every callback is called.
+   * If the user closes the popup without finishing, the callback isn't called until a later
+   * attempt ends, because the page can't tell (see `bringPopupWindowToFront`).
    * TODO: detect lack of click event  (probably can settimeout it)
    *
    * @param   callback  Errback-style callback `(err, result)`, called when complete
@@ -288,14 +298,26 @@ export class osmAuth {
       return;
     }
 
+    // PKCE needs Web Crypto, which browsers only offer in a secure context.
+    // Check before opening the popup, so a failure doesn't leave a blank one behind.
+    if (!globalThis.crypto?.subtle) {
+      callback(new OSMAuthError('Web Crypto is unavailable. It needs a secure context: https, or http://127.0.0.1', 'crypto-unavailable'));
+      return;
+    }
+
     this.logout();
 
     this._preopenPopup((error, popup) => {
       if (error) {
         callback(error);
       } else {
-        _generatePkceChallenge((pkce) => {
-          this._authenticate(pkce, options, popup, callback);
+        _generatePkceChallenge((err, pkce) => {
+          if (err || !pkce) {
+            popup?.close();
+            callback(new OSMAuthError('Could not make the PKCE challenge', 'crypto-unavailable', { cause: err }));
+          } else {
+            this._authenticate(pkce, options, popup, callback);
+          }
         });
       }
     });
@@ -397,6 +419,11 @@ export class osmAuth {
         // in the `/oauth/token` request
         this._setToken('oauth2_state', state);
         this._setToken('oauth2_pkce_code_verifier', pkce.code_verifier);
+        if (this._storeIsMocked) {
+          // saving them failed (see `_setToken`), so they wouldn't survive the redirect
+          callback(new OSMAuthError('localStorage unavailable, but required in singlepage mode', 'pkce-localstorage-unavailable'));
+          return;
+        }
         window.location.href = url;
       }
     } else if (popup) {
@@ -668,6 +695,7 @@ export class osmAuth {
    * @param    data           Passed to `xhr.send`
    * @param    headers        `Object` containing request headers
    * @param    callback       An "errback"-style callback (`err`, `result`), called when complete
+   *                          (but not if the caller aborts the request)
    * @return  `XMLHttpRequest`
    */
   rawxhr(
@@ -708,6 +736,10 @@ export class osmAuth {
     xhr.onerror = function (e) {
       callback(new OSMAuthError('Request failed with a network error', 'network-error', { xhr: xhr, cause: e }), null);
     };
+    xhr.ontimeout = function (e) {
+      callback(new OSMAuthError('Request timed out', 'timeout', { xhr: xhr, cause: e }), null);
+    };
+    // A request that the caller aborts (`xhr.abort()`) doesn't call back.
 
     xhr.open(method, url, true);
     for (const [h, v] of Object.entries(requestHeaders)) xhr.setRequestHeader(h, v);
@@ -780,6 +812,22 @@ function resolveOptions(val: OSMAuthOptions): OSMAuthResolvedOptions {
 
 
 /**
+ * memoryStore
+ * A token store kept in memory, for when `localStorage` is missing or doesn't work.
+ * Its tokens last only as long as the page.
+ * @returns A new, empty store
+ */
+function memoryStore(): TokenStore {
+  const map = new Map<string, string>();
+  return {
+    getItem: (k) => map.get(k) ?? null,
+    setItem: (k, v) => { map.set(k, v); },
+    removeItem: (k) => { map.delete(k); }
+  };
+}
+
+
+/**
  * isStringOrEmpty
  * Whether a request body is a string, or there isn't one. Only these get the default
  * `Content-Type: application/x-www-form-urlencoded`; for other bodies (`FormData`, `Blob`,
@@ -799,7 +847,12 @@ function isStringOrEmpty(body: unknown): boolean {
  * @returns The access token, or '' if the response doesn't have one
  */
 function parseAccessToken(xhr: XMLHttpRequest): string {
-  const body: unknown = JSON.parse(xhr.response);
+  let body: unknown;
+  try {
+    body = JSON.parse(xhr.response);
+  } catch (e) {
+    return '';   // not JSON, e.g. an HTML page from a captive portal or proxy
+  }
   if (typeof body === 'object' && body !== null && 'access_token' in body && typeof body.access_token === 'string') {
     return body.access_token;
   }
@@ -809,9 +862,9 @@ function parseAccessToken(xhr: XMLHttpRequest): string {
 
 /**
  * Generates a challenge/verifier pair for PKCE.
- * @param callback called with the result of the generated PKCE challenge
+ * @param callback called with `(err, pkce)`: the generated PKCE challenge, or why it failed
  */
-function _generatePkceChallenge(callback: (pkce: PkceChallenge) => void): void {
+function _generatePkceChallenge(callback: (err: unknown, pkce?: PkceChallenge) => void): void {
   // generate a random code_verifier
   // https://datatracker.ietf.org/doc/html/rfc7636#section-7.1
   const random = globalThis.crypto.getRandomValues(new Uint8Array(32));
@@ -824,11 +877,13 @@ function _generatePkceChallenge(callback: (pkce: PkceChallenge) => void): void {
   globalThis.crypto.subtle.digest('SHA-256', verifier).then(function(hash) {
     const code_challenge = base64(new Uint8Array(hash));
 
-    callback({
+    callback(null, {
       code_challenge: code_challenge,
       code_verifier: code_verifier,
       code_challenge_method: 'S256'
     });
+  }, function(err: unknown) {
+    callback(err);
   });
 }
 
