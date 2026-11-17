@@ -298,7 +298,7 @@ export class osmAuth {
     // and receive authorization code
     const path =
       '/oauth2/authorize?' +
-      utilQsString({
+      new URLSearchParams({
         client_id: o.client_id,
         redirect_uri: o.redirect_uri,
         response_type: 'code',
@@ -307,7 +307,7 @@ export class osmAuth {
         code_challenge: pkce.code_challenge,
         code_challenge_method: pkce.code_challenge_method,
         locale: o.locale || '',
-      });
+      }).toString();
 
     const url = options?.switchUser
       ? `${o.url}/logout?referer=${encodeURIComponent(`/login?referer=${encodeURIComponent(path)}`)}`
@@ -319,8 +319,7 @@ export class osmAuth {
         callback(makeError('localStorage unavailable, but required in singlepage mode', 'pkce-localstorage-unavailable'));
         return;
       }
-      const params = utilStringQs(window.location.search.slice(1));
-      const code = params['code'];
+      const code = new URLSearchParams(window.location.search).get('code');
       if (code) {
         this.bootstrapToken(code, callback);
       } else {
@@ -341,17 +340,16 @@ export class osmAuth {
     bc.addEventListener('message', (event: MessageEvent<unknown>) => {
       bc.close();
       const url = typeof event.data === 'string' ? event.data : '';
-      const params = utilStringQs(url.split('?')[1] ?? '');
-      const error = params['error'];
-      if (params['state'] !== state) {
+      const params = new URLSearchParams(url.split('?')[1] ?? '');
+      const error = params.get('error');
+      if (params.get('state') !== state) {
         callback(makeError('Invalid state', 'invalid-state'));
         return;
-      } else if (error !== undefined) {
-        const description = params['error_description'];
-        callback(makeError(description ? description.replace(/\+/g, ' ') : error, error));
+      } else if (error !== null) {
+        callback(makeError(params.get('error_description') || error, error));
         return;
       }
-      this._requestAccessToken(params['code'], pkce.code_verifier, this._accessTokenDone(callback));
+      this._requestAccessToken(params.get('code'), pkce.code_verifier, this._accessTokenDone(callback));
     });
   }
 
@@ -385,18 +383,18 @@ export class osmAuth {
    * @param  code_verifier
    * @param  accessTokenDone  Errback-style callback `(err, result)`, called when complete
    */
-  private _requestAccessToken(auth_code: string | undefined, code_verifier: string, accessTokenDone: OSMAuthRawXHRCallback): void {
+  private _requestAccessToken(auth_code: string | null, code_verifier: string, accessTokenDone: OSMAuthRawXHRCallback): void {
     const o = this._options;
-    const url =
-      o.url +
-      '/oauth2/token?' +
-      utilQsString({
-        client_id: o.client_id,
-        redirect_uri: o.redirect_uri,
-        grant_type: 'authorization_code',
-        code: auth_code,
-        code_verifier: code_verifier
-      });
+    const params = new URLSearchParams({
+      client_id: o.client_id,
+      redirect_uri: o.redirect_uri,
+      grant_type: 'authorization_code'
+    });
+    if (auth_code !== null) {
+      params.set('code', auth_code);
+    }
+    params.set('code_verifier', code_verifier);
+    const url = o.url + '/oauth2/token?' + params.toString();
 
     // The authorization server authenticates the client and validates
     // the authorization grant, and if valid, issues an access token.
@@ -439,8 +437,7 @@ export class osmAuth {
   bootstrapToken(auth_code: string, callback: OSMAuthCallback<osmAuth>): void {
     const state = this._getToken('oauth2_state');
     this._setToken('oauth2_state', '');
-    const params = utilStringQs(window.location.search.slice(1));
-    if (params['state'] !== state) {
+    if (new URLSearchParams(window.location.search).get('state') !== state) {
       callback(makeError('Invalid state', 'invalid-state'));
       return;
     }
@@ -659,46 +656,6 @@ function parseAccessToken(xhr: XMLHttpRequest): string {
     return body.access_token;
   }
   return '';
-}
-
-
-/**
- * utilQsString
- * Transforms object of `key=value` pairs into query string
- * @param   obj  Object of `key=value` pairs
- * @returns query string
- */
-function utilQsString(obj: Record<string, string | undefined>): string {
-  return Object.keys(obj)
-    .filter(function(key) {
-      return obj[key] !== undefined;
-    })
-    .sort()
-    .map(function(key) {
-      return (encodeURIComponent(key) + '=' + encodeURIComponent(obj[key] as string));
-    })
-    .join('&');
-}
-
-/**
- * utilStringQs
- * Transforms query string into object of `key=value` pairs
- * @param   str  query string
- * @returns Object of `key=value` pairs
- */
-function utilStringQs(str: string): Record<string, string> {
-  let i = 0; // advance past any leading '?' or '#' characters
-  while (i < str.length && (str[i] === '?' || str[i] === '#')) i++;
-  str = str.slice(i);
-
-  return str.split('&').reduce(function(obj: Record<string, string>, pair) {
-    const parts = pair.split('=');
-    if (parts.length === 2) {
-      const [key, value] = parts as [string, string];
-      obj[key] = decodeURIComponent(value);
-    }
-    return obj;
-  }, {});
 }
 
 

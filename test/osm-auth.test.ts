@@ -414,6 +414,16 @@ describe('osmAuth', () => {
       assert.equal(done, 1);
     });
 
+    it('decodes the code from the redirect, even with a raw `=` in it', async () => {
+      const { pending, state } = await startPopupLogin(new osmAuth(OPTIONS));
+      const tokenRequest = FakeXHR.nextRequest();
+      postFromLandPage(`${REDIRECT}?code=AB%2BC=&state=${state}`);
+      const request = await tokenRequest;
+      assert.equal(new URL(request.url).searchParams.get('code'), 'AB+C=');
+      request.respond(200, JSON.stringify({ access_token: 'TOKEN' }));
+      await pending;
+    });
+
     it('fails if the state doesn\'t match', async () => {
       const { pending } = await startPopupLogin(new osmAuth(OPTIONS));
       postFromLandPage(`${REDIRECT}?code=CODE&state=WRONG`);
@@ -427,6 +437,14 @@ describe('osmAuth', () => {
       postFromLandPage(`${REDIRECT}?error=access_denied&error_description=The+resource+owner+denied+the+request.&state=${state}`);
       const { err } = await pending;
       assertStatusError(err, 'access_denied', 'The resource owner denied the request.');
+    });
+
+    it('reports an OAuth error whose description has a malformed `%` escape', async () => {
+      const { pending, state } = await startPopupLogin(new osmAuth(OPTIONS));
+      postFromLandPage(`${REDIRECT}?error=access_denied&error_description=100%25+sure%E0%A4%A&state=${state}`);
+      const { err } = await pending;
+      assertStatusError(err, 'access_denied');
+      assert.ok(err instanceof Error && err.message.startsWith('100% sure'));
     });
 
     it('uses the OAuth error code as the message if there is no description', async () => {
