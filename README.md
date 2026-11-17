@@ -226,6 +226,7 @@ Returns: The access token, or '' if user is not authenticated.<br/>
 
 If the user is already authenticated, calls the callback right away.
 Otherwise clears any stored tokens, runs the authentication flow, and then calls the callback.<br/>
+In popup mode, calling it again while a login is in progress (e.g. a double click) opens another popup. The login ends when the user finishes in any of them, and then every callback is called.<br/>
 <br/>
 Param:   `callback`  An "errback"-style callback (`err`, `result`), called when complete. `result` is the `osmAuth` instance.<br/>
 Param:   `options`  Optional, an object which can contain `switchUser`. If `switchUser` is `true`, then the user will first be prompted to logout, then login, then go to the oauth flow.<br/>
@@ -246,6 +247,8 @@ Returns:  `Promise` settled with whatever authenticate did.<br/>
 Tries to bring an existing authentication popup to the front.<br/>
 <br/>
 Returns: `true` on success or `false` if there is no authentication popup or if it couldn't be brought to the front (e.g. because of cross-origin restrictions).<br/>
+<br/>
+Once the popup has loaded openstreetmap.org, browsers cut it off from your page (OSM sends a `Cross-Origin-Opener-Policy` header), so this returns `false`. It's fine to call `authenticate()` again then: it opens another popup, and either one finishes the login.<br/>
 
 
 ## `.bootstrapToken(auth_code, callback)`

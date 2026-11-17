@@ -179,6 +179,24 @@ A failed token request is an `'http-error'` too, rather than taking its code fro
 in the response body: one code per kind of failure is simpler to check, and `xhr` has the body.
 (Done in [#167](https://github.com/osmlab/osm-auth/issues/167).)
 
+### Popup login attempts share one pending login
+
+Every same-origin page hears every `land.html` post on the BroadcastChannel, so a redirect may
+belong to another login: another instance (e.g. for the dev server), another tab, or another
+attempt on this instance. And OSM's `Cross-Origin-Opener-Policy: same-origin` cuts the popup off
+from the opener once it loads openstreetmap.org: `popupWindow.closed` reads `true`, focusing it
+does nothing, and `window.open(…, 'oauth_window')` can't find it by name. So the library can't tell
+an abandoned popup from one that's still open, and a second click opens a second popup.
+
+So an instance keeps one pending login, with one channel, and each attempt (each popup) adds its
+`state`, PKCE verifier and options to it. The redirect for any of those states ends the login, for
+every caller; redirects for other states are ignored, rather than failing anyone with
+`invalid-state`. That makes a double click, two `fetch()` calls with `auto`, and a retry after
+closing the popup all just work, whichever popup the user finishes in. `bringPopupWindowToFront()`
+stays, but can only help before the popup reaches OSM. Rejected: one listener per attempt that
+fails on any other state (3.x, and lost logins), and reusing the first popup (not possible under
+COOP). ([#163](https://github.com/osmlab/osm-auth/issues/163))
+
 ### Keep the exported type names
 
 `osmAuth`, `LoginOptions`, `OSMAuthOptions`, `OSMAuthFetchOptions` and `OSMAuthXHROptions` keep
