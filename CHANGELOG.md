@@ -15,6 +15,41 @@ _Breaking changes, which may affect downstream projects, are marked with a_ ⚠�
 [#xxx]: https://github.com/osmlab/osm-auth/issues/xxx
 -->
 
+## 4.0.0
+##### Unreleased
+osm-auth is written in TypeScript now, and its type definitions are generated from the source.
+Most projects only need to make sure they call `new osmAuth(…)`, and update any `dist/` paths.
+
+* ⚠️  ESM only: the CommonJS bundle `dist/osm-auth.cjs` is gone
+  * `require('osm-auth')` still works in Node 20.19+ and 22.12+, which can `require()` an ES module
+* ⚠️  The bundles moved to `dist/js/`, and the type definitions to `dist/ts/`
+  * If you load osm-auth from a CDN, change `dist/osm-auth.iife.min.js` to `dist/js/osm-auth.iife.min.js`
+  * We suggest pinning the major version too, e.g. `https://cdn.jsdelivr.net/npm/osm-auth@4/dist/js/osm-auth.iife.min.js`
+* ⚠️  `osmAuth` is a class now, so `new` is required ([#148])
+  * Calling `osmAuth({…})` without `new` throws a `TypeError`
+  * Methods use `this`, so a method taken off the instance (e.g. `const { xhr } = auth`) needs `.bind(auth)`
+* ⚠️  Options are copied in and out
+  * The constructor and `options(val)` no longer change the object you pass in
+  * `options()` returns a copy, so changing it doesn't change the instance. Pass it back with `options(o)`
+* ⚠️  Type definitions
+  * `client_secret` is no longer in `OSMAuthOptions`. Nothing has read it since PKCE replaced it in v2.2.0
+  * The global `OSMAuth` namespace is gone. Import the types from `'osm-auth'` instead
+  * New types: `OSMAuthResolvedOptions` (what `options()` returns), `OSMAuthCallback<T>` and `OSMAuthRawXHRCallback`
+* Refine the type definitions ([#153], thanks [@k-yle])
+* Fix `localStorage` detection when it's `undefined` ([#151], [#152], thanks [@tyrasd])
+* Fix two bugs in the popup login:
+  * An `error` redirect without an `error_description` threw a `TypeError`, instead of reporting the error
+  * A failed attempt left a listener behind that later reported "Invalid state"
+* Development: TypeScript 7, oxlint instead of ESLint, and many more tests
+
+[#148]: https://github.com/osmlab/osm-auth/issues/148
+[#151]: https://github.com/osmlab/osm-auth/issues/151
+[#152]: https://github.com/osmlab/osm-auth/issues/152
+[#153]: https://github.com/osmlab/osm-auth/issues/153
+[@k-yle]: https://github.com/k-yle
+[@tyrasd]: https://github.com/tyrasd
+
+
 ## 3.2.0
 ##### 2026-Apr-02
 * Allow caller to get the access token via `getAccessToken()` ([#149])

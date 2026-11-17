@@ -201,7 +201,8 @@ export class osmAuth {
 
   /**
    * authenticate
-   * First logs out, then runs the authentiation flow, finally calls the callback.
+   * If already authenticated, calls the callback right away. Otherwise clears any stored
+   * tokens, runs the authentication flow, and then calls the callback.
    * TODO: detect lack of click event  (probably can settimeout it)
    *
    * @param   callback  Errback-style callback `(err, result)`, called when complete

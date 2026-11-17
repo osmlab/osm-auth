@@ -10,7 +10,10 @@ See also: https://wiki.openstreetmap.org/wiki/OAuth
 > Due to [security changes on 8 July 2025](https://github.com/openstreetmap/openstreetmap-website/commit/2ff4d6), authentication using the `popup` mode will not work until you:
 >
 > 1. update this library to >= v3.0.0
-> 2. AND update the code snippet in your `land.html` file to the latest version (see [this example](https://github.com/osmlab/osm-auth/tree/master/land.html))
+> 2. AND update the code snippet in your `land.html` file to the latest version (see [this example](https://github.com/osmlab/osm-auth/blob/main/docs/land.html))
+
+> [!NOTE]
+> Upgrading to v4? `osmAuth` must be called with `new`, and the bundles moved to `dist/js/`. See the [CHANGELOG](CHANGELOG.md) for the details.
 
 
 Note that openstreetmap.org currently only supports OAuth2.0. [OAuth1.0 is turned off](https://github.com/openstreetmap/operations/issues/867). If you want the older version of this library that supports **OAuth 1.0a** (e.g. for a sister project that uses an older OSM-stack), use [the v1 branch](https://github.com/osmlab/osm-auth/tree/v1) and pin your software to older [release versions <2](https://github.com/osmlab/osm-auth/releases).  Going forward, the v1 branch will receive limited attention.
@@ -48,17 +51,22 @@ CommonJS projects can still `require()` it on Node 20.19+ or 22.12+.
 import { osmAuth } from 'osm-auth';   // ESM named import
 // or
 const { osmAuth } = require('osm-auth');   // CJS, requires Node 20.19+ or 22.12+
+
+const auth = new osmAuth({ … });
 ```
+
+**osm-auth** is written in TypeScript, and includes its type definitions.
 
 
 ### Use in Browsers
 
 You can also use **osm-auth** directly in a web browser.  A good way to do this is to fetch the ["iife"](https://esbuild.github.io/api/#format-iife) bundle from the [jsDelivr CDN](https://www.jsdelivr.com/), which can even deliver minified versions.
 
-When you load this file in a `<script>` tag, you'll get a `osmAuth` global to use elsewhere in your scripts:
+When you load this file in a `<script>` tag, you'll get a `osmAuth` global to use elsewhere in your scripts.
+Pin the major version in the URL (here `@4`), so a future breaking release doesn't break your page:
 ```html
 <head>
-<script src="https://cdn.jsdelivr.net/npm/osm-auth@latest/dist/osm-auth.iife.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/osm-auth@4/dist/js/osm-auth.iife.min.js"></script>
 </head>
 …
 <script>
@@ -82,9 +90,8 @@ calls an auth complete function - to be available.**
 
 ### Support
 
-This project is tested in supported node versions and modern browsers.
-We attempt to use JavaScript syntax that will work in legacy environments like ES5 or Internet Explorer, but offer no guarantee that it will work.
-If you're targeting an environment like this, you're probably already building your own bundle with something like [Babel](https://babeljs.io/docs/en/index.html).
+**osm-auth** is for modern browsers. It uses `BroadcastChannel` to hear back from the login popup, and the [Web Crypto API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Crypto_API) for PKCE, which only works in a [secure context](https://developer.mozilla.org/en-US/docs/Web/Security/Secure_Contexts) (`https`, or `http://127.0.0.1`).
+It stores the access token in `localStorage` when it can. Without `localStorage`, the token lasts only as long as the page, and single-page mode doesn't work.
 
 
 ## Registering an application
@@ -108,7 +115,7 @@ Register a new OAuth2.0 application on openstreetmap.org:
 
 ```js
 var redirectPath = window.location.origin + window.location.pathname;
-var auth = new osmAuth.osmAuth({
+var auth = new osmAuth({
   client_id: "JWXSAzNp64sIRMStTnkhMRaMxSR964V4sFgn3KUZNTA",
   redirect_uri: redirectPath + "land.html",
   scope: "read_prefs",
@@ -130,12 +137,12 @@ document.getElementById("authenticate").onclick = function () {
 ### Example with single-page
 ```js
 var redirectPath = window.location.origin + window.location.pathname;
-var auth = new osmAuth.osmAuth({
+var auth = new osmAuth({
   client_id: "JWXSAzNp64sIRMStTnkhMRaMxSR964V4sFgn3KUZNTA",
   redirect_uri: redirectPath,
   scope: "read_prefs", // scopes should be separated by a space, e.g. "read_prefs write_prefs". See https://wiki.openstreetmap.org/wiki/OAuth#OAuth_2.0 for all scopes
-  auto: true  // show a login form if the user is not authenticated and you try to do a call
-  singlepage: true,
+  auto: true,  // show a login form if the user is not authenticated and you try to do a call
+  singlepage: true
 });
 
 document.getElementById("authenticate").onclick = function () {
@@ -166,9 +173,9 @@ See the [CONTRIBUTING.md](CONTRIBUTING.md) file for more info.
 
 # API
 
-## `.osmAuth(options)`
+## `new osmAuth(options)`
 
-Constructs an `osmAuth` instance.<br/>
+Constructs an `osmAuth` instance. `new` is required.<br/>
 At a minimum, `options` must contain OAuth2 client ID, redirect URI, and scope(s):
 
 ```js
@@ -189,6 +196,9 @@ Additional options are:
  - `singlepage` - If `true`, use page redirection instead of a popup (default: `false`)
  - `loading` - Function called when auth-related xhr calls start
  - `done` - Function called when auth-related xhr calls end
+ - `locale` - The locale to use on the OpenStreetMap login page (e.g. "de")
+
+The options are copied, so changing the object you passed in later doesn't change the instance. Use `.options()` to read or change them.
 
 
 ## `.logout()`
@@ -214,9 +224,10 @@ Returns: The access token, or '' if user is not authenticated.<br/>
 
 ## `.authenticate(callback, options?)`
 
-First logs out, then runs the authentiation flow, finally calls the callback.<br/>
+If the user is already authenticated, calls the callback right away.
+Otherwise clears any stored tokens, runs the authentication flow, and then calls the callback.<br/>
 <br/>
-Param:   `callback`  An "errback"-style callback (`err`, `result`), called when complete<br/>
+Param:   `callback`  An "errback"-style callback (`err`, `result`), called when complete. `result` is the `osmAuth` instance.<br/>
 Param:   `options`  Optional, an object which can contain `switchUser`. If `switchUser` is `true`, then the user will first be prompted to logout, then login, then go to the oauth flow.<br/>
 Returns:  none<br/>
 
@@ -224,9 +235,8 @@ Returns:  none<br/>
 ## `.authenticateAsync(options?)`
 
 Promisified version of `.authenticate()`<br/>
-First logs out, then runs the authentication flow and resolves if successful, or rejects if not.<br/>
+Resolves with the `osmAuth` instance if authentication succeeds, or rejects if not.<br/>
 <br/>
-Param:   `callback`  An "errback"-style callback (`err`, `result`), called when complete<br/>
 Param:   `options`  Optional, an object which can contain `switchUser`. If `switchUser` is `true`, then the user will first be prompted to logout, then login, then go to the oauth flow.<br/>
 Returns:  `Promise` settled with whatever authenticate did.<br/>
 
@@ -252,8 +262,10 @@ Returns:  none<br/>
 A `fetch` wrapper that includes the Authorization header if the user is authenticated.<br/>
 See: https://developer.mozilla.org/en-US/docs/Web/API/fetch<br/>
 <br/>
-Param: `resource`  Resource passed to `fetch`<br/>
-Param: `options`   Options passed to `fetch`<br/>
+If the user isn't authenticated, it authenticates first when `auto` is `true`, or rejects when it isn't.<br/>
+<br/>
+Param: `resource`  The URL passed to `fetch`<br/>
+Param: `options`   Options passed to `fetch`. `headers`, if given, must be a plain object.<br/>
 Return: `Promise` that wraps `authenticateAsync` then `fetch`<br/>
 
 
@@ -297,8 +309,8 @@ Return:  `self`<br/>
 ## `.options(options)`
 
 Options  (getter / setter)<br/>
- If passed with no arguments, just return the options<br/>
- If passed an Object, set the options then attempt to pre-authorize<br/>
+ If passed with no arguments, return a copy of the options, with defaults filled in<br/>
+ If passed an Object, replace the options with a copy of it, then attempt to pre-authorize<br/>
 <br/>
 Param:  `val?`   Object containing options<br/>
 Return:  current `options` (if getting), or `self` (if setting)<br/>
