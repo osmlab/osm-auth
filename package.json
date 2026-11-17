@@ -45,6 +45,7 @@
     "build:ts": "tsc -p tsconfig.build.json",
     "cdp": "bun ./scripts/cdp.ts",
     "clean": "bun ./scripts/clean.ts",
+    "postpublish": "bun ./scripts/postpublish.ts",
     "start": "bun ./scripts/server.ts",
     "start:chrome": "bun ./scripts/chrome.ts",
     "test": "bun test --dots --coverage ./test"
