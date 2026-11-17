@@ -5,10 +5,10 @@ converting it from JavaScript with hand-written types to a TypeScript class with
 (following node-diff3, location-conflation and country-coder), and fixing the bugs found along
 the way.
 
-> **Status:** In progress (Nov 2026): steps 1–7 of the [Plan](#plan) are done on the
-> `typescript_conversion` branch. The bug fixes (step 8) follow on `main` once it merges, tracked in
+> **Status:** In progress (Nov 2026): steps 1–7 of the [Plan](#plan) are done and merged to `main`.
+> The bug fixes (step 8) are GitHub issues #163–#170, listed in
 > [`knowledge/current.md`](../knowledge/current.md). It all ships in 4.0.0 along with the ESM-only
-> change that's already on `main`. The sections up to [Goals](#goals) describe 3.x, before the
+> change. The sections up to [Goals](#goals) describe 3.x, before the
 > conversion.
 
 ## What osm-auth does
