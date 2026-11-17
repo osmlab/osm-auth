@@ -16,11 +16,11 @@ _Breaking changes, which may affect downstream projects, are marked with a_ ⚠�
 -->
 
 ## 4.0.0
-##### Unreleased
-osm-auth is written in TypeScript now, and its type definitions are generated from the source.
+##### 2026-Nov-17
+osm-auth is written in TypeScript now, and its type definitions are generated from the source ([#162]).
 Most projects only need to make sure they call `new osmAuth(…)`, and update any `dist/` paths.
 
-* ⚠️  ESM only: the CommonJS bundle `dist/osm-auth.cjs` is gone
+* ⚠️  ESM only: the CommonJS bundle `dist/osm-auth.cjs` is gone ([#160])
   * `require('osm-auth')` still works in Node 20.19+ and 22.12+, which can `require()` an ES module
 * ⚠️  The bundles moved to `dist/js/`, and the type definitions to `dist/ts/`
   * If you load osm-auth from a CDN, change `dist/osm-auth.iife.min.js` to `dist/js/osm-auth.iife.min.js`
@@ -29,7 +29,7 @@ Most projects only need to make sure they call `new osmAuth(…)`, and update an
   * Calling `osmAuth({…})` without `new` throws a `TypeError`
   * Methods use `this`, so a method taken off the instance (e.g. `const { xhr } = auth`) needs `.bind(auth)`
 * ⚠️  Options are copied in and out
-  * The constructor and `options(val)` no longer change the object you pass in
+  * The constructor and `options(val)` no longer mutates the object you pass in
   * `options()` returns a copy, so changing it doesn't change the instance. Pass it back with `options(o)`
   * `options()` no longer includes the `access_token` that was passed in ([#164]). It's stored with the other tokens, see `getAccessToken()`. Passing the options back with `options({ ...options(), locale })` used to store that token again, logging the user back in after `logout()` or replacing a newer token
 * ⚠️  Type definitions
@@ -38,7 +38,7 @@ Most projects only need to make sure they call `new osmAuth(…)`, and update an
   * New types: `OSMAuthResolvedOptions` (what `options()` returns), `OSMAuthCallback<T>`, `OSMAuthRawXHRCallback`, and the `OSMAuthError` class with its `OSMAuthErrorOptions`
 * ⚠️  Every error is an `OSMAuthError` ([#167])
   * `err.code` says what went wrong, e.g. `'popup-blocked'`, `'invalid-state'` or `'access_denied'`. These codes used to be in `err.status`
-  * A request that fails with an HTTP status is an `'http-error'`. `err.status` is still the HTTP status (a number), and the request is in `err.xhr`. The error used to be the `XMLHttpRequest` itself, so read `err.xhr.responseText` instead of `err.responseText`. When the OSM API explains the error in a plain text body (e.g. "The changeset 123 was closed at …"), that's the error's `message`, so `err.message || err.responseText` still shows it
+  * A request that fails with an HTTP status is an `'http-error'`. `err.status` is still the HTTP status (a number), and the request is in `err.xhr`. The error used to be the `XMLHttpRequest` itself, so read `err.xhr.responseText` instead of `err.responseText`. When the OSM API explains the error in a plain text body (e.g. "The changeset 123 was closed at …"), that's the error's `message`, so `err.message || err.responseText` still shows it ([#180])
   * A network error is a `'network-error'`, with the `ProgressEvent` in `err.cause`
   * `xhr()` fails with a `'not-authenticated'` error when not logged in, where it used to pass the string `'not authenticated'`. `fetch()` rejects with the same error
   * Callbacks type `err` as `OSMAuthError | null`
@@ -46,10 +46,10 @@ Most projects only need to make sure they call `new osmAuth(…)`, and update an
 * The type definitions bring in the DOM lib, so they work in projects whose `lib` doesn't include it
 * Fix `localStorage` detection when it's `undefined` ([#151], [#152], thanks [@tyrasd])
 * Fix bugs in the popup login:
-  * An `error` redirect without an `error_description` threw a `TypeError`, instead of reporting the error
+  * An `error` redirect without an `error_description` threw a `TypeError`, instead of reporting the error ([#161])
   * A second login while one was in progress (a double click, two `fetch()` calls with `auto: true`, a retry after closing the popup, or another instance or tab) failed with "Invalid state", or was lost ([#163]). Now attempts on one instance share a single login, which ends when the user finishes in any of their popups, and a redirect meant for another login is ignored
   * `bringPopupWindowToFront()` can't work once the popup has loaded openstreetmap.org, whose `Cross-Origin-Opener-Policy` cuts it off from the page. With the fix above, calling `authenticate()` again is fine instead ([#163])
-* Parse the redirect from OSM with `URLSearchParams` ([#170])
+* Parse the redirect from OSM with `URLSearchParams` ([#146], [#170], thanks [@tom-konda])
   * A malformed `%` escape no longer stops the login, and a value containing `=` is no longer dropped
 * Fix two failed logins that were reported as success ([#165])
   * `xhr()` with `auto: true` sent the request without a token after a failed login (e.g. a blocked popup, or the user denied access), instead of failing with the login error
@@ -71,13 +71,19 @@ Most projects only need to make sure they call `new osmAuth(…)`, and update an
   * The default `Content-Type: application/x-www-form-urlencoded` is only added for a string body (or none), so a `FormData` body keeps its multipart boundary, e.g. to upload a GPX trace ([#35])
   * `fetch()` accepts `headers` as a `Headers` or an array of pairs, keeps the headers of a `Request`, and replaces an `authorization` header in any case
 * A login finishes on the server it started on, even if `url` changes while it's in progress ([#164])
-* Development: TypeScript 7, oxlint instead of ESLint, many more tests, and a debug Chrome for testing the demo in a real browser (`bun run start:chrome`, `bun run cdp`)
+* Development: TypeScript 7 ([#159]), oxlint instead of ESLint ([#158]), many more tests, and a debug Chrome for testing the demo in a real browser (`bun run start:chrome`, `bun run cdp`)
 
 [#35]: https://github.com/osmlab/osm-auth/issues/35
+[#146]: https://github.com/osmlab/osm-auth/issues/146
 [#148]: https://github.com/osmlab/osm-auth/issues/148
 [#151]: https://github.com/osmlab/osm-auth/issues/151
 [#152]: https://github.com/osmlab/osm-auth/issues/152
 [#153]: https://github.com/osmlab/osm-auth/issues/153
+[#158]: https://github.com/osmlab/osm-auth/issues/158
+[#159]: https://github.com/osmlab/osm-auth/issues/159
+[#160]: https://github.com/osmlab/osm-auth/issues/160
+[#161]: https://github.com/osmlab/osm-auth/issues/161
+[#162]: https://github.com/osmlab/osm-auth/issues/162
 [#163]: https://github.com/osmlab/osm-auth/issues/163
 [#164]: https://github.com/osmlab/osm-auth/issues/164
 [#165]: https://github.com/osmlab/osm-auth/issues/165
@@ -86,7 +92,9 @@ Most projects only need to make sure they call `new osmAuth(…)`, and update an
 [#168]: https://github.com/osmlab/osm-auth/issues/168
 [#169]: https://github.com/osmlab/osm-auth/issues/169
 [#170]: https://github.com/osmlab/osm-auth/issues/170
+[#180]: https://github.com/osmlab/osm-auth/issues/180
 [@k-yle]: https://github.com/k-yle
+[@tom-konda]: https://github.com/tom-konda
 [@tyrasd]: https://github.com/tyrasd
 
 
