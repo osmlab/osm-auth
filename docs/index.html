@@ -43,18 +43,23 @@
     singlepage: true
   });
 
-  if (window.location.search.slice(1).split('&').some(function(p) { return p.indexOf('code=') === 0; })) {
-    auth.authenticate(function() {
-      history.pushState({}, null, window.location.pathname);
+  function showError(message) {
+    document.getElementById("error").textContent = message;
+    document.getElementById("user").style.display = "none";
+    document.getElementById("error").style.display = "block";
+  }
+
+  function loginDone(err) {
+    if (err) {
+      showError("Login failed: " + (err.message || err.status || "unknown error"));
+    } else {
       update();
-    });
+    }
   }
 
   function done(err, result) {
     if (err) {
-      document.getElementById("error").textContent = "Error! Try clearing your browser cache.";
-      document.getElementById("user").style.display = "none";
-      document.getElementById("error").style.display = "block";
+      showError("Error! Try clearing your browser cache.");
       return;
     }
 
@@ -86,9 +91,7 @@
     }
     auth.options(o);
     if (!auth.bringPopupWindowToFront()) {
-      auth.authenticate(function() {
-        update();
-      });
+      auth.authenticate(loginDone);
     }
   };
 
@@ -119,6 +122,19 @@
   }
 
   update();
+
+  // Single page mode: OSM redirects back here with `?code=…` or `?error=…`.
+  // Remove those from the URL (and from history) once they've been handled.
+  var params = new URLSearchParams(window.location.search);
+  if (params.has("error")) {
+    history.replaceState(null, "", window.location.pathname);
+    showError("Login failed: " + (params.get("error_description") || params.get("error")));
+  } else if (params.has("code")) {
+    auth.authenticate(function(err) {
+      history.replaceState(null, "", window.location.pathname);
+      loginDone(err);
+    });
+  }
 
 </script>
 </body>

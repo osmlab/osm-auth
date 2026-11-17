@@ -74,8 +74,7 @@ Pin the major version in the URL (here `@4`), so a future breaking release doesn
   var auth = new osmAuth({
     client_id: "…",
     scope: "read_prefs",
-    redirect_uri: redirectPath + "land.html",
-    singlepage: true
+    redirect_uri: redirectPath + "land.html"
   });
   …
 </script>
@@ -84,8 +83,9 @@ Pin the major version in the URL (here `@4`), so a future breaking release doesn
 &nbsp;
 
 
-**Requires `land.html` to be accessible, or a page that does the same thing -
-calls an auth complete function - to be available.**
+**The popup login requires a `land.html` at your `redirect_uri` (copy [this one](docs/land.html)),
+or a page that does the same thing: post its URL to the `osm-api-auth-complete` BroadcastChannel,
+then close itself.**
 
 
 ### Support

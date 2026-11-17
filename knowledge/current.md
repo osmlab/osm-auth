@@ -90,18 +90,6 @@ them; 1 and 9 have none yet, so add them first), and adds its line to the 4.0.0 
   redirects to the authorize page again. **Docs:** the README's single-page example never cleans
   `?code` out of the URL.
 
-### Demo page (`docs/`)
-
-- **8. `docs/land_single.html` reads `oauth_token`**, which is OAuth 1. Nothing links to it, so it
-  can probably be deleted.
-- **19. Demo single-page return** ignores `?error=` and the callback's `err`, and uses
-  `history.pushState` where `replaceState` is wanted. *Low.*
-
-### Documentation only
-
-- **18. README "Use in Browsers" snippet** pairs `singlepage: true` with `land.html`, which
-  strands the user on a blank page. "Calls an auth complete function" is out of date too. *Low.*
-
 ### Test gaps
 
 `FakeXHR` fires `readystatechange` only at readyState 4 and allows `setRequestHeader` before
