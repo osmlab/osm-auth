@@ -76,6 +76,11 @@ function s256(verifier: string): string {
   return createHash('sha256').update(verifier).digest('base64url');
 }
 
+/** Waits until BroadcastChannel messages posted so far have been delivered, to test that nothing happened */
+function delivered(): Promise<void> {
+  return new Promise(resolve => { setTimeout(resolve, 10); });
+}
+
 
 describe('osmAuth', () => {
 
@@ -560,12 +565,115 @@ describe('osmAuth', () => {
       await pending;
     });
 
-    it('fails if the state doesn\'t match', async () => {
-      const { pending } = await startPopupLogin(new osmAuth(OPTIONS));
-      postFromLandPage(`${REDIRECT}?code=CODE&state=WRONG`);
-      const { err } = await pending;
-      assertOSMAuthError(err, 'invalid-state', 'Invalid state');
+    it('ignores a redirect with another state, and keeps waiting for its own', async () => {
+      const auth = new osmAuth(OPTIONS);
+      let calls = 0;
+      auth.authenticate(() => calls++);
+      const state = new URL(await win.lastPopup().location.nextNavigation()).searchParams.get('state');
+
+      postFromLandPage(`${REDIRECT}?code=OTHER&state=WRONG`);  // e.g. another instance's login, or another tab's
+      postFromLandPage(`${REDIRECT}?error=access_denied&state=WRONG`);
+      await delivered();
+      assert.equal(calls, 0);
       assert.equal(FakeXHR.requests.length, 0);
+
+      const tokenRequest = FakeXHR.nextRequest();
+      postFromLandPage(`${REDIRECT}?code=CODE&state=${state}`);
+      const request = await tokenRequest;
+      assert.equal(new URL(request.url).searchParams.get('code'), 'CODE');
+      request.respond(200, JSON.stringify({ access_token: 'TOKEN' }));
+      assert.equal(calls, 1);
+    });
+
+    describe('when there\'s more than one attempt at once (e.g. a double click)', () => {
+      /** Starts two logins on `auth`, the second before the first has finished, and returns their states and results */
+      async function startLogins(auth: osmAuth) {
+        const results: AuthResult[] = [];
+        const start = async (): Promise<string> => {
+          auth.authenticate((err, result) => results.push({ err, result }));
+          return new URL(await win.lastPopup().location.nextNavigation()).searchParams.get('state') ?? '';
+        };
+        const first = await start();
+        const second = await start();
+        return { results, states: [first, second] };
+      }
+
+      it('finishes them all with the first redirect for any of them, and ignores the rest', async () => {
+        const auth = new osmAuth(OPTIONS);
+        const { results, states } = await startLogins(auth);
+        assert.equal(win.opened.length, 2);
+
+        // The user finishes in the first popup (with OSM's COOP header, the second click can't reuse it)
+        const tokenRequest = FakeXHR.nextRequest();
+        postFromLandPage(`${REDIRECT}?code=CODE&state=${states[0]}`);
+        (await tokenRequest).respond(200, JSON.stringify({ access_token: 'TOKEN' }));
+        assert.deepEqual(results, [{ err: null, result: auth }, { err: null, result: auth }]);
+
+        // ...then in the second one, too late
+        postFromLandPage(`${REDIRECT}?code=LATE&state=${states[1]}`);
+        await delivered();
+        assert.equal(FakeXHR.requests.length, 1);
+        assert.equal(results.length, 2);
+      });
+
+      it('finishes them all with the latest attempt, e.g. after the user closed the first popup', async () => {
+        const auth = new osmAuth(OPTIONS);
+        const { results, states } = await startLogins(auth);
+        const tokenRequest = FakeXHR.nextRequest();
+        postFromLandPage(`${REDIRECT}?code=CODE&state=${states[1]}`);
+        const request = await tokenRequest;
+        assert.equal(new URL(request.url).searchParams.get('code'), 'CODE');
+        request.respond(200, JSON.stringify({ access_token: 'TOKEN' }));
+        assert.deepEqual(results, [{ err: null, result: auth }, { err: null, result: auth }]);
+      });
+
+      it('fails them all with the OAuth error from any of them', async () => {
+        const { results, states } = await startLogins(new osmAuth(OPTIONS));
+        postFromLandPage(`${REDIRECT}?error=access_denied&state=${states[0]}`);
+        await delivered();
+        assert.equal(results.length, 2);
+        assertOSMAuthError(results[0]?.err, 'access_denied');
+        assert.equal(results[1]?.err, results[0]?.err);
+      });
+    });
+
+    it('doesn\'t mix up the logins of two instances (e.g. for two servers)', async () => {
+      const DEV = 'https://master.apis.dev.openstreetmap.org';
+      const prod = new osmAuth(OPTIONS);
+      const dev = new osmAuth({ ...OPTIONS, url: DEV, apiUrl: DEV });
+      const prodLogin = await startPopupLogin(prod);
+      const devLogin = await startPopupLogin(dev);
+
+      const prodRequest = FakeXHR.nextRequest();
+      postFromLandPage(`${REDIRECT}?code=PROD&state=${prodLogin.state}`);
+      (await prodRequest).respond(200, JSON.stringify({ access_token: 'PROD_TOKEN' }));
+      assert.equal((await prodLogin.pending).err, null);
+
+      const devRequest = FakeXHR.nextRequest();
+      postFromLandPage(`${REDIRECT}?code=DEV&state=${devLogin.state}`);
+      const request = await devRequest;
+      assert.equal(new URL(request.url).origin, DEV);
+      request.respond(200, JSON.stringify({ access_token: 'DEV_TOKEN' }));
+      assert.equal((await devLogin.pending).err, null);
+      assert.equal(prod.getAccessToken(), 'PROD_TOKEN');
+      assert.equal(dev.getAccessToken(), 'DEV_TOKEN');
+    });
+
+    it('starts afresh after a login ends', async () => {
+      const auth = new osmAuth(OPTIONS);
+      const first = await startPopupLogin(auth);
+      postFromLandPage(`${REDIRECT}?error=access_denied&state=${first.state}`);
+      assertOSMAuthError((await first.pending).err, 'access_denied');
+
+      const second = await startPopupLogin(auth);
+      postFromLandPage(`${REDIRECT}?code=OLD&state=${first.state}`);  // the first login's state isn't accepted any more
+      await delivered();
+      assert.equal(FakeXHR.requests.length, 0);
+
+      const tokenRequest = FakeXHR.nextRequest();
+      postFromLandPage(`${REDIRECT}?code=CODE&state=${second.state}`);
+      (await tokenRequest).respond(200, JSON.stringify({ access_token: 'TOKEN' }));
+      assert.equal((await second.pending).err, null);
     });
 
     it('fails with the OAuth error from the redirect', async () => {

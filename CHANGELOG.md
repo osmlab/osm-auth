@@ -46,9 +46,10 @@ Most projects only need to make sure they call `new osmAuth(…)`, and update an
 * Refine the type definitions ([#153], thanks [@k-yle])
 * The type definitions bring in the DOM lib, so they work in projects whose `lib` doesn't include it
 * Fix `localStorage` detection when it's `undefined` ([#151], [#152], thanks [@tyrasd])
-* Fix two bugs in the popup login:
+* Fix bugs in the popup login:
   * An `error` redirect without an `error_description` threw a `TypeError`, instead of reporting the error
-  * A failed attempt left a listener behind that later reported "Invalid state"
+  * A second login while one was in progress (a double click, two `fetch()` calls with `auto: true`, a retry after closing the popup, or another instance or tab) failed with "Invalid state", or was lost ([#163]). Now attempts on one instance share a single login, which ends when the user finishes in any of their popups, and a redirect meant for another login is ignored
+  * `bringPopupWindowToFront()` can't work once the popup has loaded openstreetmap.org, whose `Cross-Origin-Opener-Policy` cuts it off from the page. With the fix above, calling `authenticate()` again is fine instead ([#163])
 * Parse the redirect from OSM with `URLSearchParams` ([#170])
   * A malformed `%` escape no longer stops the login, and a value containing `=` is no longer dropped
 * Fix two failed logins that were reported as success ([#165])
@@ -65,6 +66,7 @@ Most projects only need to make sure they call `new osmAuth(…)`, and update an
 [#151]: https://github.com/osmlab/osm-auth/issues/151
 [#152]: https://github.com/osmlab/osm-auth/issues/152
 [#153]: https://github.com/osmlab/osm-auth/issues/153
+[#163]: https://github.com/osmlab/osm-auth/issues/163
 [#164]: https://github.com/osmlab/osm-auth/issues/164
 [#165]: https://github.com/osmlab/osm-auth/issues/165
 [#167]: https://github.com/osmlab/osm-auth/issues/167

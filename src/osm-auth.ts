@@ -137,6 +137,22 @@ interface PkceChallenge {
   code_challenge_method: 'S256';
 }
 
+/** What's needed to finish a popup login with the code from one attempt's redirect */
+interface LoginAttempt {
+  code_verifier: string;
+  /** The options when the attempt started */
+  options: OSMAuthResolvedOptions;
+}
+
+/** A popup login that's waiting for the redirect from OSM */
+interface PendingLogin {
+  /** The attempts so far, by the `state` each one sent */
+  attempts: Map<string, LoginAttempt>;
+  /** Everyone waiting for the login to end */
+  callbacks: Array<OSMAuthCallback<osmAuth>>;
+  channel: BroadcastChannel;
+}
+
 /** Callback for `rawxhr()` */
 export type OSMAuthRawXHRCallback = (err: OSMAuthError | null, xhr: XMLHttpRequest | null) => void;
 
@@ -155,6 +171,7 @@ export class osmAuth {
   private _options: OSMAuthResolvedOptions;
   private _store: TokenStore;
   private _storeIsMocked: boolean;
+  private _pending: PendingLogin | null = null;
 
 
   /**
@@ -258,6 +275,8 @@ export class osmAuth {
    * authenticate
    * If already authenticated, calls the callback right away. Otherwise clears any stored
    * tokens, runs the authentication flow, and then calls the callback.
+   * In popup mode, calling it again while a login is in progress opens another popup, and the
+   * login ends when the user finishes in any of them: then every callback is called.
    * TODO: detect lack of click event  (probably can settimeout it)
    *
    * @param   callback  Errback-style callback `(err, result)`, called when complete
@@ -383,25 +402,68 @@ export class osmAuth {
     } else if (popup) {
       this.popupWindow = popup;
       popup.location.href = url;
+      this._waitForRedirect(state, { code_verifier: pkce.code_verifier, options: o }, callback);
+    }
+  }
+
+
+  /**
+   * _waitForRedirect
+   * Adds a popup login attempt to the pending login, listening for the redirect if this is the
+   * first attempt. Attempts made while a login is pending (e.g. a double click, or another try
+   * after the user closed the popup) share its result: the login ends when the redirect for any
+   * of them arrives, and then every callback is called.
+   * @param  state     The `state` this attempt sent to the authorize page
+   * @param  attempt   What's needed to finish the login with this attempt's code
+   * @param  callback  Errback-style callback `(err, result)`, called when the login ends
+   */
+  private _waitForRedirect(state: string, attempt: LoginAttempt, callback: OSMAuthCallback<osmAuth>): void {
+    let pending = this._pending;
+    if (!pending) {
+      // The redirect URL page (`land.html`) posts its URL here, then closes its window.
+      const channel = new BroadcastChannel(CHANNEL_ID);
+      const newPending: PendingLogin = { attempts: new Map(), callbacks: [], channel: channel };
+      channel.addEventListener('message', (event: MessageEvent<unknown>) => this._onRedirect(newPending, event));
+      this._pending = pending = newPending;
+    }
+    pending.attempts.set(state, attempt);
+    pending.callbacks.push(callback);
+  }
+
+
+  /**
+   * _onRedirect
+   * Handles a redirect URL posted by the redirect URL page. A redirect for a `state` that isn't
+   * one of this login's is ignored: it's for another login (another instance, or another tab),
+   * or for an attempt that has already ended.
+   * @param  pending  The pending login
+   * @param  event    The message, with the redirect URL as its data
+   */
+  private _onRedirect(pending: PendingLogin, event: MessageEvent<unknown>): void {
+    const url = typeof event.data === 'string' ? event.data : '';
+    const params = new URLSearchParams(url.split('?')[1] ?? '');
+    const attempt = pending.attempts.get(params.get('state') ?? '');
+    if (!attempt) return;
+
+    // The login ends here, whichever way it goes, so the next one starts afresh.
+    pending.channel.close();
+    if (this._pending === pending) {
+      this._pending = null;
     }
 
-    // Called by a function in the redirect URL page, in the popup window. The
-    // window closes itself.
-    const bc = new BroadcastChannel(CHANNEL_ID);
-    bc.addEventListener('message', (event: MessageEvent<unknown>) => {
-      bc.close();
-      const url = typeof event.data === 'string' ? event.data : '';
-      const params = new URLSearchParams(url.split('?')[1] ?? '');
-      const error = params.get('error');
-      if (params.get('state') !== state) {
-        callback(new OSMAuthError('Invalid state', 'invalid-state'));
-        return;
-      } else if (error !== null) {
-        callback(new OSMAuthError(params.get('error_description') || error, error));
-        return;
+    const done: OSMAuthCallback<osmAuth> = (err, result) => {
+      for (const callback of pending.callbacks) {
+        callback(err, result);
       }
-      this._requestAccessToken(params.get('code'), pkce.code_verifier, o, this._accessTokenDone(o, callback));
-    });
+    };
+
+    const error = params.get('error');
+    if (error !== null) {
+      done(new OSMAuthError(params.get('error_description') || error, error));
+      return;
+    }
+    const o = attempt.options;
+    this._requestAccessToken(params.get('code'), attempt.code_verifier, o, this._accessTokenDone(o, done));
   }
 
 
@@ -463,6 +525,9 @@ export class osmAuth {
   /**
    * bringPopupWindowToFront
    * Tries to bring an existing authentication popup to the front.
+   * Once the popup has loaded openstreetmap.org, this can't work: OSM's `Cross-Origin-Opener-Policy`
+   * header cuts the popup off from this page, so it looks closed. It's fine to call `authenticate()`
+   * again then: it opens another popup, and either one finishes the login.
    *
    * @return `true` if it succeeded, `false` if not
    */
