@@ -17,8 +17,9 @@ a no-op at best. Rapid still passes one by habit. Rejected: keeping it as `@depr
 
 ## Bundles in `dist/js/`, declarations in `dist/ts/` (4.0.0)
 
-Matches location-conflation and country-coder. It breaks unpinned CDN URLs, so the README and demo
-pin `osm-auth@4`, and the changelog calls it out.
+Matches location-conflation and country-coder. It breaks unpinned CDN URLs, so the README tells
+apps to pin `osm-auth@4`, and the changelog calls it out. The demo page loads `@latest` like the
+sibling projects' demos, so it doesn't need a change every major release.
 
 ## Options are copied in and out (4.0.0)
 
