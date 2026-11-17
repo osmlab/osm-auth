@@ -5,9 +5,11 @@ converting it from JavaScript with hand-written types to a TypeScript class with
 (following node-diff3, location-conflation and country-coder), and fixing the bugs found along
 the way.
 
-> **Status:** In progress (Nov 2026): steps 1–7 of the [Plan](#plan) are done. Work happens on the `typescript_conversion` branch, and ships in
-> 4.0.0 along with the ESM-only change that's already on `main`. The sections up to
-> [Goals](#goals) describe 3.x, before the conversion.
+> **Status:** In progress (Nov 2026): steps 1–7 of the [Plan](#plan) are done on the
+> `typescript_conversion` branch. The bug fixes (step 8) follow on `main` once it merges, tracked in
+> [`knowledge/current.md`](../knowledge/current.md). It all ships in 4.0.0 along with the ESM-only
+> change that's already on `main`. The sections up to [Goals](#goals) describe 3.x, before the
+> conversion.
 
 ## What osm-auth does
 
@@ -108,7 +110,8 @@ a window and a BroadcastChannel.
    `src/osm-auth.d.ts`.
 4. **Same layout as the sibling projects.** Bundles in `dist/js/`, declarations in `dist/ts/`,
    `build`, `build:ts` and `check:types` scripts, `tsconfig.build.json`.
-5. **Fix the known bugs** (listed [below](#bugs-to-fix-in-400)), even where that changes behavior.
+5. **Fix the known bugs** (listed in [`knowledge/current.md`](../knowledge/current.md)), even where
+   that changes behavior.
    4.0.0 is the release for it.
 6. **Tests in TypeScript** that cover more than the constructor.
 
@@ -253,34 +256,5 @@ fixes in step 8 are separate commits, so each behavior change can be reviewed on
    replace the "Support" paragraph about ES5 and Internet Explorer, which the code hasn't
    supported for a while. `docs/index.html`: the CDN path. `CHANGELOG.md`: a 4.0.0 entry with
    the breaking changes. `knowledge/`: record the decisions.
-8. **Fixes**, one commit each, from the list below.
-
-## Bugs to fix in 4.0.0
-
-Found while reading `src/osm-auth.mjs`.
-
-1. **`xhr()` with `auto: true` ignores a failed login.** It calls `authenticate(_doXHR)`, but
-   `_doXHR` takes no arguments, so after a blocked popup or a denied login it sends the request
-   anyway without a token, and the caller never sees the login error.
-2. **`xhr()`'s "not authenticated" error is a string**, where `fetch()` rejects with an `Error`.
-   (It also returned `undefined` rather than the documented `null` when it didn't send a request;
-   the class returns `null`.)
-3. **Errors come in four shapes.** Replace them with `OSMAuthError` (see
-   [above](#errors-one-osmautherror-class)).
-4. **`fetch()` and `rawxhr()` add the `Authorization` header to the caller's own objects.**
-   Copy the headers instead.
-5. **Single-page mode opens a BroadcastChannel it never uses**, and never closes it.
-   `_authenticate` creates the channel after redirecting or calling `bootstrapToken`, for both of
-   which nothing will ever post to it.
-6. **`authenticate` and `authenticateAsync` duplicate each other.** One should call the other.
-   (The token exchange was written twice too; the class shares one `_accessTokenDone`.)
-7. **`utilStringQs` doesn't decode `+` as a space**, and throws on a malformed `%` escape.
-   `URLSearchParams` does both properly and would replace both helpers. The `+` workaround for
-   `error_description` could go too.
-8. **`docs/land_single.html` reads `oauth_token`**, which is OAuth 1. Nothing links to it, so it
-   can probably be deleted.
-9. **A token response without an `access_token` counts as success.** The callback gets
-   `(null, auth)`, but nothing was stored, so `authenticated()` is still `false`. It should fail.
-
-The tests cover the current behavior of items 1–3 and 9 where they can, so each fix changes a
-test along with the code.
+8. **Fixes**, one commit each, on `main` after the conversion merges. The list is in
+   [`knowledge/current.md`](../knowledge/current.md).
