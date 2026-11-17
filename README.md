@@ -316,6 +316,28 @@ Param:  `val?`   Object containing options<br/>
 Return:  current `options` (if getting), or `self` (if setting)<br/>
 <br/>
 
+
+## `OSMAuthError`
+
+Every error passed to a callback, or rejected by a promise, is an `OSMAuthError`.
+Its `code` says what went wrong:
+
+ - `'popup-blocked'` - the browser blocked the login popup
+ - `'invalid-state'` - the redirect from OSM didn't carry the `state` this login sent
+ - `'not-authenticated'` - `xhr()` or `fetch()` needs a login, and `auto` isn't set
+ - `'pkce-localstorage-unavailable'` - single-page mode needs `localStorage`, and there isn't one
+ - `'http-error'` - a request got a response that isn't 20x. `status` is the HTTP status, and `xhr` is the request
+ - `'network-error'` - a request failed without a response. `xhr` is the request, and `cause` is the error event
+ - an OAuth error code from OSM's redirect, e.g. `'access_denied'` if the user denied access
+
+```js
+auth.xhr({ method: 'GET', path: '/api/0.6/user/details' }, function (err, result) {
+  if (err?.status === 429) {
+    // rate limited
+  }
+});
+```
+
 ## License
 
 This project is available under the [ISC License](LICENSE.md).
