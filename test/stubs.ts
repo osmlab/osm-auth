@@ -94,6 +94,8 @@ export class FakeXHR {
   async = false;
   headers: Record<string, string> = {};
   body: unknown = undefined;
+  /** Response headers, for `getResponseHeader()`. Set them before `respond()` */
+  responseHeaders: Record<string, string> = {};
   readyState = 0;
   status = 0;
   response: string = '';
@@ -117,6 +119,11 @@ export class FakeXHR {
   /** Resolves with the next request sent */
   static nextRequest(): Promise<FakeXHR> {
     return new Promise(resolve => { FakeXHR._waiters.push(resolve); });
+  }
+
+  getResponseHeader(name: string): string | null {
+    const key = Object.keys(this.responseHeaders).find(k => k.toLowerCase() === name.toLowerCase());
+    return key === undefined ? null : (this.responseHeaders[key] ?? null);
   }
 
   open(method: string, url: string, async: boolean): void {

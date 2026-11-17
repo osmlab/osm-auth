@@ -37,7 +37,7 @@ Most projects only need to make sure they call `new osmAuth(…)`, and update an
   * New types: `OSMAuthResolvedOptions` (what `options()` returns), `OSMAuthCallback<T>` and `OSMAuthRawXHRCallback`
 * ⚠️  Every error is an `OSMAuthError` ([#167])
   * `err.code` says what went wrong, e.g. `'popup-blocked'`, `'invalid-state'` or `'access_denied'`. These codes used to be in `err.status`
-  * A request that fails with an HTTP status is an `'http-error'`. `err.status` is still the HTTP status (a number), and the request is in `err.xhr`. The error used to be the `XMLHttpRequest` itself, so read `err.xhr.responseText` instead of `err.responseText`
+  * A request that fails with an HTTP status is an `'http-error'`. `err.status` is still the HTTP status (a number), and the request is in `err.xhr`. The error used to be the `XMLHttpRequest` itself, so read `err.xhr.responseText` instead of `err.responseText`. When the OSM API explains the error in a plain text body (e.g. "The changeset 123 was closed at …"), that's the error's `message`, so `err.message || err.responseText` still shows it
   * A network error is a `'network-error'`, with the `ProgressEvent` in `err.cause`
   * `xhr()` fails with a `'not-authenticated'` error when not logged in, where it used to pass the string `'not authenticated'`. `fetch()` rejects with the same error
   * Callbacks type `err` as `OSMAuthError | null`

@@ -326,7 +326,7 @@ Its `code` says what went wrong:
  - `'invalid-state'` - the redirect from OSM didn't carry the `state` this login sent
  - `'not-authenticated'` - `xhr()` or `fetch()` needs a login, and `auto` isn't set
  - `'pkce-localstorage-unavailable'` - single-page mode needs `localStorage`, and there isn't one
- - `'http-error'` - a request got a response that isn't 20x. `status` is the HTTP status, and `xhr` is the request
+ - `'http-error'` - a request got a response that isn't 20x. `status` is the HTTP status, and `xhr` is the request. When the OSM API explains the error (in a plain text body, e.g. "The changeset 123 was closed at …"), that's the `message`
  - `'network-error'` - a request failed without a response. `xhr` is the request, and `cause` is the error event
  - `'invalid-token-response'` - the token request succeeded, but its response has no access token. `xhr` is the request
  - an OAuth error code from OSM's redirect, e.g. `'access_denied'` if the user denied access
