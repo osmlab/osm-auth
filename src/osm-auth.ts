@@ -5,6 +5,10 @@
  * @module
  */
 
+// The public types use DOM types (`Window`, `XMLHttpRequest`, `RequestInit`…), so the generated
+// .d.ts must bring in the DOM lib for consumers that don't include it themselves.
+/// <reference lib="dom" preserve="true" />
+
 
 /** Options for the `osmAuth` constructor and `options()` setter */
 export interface OSMAuthOptions {
@@ -68,7 +72,7 @@ export interface OSMAuthXHROptions {
 }
 
 /** An "errback"-style callback `(err, result)`, called when complete */
-export type OSMAuthCallback<T> = (err: unknown, result?: T) => void;
+export type OSMAuthCallback<T> = (err: any, result?: T) => void;
 
 /** Errors raised by osm-auth itself carry a `status` string, e.g. 'popup-blocked' */
 type StatusError = Error & { status: string };

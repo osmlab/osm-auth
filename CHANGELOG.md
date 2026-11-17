@@ -36,6 +36,7 @@ Most projects only need to make sure they call `new osmAuth(…)`, and update an
   * The global `OSMAuth` namespace is gone. Import the types from `'osm-auth'` instead
   * New types: `OSMAuthResolvedOptions` (what `options()` returns), `OSMAuthCallback<T>` and `OSMAuthRawXHRCallback`
 * Refine the type definitions ([#153], thanks [@k-yle])
+* The type definitions bring in the DOM lib, so they work in projects whose `lib` doesn't include it
 * Fix `localStorage` detection when it's `undefined` ([#151], [#152], thanks [@tyrasd])
 * Fix two bugs in the popup login:
   * An `error` redirect without an `error_description` threw a `TypeError`, instead of reporting the error

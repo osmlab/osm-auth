@@ -31,8 +31,9 @@ them; 1 and 9 have none yet, so add them first), and adds its line to the 4.0.0 
   (It also returned `undefined` rather than the documented `null` when it didn't send a request;
   the class returns `null`.)
 - **3. Errors come in four shapes.** Replace them with `OSMAuthError` (see
-  [Errors in the design doc](../design/osm-auth.md#errors-one-osmautherror-class)). This changes
-  the types too; do 17 with it.
+  [Errors in the design doc](../design/osm-auth.md#errors-one-osmautherror-class)), and type the
+  callbacks' `err` as `OSMAuthError | null`. It's `any` until then, as in 3.x (`unknown` broke
+  typed callers).
 - **4. `fetch()` and `rawxhr()` add the `Authorization` header to the caller's own objects.**
   Copy the headers instead.
 - **5. Single-page mode opens a BroadcastChannel it never uses**, and never closes it.
@@ -88,15 +89,6 @@ them; 1 and 9 have none yet, so add them first), and adds its line to the 4.0.0 
   `invalid-state`. A return with `?error=` isn't reported: `authenticate()` saves a new state and
   redirects to the authorize page again. **Docs:** the README's single-page example never cleans
   `?code` out of the URL.
-
-### Types and packaging (no runtime effect)
-
-- **17. Callback `err` is typed `unknown`** (3.x: `any`). *Medium, new.* A TS caller's
-  `(err: Error | null)` stops compiling, and `err.status` needs a cast. Not in the changelog.
-  Generated from the source; item 3 should type it `OSMAuthError | null`.
-- **20. The `.d.ts` needs the DOM lib.** *Low.* A consumer with `lib: ["ES2022"]` and
-  `skipLibCheck: false` gets 12 errors. Fix: `/// <reference lib="dom" preserve="true" />` in the
-  source.
 
 ### Demo page (`docs/`)
 
