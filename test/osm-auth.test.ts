@@ -1,4 +1,4 @@
-import { afterAll, beforeEach, describe, it } from 'bun:test';
+import { afterAll, afterEach, beforeEach, describe, it } from 'bun:test';
 import { strict as assert } from 'node:assert';
 import { createHash } from 'node:crypto';
 import { osmAuth, OSMAuthError, type LoginOptions, type OSMAuthOptions } from '../src/osm-auth.ts';
@@ -236,6 +236,14 @@ describe('osmAuth', () => {
       auth.logout();
       assert.equal(auth.authenticated(), false);
     });
+
+    it('keeps tokens in memory if writing to localStorage throws (e.g. it\'s full)', () => {
+      storage.setItem = () => { throw new DOMException('Quota exceeded', 'QuotaExceededError'); };
+      const auth = new osmAuth({ ...OPTIONS, access_token: 'foo' });
+      assert.equal(auth.getAccessToken(), 'foo');
+      auth.logout();
+      assert.equal(auth.authenticated(), false);
+    });
   });
 
 
@@ -435,6 +443,27 @@ describe('osmAuth', () => {
       const auth = new osmAuth(OPTIONS);
       auth.rawxhr('GET', 'https://example.com', null, null, null, () => {});
       assert.deepEqual(FakeXHR.last().headers, { 'Content-Type': 'application/x-www-form-urlencoded' });
+    });
+
+    it('fails with a timeout error if the request times out', () => {
+      const auth = new osmAuth(OPTIONS);
+      const calls: unknown[][] = [];
+      const xhr = auth.rawxhr('GET', 'https://example.com', null, null, null, (...args) => calls.push(args));
+      xhr.timeout = 1000;
+      const request = FakeXHR.last();
+      const e = request.timeOut();
+      assert.equal(calls.length, 1);
+      const err = assertOSMAuthError(calls[0]?.[0], 'timeout');
+      assert.equal(err.xhr, request);
+      assert.equal(err.cause, e);
+    });
+
+    it('doesn\'t call back if the caller aborts the request', () => {
+      const auth = new osmAuth(OPTIONS);
+      const calls: unknown[][] = [];
+      const xhr = auth.rawxhr('GET', 'https://example.com', null, null, null, (...args) => calls.push(args));
+      xhr.abort();
+      assert.equal(calls.length, 0);
     });
 
     it('doesn\'t change the caller\'s headers', () => {
@@ -733,6 +762,57 @@ describe('osmAuth', () => {
       assert.equal(storage.getItem(`${DEV}oauth2_access_token`), null);
     });
 
+    it('fails if the token response isn\'t JSON (e.g. a captive portal\'s page)', async () => {
+      let done = 0;
+      const auth = new osmAuth({ ...OPTIONS, done: () => done++ });
+      const { pending, state } = await startPopupLogin(auth);
+      const tokenRequest = FakeXHR.nextRequest();
+      postFromLandPage(`${REDIRECT}?code=CODE&state=${state}`);
+      (await tokenRequest).respond(200, '<html>Sign in to the Wi-Fi</html>');
+
+      const { err } = await pending;
+      assertOSMAuthError(err, 'invalid-token-response');
+      assert.equal(auth.authenticated(), false);
+      assert.equal(done, 1);
+    });
+
+    it('still logs in if saving the token to localStorage throws, and keeps it in memory', async () => {
+      const auth = new osmAuth(OPTIONS);
+      const { pending, state } = await startPopupLogin(auth);
+      storage.setItem = () => { throw new DOMException('Quota exceeded', 'QuotaExceededError'); };
+      const tokenRequest = FakeXHR.nextRequest();
+      postFromLandPage(`${REDIRECT}?code=CODE&state=${state}`);
+      (await tokenRequest).respond(200, JSON.stringify({ access_token: 'TOKEN' }));
+
+      const { err } = await pending;
+      assert.equal(err, null);
+      assert.equal(auth.getAccessToken(), 'TOKEN');
+    });
+
+    describe('without Web Crypto (e.g. not in a secure context)', () => {
+      const originalCrypto = globalThis.crypto;
+      afterEach(() => { setGlobal('crypto', originalCrypto); });
+
+      it('fails without opening a popup', async () => {
+        setGlobal('crypto', { getRandomValues: originalCrypto.getRandomValues.bind(originalCrypto) });
+        const { err } = await authenticateP(new osmAuth(OPTIONS));
+        assertOSMAuthError(err, 'crypto-unavailable');
+        assert.equal(win.opened.length, 0);
+      });
+
+      it('fails, and closes the popup, if making the PKCE challenge fails', async () => {
+        const failure = new Error('digest failed');
+        setGlobal('crypto', {
+          getRandomValues: originalCrypto.getRandomValues.bind(originalCrypto),
+          subtle: { digest: () => Promise.reject(failure) }
+        });
+        const { err } = await authenticateP(new osmAuth(OPTIONS));
+        const error = assertOSMAuthError(err, 'crypto-unavailable');
+        assert.equal(error.cause, failure);
+        assert.equal(win.lastPopup().closed, true);
+      });
+    });
+
     it('fails if the token response has no access_token', async () => {
       let done = 0;
       const auth = new osmAuth({ ...OPTIONS, done: () => done++ });
@@ -836,6 +916,16 @@ describe('osmAuth', () => {
       const { err } = await authenticateP(new osmAuth(SINGLEPAGE));
       assertOSMAuthError(err, 'pkce-localstorage-unavailable');
       assert.equal(win.opened.length, 0);
+    });
+
+    it('fails, rather than redirecting, if saving the state to localStorage throws', async () => {
+      storage.setItem = () => { throw new DOMException('Quota exceeded', 'QuotaExceededError'); };
+      let navigated = false;
+      win.location.nextNavigation().then(() => { navigated = true; });
+      const { err } = await authenticateP(new osmAuth(SINGLEPAGE));
+      assertOSMAuthError(err, 'pkce-localstorage-unavailable');
+      await delivered();
+      assert.equal(navigated, false);
     });
 
     it('saves the state and verifier, then redirects to the authorize page', async () => {

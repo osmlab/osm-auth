@@ -55,6 +55,12 @@ Most projects only need to make sure they call `new osmAuth(…)`, and update an
 * Fix two failed logins that were reported as success ([#165])
   * `xhr()` with `auto: true` sent the request without a token after a failed login (e.g. a blocked popup, or the user denied access), instead of failing with the login error
   * A token response without an `access_token` succeeded without logging in. It fails with an `'invalid-token-response'` error now
+* Fix failures that never called back ([#166])
+  * A token response that isn't JSON (e.g. a captive portal's page) threw inside the request handler. It fails with an `'invalid-token-response'` error now
+  * If writing to `localStorage` throws (e.g. it's full), tokens are kept in memory instead, as when there's no `localStorage`. The login and the constructor used to throw. In single-page mode, the login fails with `'pkce-localstorage-unavailable'` rather than redirecting
+  * Without Web Crypto (outside a secure context), `authenticate()` threw after opening a blank popup. It fails with a `'crypto-unavailable'` error now, without opening the popup
+  * A request that times out fails with a `'timeout'` error. (A request you `abort()` still doesn't call back.)
+  * If the user closes the login popup, the browser doesn't tell the page, so the callback is called when a later login attempt ends ([#163])
 * Fix how `fetch()` and `xhr()` set request headers ([#169])
   * They no longer add the `Authorization` header to the caller's own options or headers object
   * The default `Content-Type: application/x-www-form-urlencoded` is only added for a string body (or none), so a `FormData` body keeps its multipart boundary, e.g. to upload a GPX trace ([#35])
@@ -69,6 +75,7 @@ Most projects only need to make sure they call `new osmAuth(…)`, and update an
 [#163]: https://github.com/osmlab/osm-auth/issues/163
 [#164]: https://github.com/osmlab/osm-auth/issues/164
 [#165]: https://github.com/osmlab/osm-auth/issues/165
+[#166]: https://github.com/osmlab/osm-auth/issues/166
 [#167]: https://github.com/osmlab/osm-auth/issues/167
 [#169]: https://github.com/osmlab/osm-auth/issues/169
 [#170]: https://github.com/osmlab/osm-auth/issues/170

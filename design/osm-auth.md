@@ -165,8 +165,8 @@ every failure is an `OSMAuthError`, and callbacks type `err` as `OSMAuthError | 
 export class OSMAuthError extends Error {
   code: string;               // 'popup-blocked', 'invalid-state', 'not-authenticated',
                               // 'pkce-localstorage-unavailable', 'http-error',
-                              // 'network-error', 'invalid-token-response',
-                              // or an OAuth error code from the redirect
+                              // 'network-error', 'timeout', 'invalid-token-response',
+                              // 'crypto-unavailable', or an OAuth error code from the redirect
   status?: number;            // HTTP status, for 'http-error'
   xhr?: XMLHttpRequest;       // the failed request, for its response body and headers
 }                             // (and `cause`: the ProgressEvent, for 'network-error')
